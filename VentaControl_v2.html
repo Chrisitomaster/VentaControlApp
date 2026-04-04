@@ -259,8 +259,8 @@ body{
    VentaControl v2.1 — Configuration & Data
    ============================================ */
 
-// ---- APPS SCRIPT URL (replace after deploying) ----
-const APPS_SCRIPT_URL = '';
+// ---- APPS SCRIPT URL (editable desde la app) ----
+let APPS_SCRIPT_URL = localStorage.getItem('vc2_apps_url') || '';
 const SHEET_ID = '1Ivnk1kXB1PVMqCAjKLRZzJnC72OdkL0zrIG_KB6WQz8';
 
 // ---- BUILDING DEFINITIONS ----
@@ -1370,6 +1370,7 @@ function showExportMenu(){
     h('div',{className:'modal'},[
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
+        h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showUrlConfig();}},['⚙️ Configurar URL Sync']),
         h('button',{className:'btn btn-ghost',onClick:()=>{exportCSV();overlay.remove();}},['📥 Exportar CSV']),
         h('button',{className:'btn btn-ghost',onClick:()=>{importCSV();overlay.remove();}},['📤 Importar CSV']),
         h('button',{className:'btn btn-ghost',onClick:()=>{migrateV1();overlay.remove();}},['🔄 Migrar desde v1']),
@@ -1384,6 +1385,34 @@ function showExportMenu(){
     ]),
   ]);
   document.body.appendChild(overlay);
+}
+
+function showUrlConfig(){
+  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+    h('div',{className:'modal'},[
+      h('h3',{},['⚙️ URL de Sincronización']),
+      h('p',{style:{fontSize:'0.8rem',color:'var(--tx-2)',marginBottom:'12px'}},['Pega aquí la URL de tu Apps Script (termina en /exec)']),
+      h('textarea',{
+        id:'url-input',
+        className:'obs-area',
+        style:{minHeight:'80px',fontSize:'0.75rem',wordBreak:'break-all'},
+        placeholder:'https://script.google.com/macros/s/.../exec',
+      },[APPS_SCRIPT_URL]),
+      h('div',{style:{display:'flex',gap:'8px',marginTop:'12px'}},[
+        h('button',{className:'btn btn-primary',style:{flex:1},onClick:()=>{
+          const val=$('#url-input').value.trim();
+          APPS_SCRIPT_URL=val;
+          localStorage.setItem('vc2_apps_url',val);
+          overlay.remove();
+          showSyncMsg(val?'✓ URL guardada':'URL borrada');
+        }},['Guardar']),
+        h('button',{className:'btn btn-ghost',onClick:()=>overlay.remove()},['Cancelar']),
+      ]),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+  // Foco en el textarea
+  setTimeout(()=>{const t=$('#url-input');if(t)t.focus();},100);
 }
 
 /* ============================================
