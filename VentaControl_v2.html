@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VentaControl v2.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b82f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VentaControl">
+<style>
+:root{
+  --font-main:'Outfit',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --radius:10px;
+  --radius-sm:6px;
+  --gap:12px;
+  --transition:0.2s ease;
+}
+[data-theme="light"]{
+  --bg-0:#f0f2f5;--bg-1:#ffffff;--bg-2:#e8ecf1;--bg-3:#d5dbe3;
+  --tx-0:#0f1419;--tx-1:#3a4553;--tx-2:#6b7a8d;
+  --ac-blue:#2563eb;--ac-blue-soft:#dbeafe;
+  --ac-green:#16a34a;--ac-green-soft:#dcfce7;
+  --ac-orange:#ea580c;--ac-orange-soft:#ffedd5;
+  --ac-red:#dc2626;--ac-red-soft:#fee2e2;
+  --ac-purple:#9333ea;--ac-purple-soft:#f3e8ff;
+  --ac-cyan:#0891b2;--ac-cyan-soft:#cffafe;
+  --border:#d1d5db;--shadow:0 1px 3px rgba(0,0,0,0.08);
+  --card-hover:#f8fafc;
+}
+[data-theme="dark"]{
+  --bg-0:#0b0f19;--bg-1:#131a2b;--bg-2:#1a2340;--bg-3:#243056;
+  --tx-0:#e2e8f0;--tx-1:#94a3b8;--tx-2:#64748b;
+  --ac-blue:#3b82f6;--ac-blue-soft:#1e3a5f;
+  --ac-green:#22c55e;--ac-green-soft:#14532d;
+  --ac-orange:#f97316;--ac-orange-soft:#7c2d12;
+  --ac-red:#ef4444;--ac-red-soft:#7f1d1d;
+  --ac-purple:#a855f7;--ac-purple-soft:#581c87;
+  --ac-cyan:#06b6d4;--ac-cyan-soft:#164e63;
+  --border:#1e3050;--shadow:0 2px 8px rgba(0,0,0,0.3);
+  --card-hover:#1a2540;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:15px;}
+body{
+  font-family:var(--font-main);background:var(--bg-0);color:var(--tx-0);
+  min-height:100vh;min-height:100dvh;transition:background var(--transition),color var(--transition);
+  -webkit-tap-highlight-color:transparent;
+}
+#app{max-width:640px;margin:0 auto;padding:0 var(--gap) var(--gap);padding-bottom:80px;}
+/* NAV */
+.topbar{
+  position:sticky;top:0;z-index:100;background:var(--bg-1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;padding:10px var(--gap);margin:0 calc(-1*var(--gap));
+  backdrop-filter:blur(12px);
+}
+.topbar h1{font-size:1.1rem;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar .back-btn{
+  background:none;border:none;color:var(--tx-1);font-size:1.3rem;cursor:pointer;
+  padding:4px 8px;border-radius:var(--radius-sm);
+}
+.topbar .back-btn:hover{background:var(--bg-2);}
+.topbar .logo{font-family:var(--font-mono);font-size:0.75rem;color:var(--ac-blue);font-weight:600;letter-spacing:1px;}
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+  border:none;border-radius:var(--radius-sm);font-family:var(--font-main);
+  font-size:0.85rem;font-weight:500;cursor:pointer;transition:all var(--transition);
+}
+.btn-primary{background:var(--ac-blue);color:#fff;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-sm{padding:5px 10px;font-size:0.78rem;}
+.btn-ghost{background:transparent;color:var(--tx-1);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--bg-2);}
+.btn-icon{
+  background:none;border:none;color:var(--tx-2);font-size:1.1rem;
+  cursor:pointer;padding:6px;border-radius:var(--radius-sm);line-height:1;
+}
+.btn-icon:hover{background:var(--bg-2);color:var(--tx-0);}
+/* CARDS */
+.card{
+  background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;margin-bottom:var(--gap);box-shadow:var(--shadow);transition:all var(--transition);
+}
+.card-click{cursor:pointer;}
+.card-click:hover{border-color:var(--ac-blue);background:var(--card-hover);}
+.card-click:active{transform:scale(0.98);}
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+/* SA CARDS */
+.sa-card{text-align:center;padding:16px 10px;}
+.sa-card .sa-label{font-size:0.75rem;color:var(--tx-2);text-transform:uppercase;letter-spacing:1px;}
+.sa-card .sa-num{font-size:1.8rem;font-weight:700;font-family:var(--font-mono);}
+.sa-card .sa-progress{font-size:0.8rem;color:var(--tx-1);margin-top:4px;}
+/* PROGRESS BAR */
+.pbar{height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden;margin-top:6px;}
+.pbar-fill{height:100%;border-radius:3px;transition:width 0.4s ease;}
+.pbar-fill.blue{background:var(--ac-blue);}
+.pbar-fill.green{background:var(--ac-green);}
+/* BUILDING GRID */
+.floor-label{font-size:0.75rem;color:var(--tx-2);margin:8px 0 4px;font-weight:500;}
+.dept-cell{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  text-align:center;padding:10px 4px;cursor:pointer;transition:all var(--transition);
+}
+.dept-cell:hover{border-color:var(--ac-blue);background:var(--card-hover);}
+.dept-cell .dept-num{font-weight:600;font-size:0.95rem;}
+.dept-cell .dept-info{font-size:0.7rem;color:var(--tx-2);margin-top:2px;}
+.dept-cell.complete{border-color:var(--ac-green);background:var(--ac-green-soft);}
+.dept-cell.partial{border-color:var(--ac-orange);background:var(--ac-orange-soft);}
+.dept-cell.has-issues{border-left:3px solid var(--ac-red);}
+/* WINDOW ROW */
+.win-row{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  border-bottom:1px solid var(--border);transition:background var(--transition);
+}
+.win-row:last-child{border-bottom:none;}
+.win-row:hover{background:var(--bg-2);}
+.win-code{font-family:var(--font-mono);font-size:0.85rem;font-weight:600;min-width:60px;}
+.win-loc{font-size:0.75rem;color:var(--tx-2);flex:1;}
+.win-status{font-size:1.1rem;cursor:pointer;padding:4px;user-select:none;}
+/* STATUS BADGES */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;
+  font-size:0.7rem;font-weight:600;white-space:nowrap;
+}
+.badge-blue{background:var(--ac-blue-soft);color:var(--ac-blue);}
+.badge-green{background:var(--ac-green-soft);color:var(--ac-green);}
+.badge-orange{background:var(--ac-orange-soft);color:var(--ac-orange);}
+.badge-red{background:var(--ac-red-soft);color:var(--ac-red);}
+.badge-purple{background:var(--ac-purple-soft);color:var(--ac-purple);}
+.badge-cyan{background:var(--ac-cyan-soft);color:var(--ac-cyan);}
+/* STATS ROW */
+.stats-row{display:flex;gap:var(--gap);flex-wrap:wrap;margin-bottom:var(--gap);}
+.stat-box{flex:1;min-width:80px;text-align:center;padding:10px 6px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.stat-val{font-size:1.4rem;font-weight:700;font-family:var(--font-mono);}
+.stat-label{font-size:0.65rem;color:var(--tx-2);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+/* DEFICIENCY CHIPS */
+.def-group{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.def-chip{
+  display:inline-flex;align-items:center;gap:4px;padding:5px 10px;
+  border:1px solid var(--border);border-radius:20px;font-size:0.75rem;
+  cursor:pointer;transition:all var(--transition);user-select:none;
+}
+.def-chip.active{border-color:var(--ac-red);background:var(--ac-red-soft);color:var(--ac-red);font-weight:600;}
+/* CORRECTIVE ACTIONS */
+.action-row{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:var(--radius-sm);margin:4px 0;font-size:0.82rem;
+}
+.action-row .action-icon{font-size:1rem;}
+.action-row .action-label{flex:1;}
+.action-row .action-check{
+  width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:0.7rem;transition:all var(--transition);
+}
+.action-row .action-check.done{background:var(--ac-green);border-color:var(--ac-green);color:#fff;}
+/* VANO STATUS */
+.vano-group{display:flex;gap:6px;margin:6px 0;}
+.vano-opt{
+  padding:5px 12px;border:1px solid var(--border);border-radius:20px;
+  font-size:0.75rem;cursor:pointer;transition:all var(--transition);
+}
+.vano-opt.sel{background:var(--ac-blue);color:#fff;border-color:var(--ac-blue);font-weight:600;}
+/* ESTADO SELECTOR */
+.estado-group{display:flex;gap:6px;flex-wrap:wrap;}
+.estado-opt{
+  padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:0.8rem;cursor:pointer;transition:all var(--transition);display:flex;align-items:center;gap:4px;
+}
+.estado-opt.sel-instalada{background:var(--ac-green-soft);border-color:var(--ac-green);color:var(--ac-green);font-weight:600;}
+.estado-opt.sel-pendiente{background:var(--ac-orange-soft);border-color:var(--ac-orange);color:var(--ac-orange);font-weight:600;}
+.estado-opt.sel-noinstalada{background:var(--bg-2);border-color:var(--tx-2);color:var(--tx-2);font-weight:600;}
+.estado-opt.sel-quitar{background:var(--ac-red-soft);border-color:var(--ac-red);color:var(--ac-red);font-weight:600;}
+/* TEXTAREA */
+.obs-area{
+  width:100%;min-height:60px;padding:8px 10px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--bg-0);color:var(--tx-0);
+  font-family:var(--font-main);font-size:0.85rem;resize:vertical;
+}
+.obs-area:focus{outline:none;border-color:var(--ac-blue);}
+/* HISTORY */
+.hist-item{
+  padding:6px 0;border-bottom:1px solid var(--border);font-size:0.78rem;color:var(--tx-1);
+}
+.hist-item:last-child{border-bottom:none;}
+.hist-time{font-family:var(--font-mono);font-size:0.7rem;color:var(--tx-2);}
+/* MODAL / OVERLAY */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.modal{
+  background:var(--bg-1);border-radius:var(--radius) var(--radius) 0 0;
+  padding:20px;width:100%;max-width:640px;max-height:85vh;overflow-y:auto;
+}
+.modal h3{margin-bottom:12px;font-size:1rem;}
+/* THEME TOGGLE */
+.theme-toggle{
+  width:36px;height:20px;border-radius:10px;background:var(--bg-3);
+  position:relative;cursor:pointer;border:none;transition:background var(--transition);
+}
+.theme-toggle::after{
+  content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;
+  border-radius:50%;background:var(--tx-0);transition:transform var(--transition);
+}
+[data-theme="dark"] .theme-toggle::after{transform:translateX(16px);}
+/* SYNC BAR */
+.sync-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:150;
+  background:var(--bg-1);border-top:1px solid var(--border);
+  padding:10px var(--gap);display:flex;align-items:center;justify-content:center;gap:12px;
+  max-width:640px;margin:0 auto;
+}
+.sync-status{font-size:0.75rem;color:var(--tx-2);}
+/* TYPE COUNT TABLE */
+.type-table{width:100%;border-collapse:collapse;margin-top:8px;}
+.type-table td{padding:6px 8px;border-bottom:1px solid var(--border);font-size:0.85rem;}
+.type-table td:first-child{font-family:var(--font-mono);font-weight:600;color:var(--ac-blue);}
+.type-table td:last-child{text-align:right;font-family:var(--font-mono);color:var(--tx-1);}
+/* BUILDING CARD */
+.bld-card{padding:12px;}
+.bld-card .bld-num{font-size:1.3rem;font-weight:700;font-family:var(--font-mono);}
+.bld-card .bld-tipo{font-size:0.7rem;color:var(--tx-2);text-transform:uppercase;letter-spacing:0.5px;}
+.bld-card .bld-actions{display:flex;gap:6px;margin-top:6px;}
+/* SECTION HEADER */
+.section-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);
+}
+.section-hdr h2{font-size:0.9rem;font-weight:600;}
+/* COMMENT BOX */
+.comment-box{margin-top:12px;}
+.comment-box label{font-size:0.75rem;color:var(--tx-2);display:block;margin-bottom:4px;}
+/* ANIMATIONS */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.25s ease;}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bg-3);border-radius:2px;}
+/* RESPONSIVE */
+@media(min-width:500px){
+  .grid-4{gap:10px;}
+  .dept-cell{padding:12px 6px;}
+}
+</style>
+</head>
+<body data-theme="dark">
+<div id="app"></div>
+<script>
+/* ============================================
+   VentaControl v2.1 — Configuration & Data
+   ============================================ */
+
+// ---- APPS SCRIPT URL (replace after deploying) ----
+const APPS_SCRIPT_URL = '';
+const SHEET_ID = '1Ivnk1kXB1PVMqCAjKLRZzJnC72OdkL0zrIG_KB6WQz8';
+
+// ---- BUILDING DEFINITIONS ----
+// [edif, tipo, sa, [p1 depts], [p2-5 depts] or null=same]
+const BLDG_RAW = [
+  [1,'Aa',1,['A','B','A','B'],null],
+  [2,'B',1,['B','B','B','B'],null],
+  [3,'A',1,['B','A','B','A'],null],
+  [4,'Aa',1,['A','B','A','B'],null],
+  [5,'B',1,['B','B','B','B'],null],
+  [6,'A',1,['B','A','B','A'],null],
+  [7,'C',1,['B','MR','B','MR'],['B','B','B','B']],
+  [8,'Aa',1,['A','B','A','B'],null],
+  [9,'Aa',2,['A','B','A','B'],null],
+  [10,'B',2,['B','B','B','B'],null],
+  [11,'A',2,['B','A','B','A'],null],
+  [12,'A',2,['B','A','B','A'],null],
+  [13,'Aa',2,['A','B','A','B'],null],
+  [14,'A',2,['B','A','B','A'],null],
+  [15,'Aa',2,['A','B','A','B'],null],
+  [16,'Ca',2,['MR','B','MR','B'],['A','B','A','B']],
+  [17,'A',2,['B','A','B','A'],null],
+  [18,'A',3,['B','A','B','A'],null],
+  [19,'Aa',3,['A','B','A','B'],null],
+  [20,'Aa',3,['A','B','A','B'],null],
+  [21,'A',3,['B','A','B','A'],null],
+  [22,'A',3,['B','A','B','A'],null],
+  [23,'Aa',3,['A','B','A','B'],null],
+  [24,'Ca',3,['MR','B','MR','B'],['A','B','A','B']],
+  [25,'A',3,['B','A','B','A'],null],
+  [26,'Aa',4,['A','B','A','B'],null],
+  [27,'A',4,['B','A','B','A'],null],
+  [28,'A',4,['B','A','B','A'],null],
+  [29,'Aa',4,['A','B','A','B'],null],
+  [30,'Aa',5,['A','B','A','B'],null],
+  [31,'A',5,['B','MR','B','MR'],['B','A','B','A']],
+  [32,'Aa',5,['A','B','A','B'],null],
+  [33,'A',5,['B','A','B','A'],null],
+  [34,'D',5,['A','A','A','A'],null],
+];
+
+const BUILDINGS = {};
+BLDG_RAW.forEach(([e,tipo,sa,p1,p25])=>{
+  BUILDINGS[e]={tipo,sa,p1,p25:p25||p1};
+});
+
+// ---- WINDOW DEFINITIONS PER DEPT TYPE ----
+const WIN_DEF = {
+  A:[['V1-Izq','Dorm 1 Izq'],['V1-Der','Dorm 1 Der'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
+  B:[['V2','Dormitorio 1'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
+  MR:[['V5_1','Dorm MR 1'],['V5_2','Dorm MR 2'],['V5_3','Dorm MR 3'],['V5a','Logia MR'],['V6_1','Dorm 2 MR'],['V6_2','Dorm 2 MR'],['V7','Estar-Comedor MR']]
+};
+
+const COMMON_WIN = {
+  1:[['PV1','Mampara Acceso'],['PV2','Mampara Trasera']],
+  other:[['V8','Ventanal Escalera'],['V9','Ventana Escalera']]
+};
+
+// ---- DEFICIENCY & ACTION DEFINITIONS ----
+const DEFICIENCIES = [
+  {id:'separacion',        label:'Separación >5mm',                    icon:'↔'},
+  {id:'descuadre',         label:'Descuadre',                          icon:'◇'},
+  {id:'desaplomo',         label:'Ventana desaplomada',                 icon:'📐'},
+  {id:'sinSellador',       label:'Sin sellador FC11 bajo marco',        icon:'💧'},
+  {id:'sinSelladorFrente', label:'Sin sellador FC11 frente ventana',    icon:'💦'},
+  {id:'retornoMalla',      label:'Malla retorno EIFS no llega a marco', icon:'🔲'},
+  {id:'mallaPulida',       label:'Malla de retorno está pulida',        icon:'⚠'},
+  {id:'vidrioTrizado',     label:'Vidrio trizado',                     icon:'🔍'},
+  {id:'marcoPerforado',    label:'Marco perforado',                    icon:'🔧'},
+  {id:'faltaFijacion',     label:'Falta fijación en marco',             icon:'🔩'},
+];
+
+const ACTIONS = [
+  {id:'pulir',label:'Pulir Vano',icon:'🟣',color:'purple'},
+  {id:'impermeabilizar',label:'Impermeabilizar',icon:'🔵',color:'cyan'},
+  {id:'repararEIFS',label:'Reparar retorno EIFS',icon:'🟠',color:'orange'},
+  {id:'aplomar',label:'Aplomar ventana',icon:'🔴',color:'red'}
+];
+
+// Deficiency → Action mapping
+const DEF_ACTION_MAP = {
+  separacion:'pulir',
+  descuadre:'aplomar',
+  desaplomo:'aplomar',
+  sinSellador:'impermeabilizar',
+  sinSelladorFrente:'impermeabilizar',
+  retornoMalla:'repararEIFS',
+  mallaPulida:'repararEIFS',
+};
+
+const ESTADOS = [
+  {id:'instalada',label:'Instalada',sym:'✓',cls:'sel-instalada'},
+  {id:'pendiente',label:'Pendiente',sym:'◷',cls:'sel-pendiente'},
+  {id:'noInstalada',label:'No Instalada',sym:'✗',cls:'sel-noinstalada'},
+  {id:'quitar',label:'Quitar',sym:'↩',cls:'sel-quitar'}
+];
+
+const VANO_OPTS = ['OK','Sobredimensionado','Pulir'];
+
+const SA_NAMES = {1:'SA1',2:'SA2',3:'SA3',4:'SA4',5:'SA5'};
+const SA_RANGES = {1:[1,8],2:[9,17],3:[18,25],4:[26,29],5:[30,34]};
+
+// ---- PROFILE ----
+let userRole = localStorage.getItem('vc2_role') || null;
+function isEditor(){ return userRole === 'editor'; }
+
+// ---- UI STATE ----
+let defSectionOpen = true;
+
+/* ============================================
+   Utility Helpers
+   ============================================ */
+function $(sel,ctx=document){return ctx.querySelector(sel);}
+function $$(sel,ctx=document){return[...ctx.querySelectorAll(sel)];}
+function h(tag,attrs={},children=[]){
+  const el=document.createElement(tag);
+  for(const[k,v] of Object.entries(attrs)){
+    if(k==='className')el.className=v;
+    else if(k.startsWith('on'))el[k.toLowerCase()]=v;
+    else if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
+    else el.setAttribute(k,v);
+  }
+  children.forEach(c=>{
+    if(typeof c==='string')el.appendChild(document.createTextNode(c));
+    else if(c)el.appendChild(c);
+  });
+  return el;
+}
+function ts(){return new Date().toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function pct(n,t){return t?Math.round(n/t*100):0;}
+
+/* ============================================
+   DATA MODEL
+   ============================================ */
+let DATA = {windows:{},buildings:{},meta:{version:'2.0',lastSync:null}};
+
+// Generate building key
+function wKey(edif,depto,win){return `${edif}-${depto}-${win}`;}
+function bKey(edif){return `bld-${edif}`;}
+
+// Get dept type for given building/floor/position
+function getDeptType(edif,floor,posIdx){
+  const b=BUILDINGS[edif];
+  const arr=floor===1?b.p1:b.p25;
+  return arr[posIdx];
+}
+
+// Get dept number from floor and position index
+function deptNum(floor,posIdx){return floor*100+(posIdx+1);}
+
+// Get all departments for a building
+function getBldgDepts(edif){
+  const depts=[];
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(edif,f,p);
+      const num=deptNum(f,p);
+      depts.push({num,tipo,floor:f,posIdx:p});
+    }
+  }
+  return depts;
+}
+
+// Get windows for a department
+function getDeptWindows(tipo){return WIN_DEF[tipo]||[];}
+
+// Get common area windows for a floor
+function getCommonWindows(floor){return floor===1?COMMON_WIN[1]:COMMON_WIN.other;}
+
+// Initialize all window data
+function initData(){
+  const stored=localStorage.getItem('ventacontrol_v2');
+  if(stored){
+    try{DATA=JSON.parse(stored);return;}catch(e){console.error('Parse error',e);}
+  }
+  // Fresh init
+  for(const[edif,cfg] of Object.entries(BUILDINGS)){
+    const e=parseInt(edif);
+    // Building-level data
+    DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{}};
+    // Department windows
+    for(let f=1;f<=5;f++){
+      for(let p=0;p<4;p++){
+        const tipo=getDeptType(e,f,p);
+        const dn=deptNum(f,p);
+        const wins=getDeptWindows(tipo);
+        wins.forEach(([code])=>{
+          const key=wKey(e,dn,code);
+          DATA.windows[key]=newWindowRecord();
+        });
+      }
+      // Common area windows
+      const cw=getCommonWindows(f);
+      cw.forEach(([code])=>{
+        const key=wKey(e,`EC${f}`,code);
+        DATA.windows[key]=newWindowRecord();
+      });
+    }
+  }
+  saveLocal();
+}
+
+function newWindowRecord(){
+  return{
+    estado:'noInstalada',
+    estadoVano:'',
+    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false},
+    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false}},
+    observaciones:'',
+    historial:[],
+    fotos:[]
+  };
+}
+
+function saveLocal(){
+  DATA.meta.lastSave=ts();
+  localStorage.setItem('ventacontrol_v2',JSON.stringify(DATA));
+}
+
+// Update window field with history tracking
+function updateWindow(key,field,value,label){
+  const w=DATA.windows[key];
+  if(!w)return;
+  const old=typeof field==='function'?'':JSON.stringify(getNestedVal(w,field));
+  if(typeof field==='function'){field(w,value);}
+  else{setNestedVal(w,field,value);}
+  w.historial.unshift({t:ts(),cambio:label||`${field}: ${old} → ${JSON.stringify(value)}`});
+  if(w.historial.length>50)w.historial=w.historial.slice(0,50);
+  // Auto-generate corrective actions from deficiencies
+  syncDefToActions(w);
+  saveLocal();
+}
+
+function getNestedVal(obj,path){
+  return path.split('.').reduce((o,k)=>o&&o[k],obj);
+}
+function setNestedVal(obj,path,val){
+  const parts=path.split('.');
+  const last=parts.pop();
+  const target=parts.reduce((o,k)=>o[k],obj);
+  target[last]=val;
+}
+
+function syncDefToActions(w){
+  for(const[defId,actId] of Object.entries(DEF_ACTION_MAP)){
+    if(w.deficiencias[defId]){
+      w.acciones[actId].active=true;
+    }
+  }
+}
+
+/* ============================================
+   STATS COMPUTATION
+   ============================================ */
+function getBldgStats(edif){
+  const e=parseInt(edif);
+  let total=0,instaladas=0,quitar=0,pendientes=0,defCount=0,actionsPending=0;
+  const tipoCounts={};
+  // Dept windows
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      const dn=deptNum(f,p);
+      const wins=getDeptWindows(tipo);
+      wins.forEach(([code])=>{
+        const key=wKey(e,dn,code);
+        const w=DATA.windows[key];
+        if(!w)return;
+        total++;
+        // Determine window type group for counts
+        const typeGroup=code.replace(/-[A-Za-z]+$/,'').replace(/_D\d/,'');
+        const baseType=code.startsWith('V1-')||code==='V1_D2'||code==='V1_D3'?'V1':
+                       code.startsWith('V5')?'V5':code.startsWith('V6')?'V6':code;
+        // Simplified: use first part
+        const tKey=code.replace(/_\d$/,'').replace(/-[A-Za-z]+$/,'');
+        tipoCounts[tKey]=(tipoCounts[tKey]||{t:0,i:0});
+        tipoCounts[tKey].t++;
+        if(w.estado==='instalada'){instaladas++;tipoCounts[tKey].i++;}
+        if(w.estado==='quitar')quitar++;
+        if(w.estado==='pendiente')pendientes++;
+        Object.values(w.deficiencias).forEach(v=>{if(v)defCount++;});
+        Object.values(w.acciones).forEach(a=>{if(a.active&&!a.done)actionsPending++;});
+      });
+    }
+    // Common
+    const cw=getCommonWindows(f);
+    cw.forEach(([code])=>{
+      const key=wKey(e,`EC${f}`,code);
+      const w=DATA.windows[key];
+      if(!w)return;
+      total++;
+      tipoCounts[code]=(tipoCounts[code]||{t:0,i:0});
+      tipoCounts[code].t++;
+      if(w.estado==='instalada'){instaladas++;tipoCounts[code].i++;}
+      if(w.estado==='quitar')quitar++;
+      if(w.estado==='pendiente')pendientes++;
+      Object.values(w.deficiencias).forEach(v=>{if(v)defCount++;});
+      Object.values(w.acciones).forEach(a=>{if(a.active&&!a.done)actionsPending++;});
+    });
+  }
+  const pctBruto=pct(instaladas,total);
+  const pctAjustado=pct(instaladas-quitar,total);
+  return{total,instaladas,quitar,pendientes,defCount,actionsPending,pctBruto,pctAjustado,tipoCounts};
+}
+
+function getDeptStats(edif,depto){
+  const e=parseInt(edif);
+  const floor=Math.floor(depto/100);
+  const posIdx=(depto%100)-1;
+  const tipo=getDeptType(e,floor,posIdx);
+  const wins=getDeptWindows(tipo);
+  let total=wins.length,instaladas=0,quitar=0,defCount=0;
+  wins.forEach(([code])=>{
+    const w=DATA.windows[wKey(e,depto,code)];
+    if(!w)return;
+    if(w.estado==='instalada')instaladas++;
+    if(w.estado==='quitar')quitar++;
+    Object.values(w.deficiencias).forEach(v=>{if(v)defCount++;});
+  });
+  return{total,instaladas,quitar,defCount,tipo};
+}
+
+function getCommonStats(edif,floor){
+  const cw=getCommonWindows(floor);
+  let total=cw.length,instaladas=0;
+  cw.forEach(([code])=>{
+    const w=DATA.windows[wKey(edif,`EC${floor}`,code)];
+    if(w&&w.estado==='instalada')instaladas++;
+  });
+  return{total,instaladas};
+}
+
+function getSAStats(sa){
+  const[start,end]=SA_RANGES[sa];
+  let total=0,instaladas=0,quitar=0;
+  for(let e=start;e<=end;e++){
+    const s=getBldgStats(e);
+    total+=s.total;instaladas+=s.instaladas;quitar+=s.quitar;
+  }
+  return{total,instaladas,quitar,pctBruto:pct(instaladas,total),pctAjustado:pct(instaladas-quitar,total)};
+}
+
+function getGlobalStats(){
+  let total=0,instaladas=0,quitar=0,defCount=0;
+  for(let e=1;e<=34;e++){
+    const s=getBldgStats(e);
+    total+=s.total;instaladas+=s.instaladas;quitar+=s.quitar;defCount+=s.defCount;
+  }
+  return{total,instaladas,quitar,defCount,pctBruto:pct(instaladas,total),pctAjustado:pct(instaladas-quitar,total)};
+}
+
+/* ============================================
+   ROUTER
+   ============================================ */
+let currentView='dashboard';
+let viewParams={};
+
+function navigate(view,params={}){
+  currentView=view;
+  viewParams=params;
+  render();
+  window.scrollTo(0,0);
+}
+
+/* ============================================
+   RENDER ENGINE
+   ============================================ */
+const app=()=>$('#app');
+
+function renderLogin(){
+  const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
+    h('div',{style:{marginBottom:'32px'}},[
+      h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.1']),
+      h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
+    ]),
+    h('p',{style:{color:'var(--tx-1)',marginBottom:'20px',fontSize:'0.9rem',fontWeight:'500'}},['Selecciona tu perfil de acceso']),
+    h('div',{style:{display:'flex',flexDirection:'column',gap:'12px',maxWidth:'260px',margin:'0 auto'}},[
+      h('button',{className:'btn btn-primary',style:{padding:'14px',fontSize:'1rem',justifyContent:'center'},
+        onClick:()=>{ userRole='editor'; localStorage.setItem('vc2_role','editor'); render(); }
+      },['✏️  Editor']),
+      h('button',{className:'btn btn-ghost',style:{padding:'14px',fontSize:'1rem',justifyContent:'center'},
+        onClick:()=>{ userRole='viewer'; localStorage.setItem('vc2_role','viewer'); render(); }
+      },['👁  Espectador']),
+    ]),
+  ]);
+  app().innerHTML='';
+  app().appendChild(el);
+}
+
+function render(){
+  if(!userRole){ renderLogin(); return; }
+  const views={
+    dashboard:renderDashboard,
+    sa:renderSA,
+    building:renderBuilding,
+    dept:renderDept,
+    window:renderWindow,
+    common:renderCommon
+  };
+  (views[currentView]||renderDashboard)();
+}
+
+/* ---- TOPBAR ---- */
+function topbar(title,backView=null,backParams={}){
+  const roleBadge=isEditor()?
+    h('span',{className:'badge badge-blue',style:{fontSize:'0.65rem',cursor:'pointer',padding:'2px 6px'},onClick:switchRole},['✏ Editor']):
+    h('span',{className:'badge badge-cyan',style:{fontSize:'0.65rem',cursor:'pointer',padding:'2px 6px'},onClick:switchRole},['👁 Vista']);
+  return h('div',{className:'topbar'},[
+    backView?h('button',{className:'back-btn',onClick:()=>navigate(backView,backParams)},['←']):null,
+    h('h1',{},[title]),
+    roleBadge,
+    h('span',{className:'logo'},['VC2']),
+    h('button',{className:'theme-toggle',onClick:toggleTheme},[]),
+  ]);
+}
+
+function switchRole(){
+  const msg=isEditor()?'¿Cambiar a modo Espectador?\nNo podrás editar datos.':'¿Cambiar a modo Editor?';
+  if(confirm(msg)){
+    userRole=isEditor()?'viewer':'editor';
+    localStorage.setItem('vc2_role',userRole);
+    render();
+  }
+}
+
+function toggleTheme(){
+  const body=document.body;
+  const next=body.getAttribute('data-theme')==='dark'?'light':'dark';
+  body.setAttribute('data-theme',next);
+  localStorage.setItem('vc2_theme',next);
+}
+
+/* ============================================
+   VIEW: DASHBOARD
+   ============================================ */
+function renderDashboard(){
+  const g=getGlobalStats();
+  const el=h('div',{className:'fade-in'},[
+    topbar('VentaControl v2.1'),
+    // Global stats
+    h('div',{className:'stats-row'},[
+      statBox(g.instaladas.toLocaleString(),'Instaladas'),
+      statBox(g.total.toLocaleString(),'Total'),
+      statBox(g.pctBruto+'%','% Bruto'),
+      statBox(g.pctAjustado+'%','% Ajustado'),
+    ]),
+    h('div',{className:'pbar'},[h('div',{className:'pbar-fill blue',style:{width:g.pctBruto+'%'}})]),
+    h('div',{style:{height:'6px'}}),
+    h('div',{className:'pbar'},[h('div',{className:'pbar-fill green',style:{width:Math.max(0,g.pctAjustado)+'%'}})]),
+    // SA cards
+    h('div',{className:'section-hdr'},[h('h2',{},['Sub-Administraciones'])]),
+    h('div',{className:'grid-2'},
+      [1,2,3,4,5].map(sa=>{
+        const s=getSAStats(sa);
+        const card=h('div',{className:'card card-click sa-card',onClick:()=>navigate('sa',{sa})},[
+          h('div',{className:'sa-label'},[SA_NAMES[sa]]),
+          h('div',{className:'sa-num'},[s.pctBruto+'%']),
+          h('div',{className:'sa-progress'},[`${s.instaladas}/${s.total}`]),
+          h('div',{className:'pbar'},[h('div',{className:'pbar-fill blue',style:{width:s.pctBruto+'%'}})]),
+        ]);
+        return card;
+      })
+    ),
+    // Deficiency summary
+    h('div',{className:'section-hdr'},[h('h2',{},['Resumen Global']),h('span',{className:'badge badge-red'},[g.defCount+' inconformidades'])]),
+    // Sync bar
+    renderSyncBar(),
+  ]);
+  app().innerHTML='';
+  app().appendChild(el);
+}
+
+function statBox(val,label){
+  return h('div',{className:'stat-box'},[
+    h('div',{className:'stat-val'},[val]),
+    h('div',{className:'stat-label'},[label]),
+  ]);
+}
+
+/* ============================================
+   VIEW: SA (Building List)
+   ============================================ */
+function renderSA(){
+  const sa=viewParams.sa;
+  const[start,end]=SA_RANGES[sa];
+  const sStats=getSAStats(sa);
+  const el=h('div',{className:'fade-in'},[
+    topbar(SA_NAMES[sa]+` — ${sStats.pctBruto}%`,'dashboard'),
+    h('div',{className:'stats-row'},[
+      statBox(sStats.instaladas.toString(),'Instaladas'),
+      statBox(sStats.total.toString(),'Total'),
+      statBox(sStats.pctBruto+'%','Bruto'),
+      statBox(sStats.pctAjustado+'%','Ajustado'),
+    ]),
+    ...Array.from({length:end-start+1},(_,i)=>{
+      const e=start+i;
+      const b=BUILDINGS[e];
+      const s=getBldgStats(e);
+      return h('div',{className:'card card-click bld-card',onClick:()=>navigate('building',{edif:e})},[
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},[
+          h('div',{},[
+            h('span',{className:'bld-num'},['Edif. '+e]),
+            h('span',{className:'bld-tipo',style:{marginLeft:'8px'}},['Tipo '+b.tipo]),
+          ]),
+          h('span',{className:'badge '+(s.pctBruto>=100?'badge-green':s.pctBruto>0?'badge-blue':'badge-orange')},[s.pctBruto+'%']),
+        ]),
+        h('div',{className:'pbar',style:{marginTop:'8px'}},[h('div',{className:'pbar-fill blue',style:{width:s.pctBruto+'%'}})]),
+        h('div',{style:{display:'flex',gap:'6px',marginTop:'8px',flexWrap:'wrap'}},[
+          s.defCount?h('span',{className:'badge badge-red'},[s.defCount+' def.']):null,
+          s.actionsPending?h('span',{className:'badge badge-orange'},[s.actionsPending+' acc.']):null,
+          s.quitar?h('span',{className:'badge badge-purple'},[s.quitar+' quitar']):null,
+        ]),
+      ]);
+    }),
+    renderSyncBar(),
+  ]);
+  app().innerHTML='';
+  app().appendChild(el);
+}
+
+/* ============================================
+   VIEW: BUILDING DETAIL
+   ============================================ */
+function renderBuilding(){
+  const edif=viewParams.edif;
+  const b=BUILDINGS[edif];
+  const s=getBldgStats(edif);
+  const bData=DATA.buildings[bKey(edif)]||{comment:'',accionesPendientes:{}};
+
+  const el=h('div',{className:'fade-in'},[
+    topbar(`Edif. ${edif} — Tipo ${b.tipo}`,'sa',{sa:b.sa}),
+
+    // Stats
+    h('div',{className:'stats-row'},[
+      statBox(s.instaladas+'/'+s.total,'Ventanas'),
+      statBox(s.pctBruto+'%','Bruto'),
+      statBox(s.pctAjustado+'%','Ajustado'),
+      statBox(s.defCount.toString(),'Defectos'),
+    ]),
+
+    // Bulk actions (editor only)
+    isEditor()?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
+      h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']),
+      h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>confirmClearBuilding(edif)},['🗑 Limpiar edificio']),
+    ]):null,
+
+    // Floor grid
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.85rem'}},['Estado por Departamento']),
+      ...([1,2,3,4,5].map(f=>{
+        return h('div',{},[
+          h('div',{className:'floor-label'},['Piso '+f]),
+          h('div',{className:'grid-4'},[
+            ...[0,1,2,3].map(p=>{
+              const dn=deptNum(f,p);
+              const tipo=getDeptType(edif,f,p);
+              const st=getDeptStats(edif,dn);
+              let cls='dept-cell';
+              if(st.instaladas===st.total)cls+=' complete';
+              else if(st.instaladas>0)cls+=' partial';
+              if(st.defCount>0)cls+=' has-issues';
+              return h('div',{className:cls,onClick:()=>navigate('dept',{edif,depto:dn})},[
+                h('div',{className:'dept-num'},[dn.toString()]),
+                h('div',{className:'dept-info'},[`${tipo} · ${st.instaladas}/${st.total}`]),
+                st.defCount?h('div',{style:{fontSize:'0.65rem',color:'var(--ac-red)',marginTop:'2px'}},[st.defCount+' def']):null,
+              ].filter(Boolean));
+            }),
+          ]),
+        ]);
+      })),
+    ]),
+
+    // Common areas — improved view
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.85rem'}},['Espacios Comunes']),
+      ...[1,2,3,4,5].flatMap(f=>{
+        const cw=getCommonWindows(f);
+        return [
+          h('div',{className:'floor-label'},['Piso '+f]),
+          ...cw.map(([code])=>{
+            const w=DATA.windows[wKey(edif,`EC${f}`,code)];
+            const loc=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
+            const hasD=w&&Object.values(w.deficiencias).some(v=>v);
+            const activeDefIcons=w?DEFICIENCIES.filter(d=>w.deficiencias[d.id]):[];
+            return h('div',{style:{padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'},
+              onClick:()=>navigate('common',{edif,floor:f,code})},[
+              h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},[
+                h('span',{className:'win-code'},[code]),
+                h('span',{className:'win-loc'},[loc]),
+                h('span',{style:{flex:1}}),
+                renderEstadoMini(w?w.estado:'noInstalada'),
+                w?.estadoVano?h('span',{className:'badge badge-cyan',style:{fontSize:'0.65rem'}},[w.estadoVano]):null,
+              ]),
+              (hasD||w?.observaciones)?h('div',{style:{marginTop:'3px',paddingLeft:'60px',display:'flex',gap:'3px',flexWrap:'wrap',alignItems:'center'}},[
+                ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.85rem'}},[d.icon])),
+                w?.observaciones?h('span',{style:{fontSize:'0.7rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,50)+(w.observaciones.length>50?'…':'')]):null,
+              ].filter(Boolean)):null,
+            ].filter(Boolean));
+          }),
+        ];
+      }),
+    ]),
+
+    // Deficiency breakdown
+    s.defCount>0?h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.85rem'}},['Inconformidades']),
+      renderBldgDefBreakdown(edif),
+    ]):null,
+
+    // Type counts table
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',marginBottom:'4px',fontSize:'0.85rem'}},['Por Tipo (Edif. '+edif+')']),
+      renderTypeTable(s.tipoCounts),
+    ]),
+
+    // Corrective actions summary
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.85rem'}},['Acciones Correctivas']),
+      ...ACTIONS.map(a=>{
+        const count=countBldgActions(edif,a.id);
+        return h('div',{className:'action-row'},[
+          h('span',{className:'action-icon'},[a.icon]),
+          h('span',{className:'action-label'},[a.label]),
+          h('span',{className:'badge badge-'+a.color},[count.pending+' pend.']),
+          h('span',{className:'badge badge-green',style:{marginLeft:'4px'}},[count.done+' ✓']),
+        ]);
+      }),
+    ]),
+
+    // Building comment
+    h('div',{className:'card comment-box'},[
+      h('label',{},['Comentarios del Edificio']),
+      h('textarea',{
+        className:'obs-area',
+        value:bData.comment||'',
+        placeholder:'Notas generales del edificio...',
+        readOnly:!isEditor(),
+        onBlur:(e)=>{
+          if(!isEditor())return;
+          if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{}};
+          DATA.buildings[bKey(edif)].comment=e.target.value;
+          saveLocal();
+        }
+      },[bData.comment||'']),
+    ]),
+
+    renderSyncBar(),
+  ].filter(Boolean));
+  app().innerHTML='';
+  app().appendChild(el);
+  const ta=$('.obs-area',app());
+  if(ta)ta.value=bData.comment||'';
+}
+
+function renderTypeTable(tipoCounts){
+  const tbl=h('table',{className:'type-table'});
+  // Sort entries by a logical order
+  const order=['V1','V1a','V2','V3','V4','V5','V5a','V6','V7','V8','V9','PV1','PV2'];
+  const sorted=Object.entries(tipoCounts).sort((a,b)=>{
+    const ia=order.indexOf(a[0]),ib=order.indexOf(b[0]);
+    return(ia===-1?99:ia)-(ib===-1?99:ib);
+  });
+  sorted.forEach(([tipo,{t,i}])=>{
+    const row=h('tr',{},[
+      h('td',{},[tipo]),
+      h('td',{},[`${i}/${t}`]),
+    ]);
+    tbl.appendChild(row);
+  });
+  return tbl;
+}
+
+function countBldgActions(edif,actionId){
+  let pending=0,done=0;
+  const e=parseInt(edif);
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      const dn=deptNum(f,p);
+      getDeptWindows(tipo).forEach(([code])=>{
+        const w=DATA.windows[wKey(e,dn,code)];
+        if(!w)return;
+        if(w.acciones[actionId]?.active&&!w.acciones[actionId]?.done)pending++;
+        if(w.acciones[actionId]?.done)done++;
+      });
+    }
+    getCommonWindows(f).forEach(([code])=>{
+      const w=DATA.windows[wKey(e,`EC${f}`,code)];
+      if(!w)return;
+      if(w.acciones[actionId]?.active&&!w.acciones[actionId]?.done)pending++;
+      if(w.acciones[actionId]?.done)done++;
+    });
+  }
+  return{pending,done};
+}
+
+/* ============================================
+   VIEW: DEPARTMENT
+   ============================================ */
+function renderDept(){
+  const{edif,depto}=viewParams;
+  const floor=Math.floor(depto/100);
+  const posIdx=(depto%100)-1;
+  const tipo=getDeptType(edif,floor,posIdx);
+  const wins=getDeptWindows(tipo);
+  const st=getDeptStats(edif,depto);
+
+  const el=h('div',{className:'fade-in'},[
+    topbar(`${depto} · ${tipo} — Edif. ${edif}`,'building',{edif}),
+    h('div',{className:'stats-row'},[
+      statBox(`${st.instaladas}/${st.total}`,'Ventanas'),
+      statBox(pct(st.instaladas,st.total)+'%','Avance'),
+      statBox(st.defCount.toString(),'Defectos'),
+    ]),
+    // Toolbar (editor only)
+    isEditor()?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
+      h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('dept',{edif,depto})},['⚡ Cambio masivo']),
+      h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>confirmClearDept(edif,depto)},['🗑 Limpiar depto']),
+    ]):null,
+    h('div',{className:'card',style:{padding:'0'}},[
+      ...wins.map(([code,loc])=>{
+        const key=wKey(edif,depto,code);
+        const w=DATA.windows[key];
+        if(!w)return null;
+        const hasD=Object.values(w.deficiencias).some(v=>v);
+        const activeDefIcons=DEFICIENCIES.filter(d=>w.deficiencias[d.id]);
+        return h('div',{style:{borderBottom:'1px solid var(--border)',padding:'10px 12px'}},[
+          // Header row — tap to open detail
+          h('div',{style:{display:'flex',alignItems:'center',gap:'8px',cursor:'pointer'},
+            onClick:()=>navigate('window',{edif,depto,code,loc})},[
+            h('span',{className:'win-code'},[code]),
+            h('span',{className:'win-loc'},[loc]),
+            h('span',{style:{flex:1}}),
+            renderEstadoMini(w.estado),
+            w.estadoVano?h('span',{className:'badge badge-cyan',style:{fontSize:'0.65rem'}},[w.estadoVano]):null,
+          ]),
+          // Deficiency icons + observation preview
+          (hasD||w.observaciones)?h('div',{style:{marginTop:'4px',paddingLeft:'60px',display:'flex',gap:'3px',alignItems:'center',flexWrap:'wrap'}},[
+            ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.85rem'}},[d.icon])),
+            w.observaciones?h('span',{style:{fontSize:'0.7rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,50)+(w.observaciones.length>50?'…':'')]):null,
+          ].filter(Boolean)):null,
+          // Quick status buttons (editor only)
+          isEditor()?h('div',{style:{display:'flex',gap:'4px',marginTop:'7px',flexWrap:'wrap'}},
+            ESTADOS.map(e=>h('div',{
+              className:'estado-opt'+(w.estado===e.id?' '+e.cls:''),
+              style:{padding:'3px 8px',fontSize:'0.72rem'},
+              onClick:(ev)=>{
+                ev.stopPropagation();
+                updateWindow(key,'estado',e.id,`Estado: ${w.estado} → ${e.id}`);
+                renderDept();
+              }
+            },[e.sym+' '+e.label]))
+          ):null,
+        ].filter(Boolean));
+      }),
+    ]),
+    renderSyncBar(),
+  ].filter(Boolean));
+  app().innerHTML='';
+  app().appendChild(el);
+}
+
+function renderEstadoMini(estado){
+  const cfg=ESTADOS.find(e=>e.id===estado)||ESTADOS[2];
+  const colors={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)'};
+  return h('span',{style:{fontSize:'1.2rem',color:colors[estado]||'var(--tx-2)'}},[cfg.sym]);
+}
+
+/* ============================================
+   VIEW: COMMON AREA WINDOW
+   ============================================ */
+function renderCommon(){
+  const{edif,floor,code}=viewParams;
+  const key=wKey(edif,`EC${floor}`,code);
+  const w=DATA.windows[key];
+  if(!w)return;
+  const loc=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
+  // Reuse window detail renderer
+  renderWindowDetail(key,code,loc,`EC Piso ${floor} — Edif. ${edif}`,'building',{edif});
+}
+
+/* ============================================
+   VIEW: WINDOW DETAIL
+   ============================================ */
+function renderWindow(){
+  const{edif,depto,code,loc}=viewParams;
+  const key=wKey(edif,depto,code);
+  renderWindowDetail(key,code,loc,`${depto} — Edif. ${edif}`,'dept',{edif,depto});
+}
+
+function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
+  const w=DATA.windows[key];
+  if(!w){app().innerHTML='<p>Ventana no encontrada</p>';return;}
+
+  const el=h('div',{className:'fade-in'},[
+    topbar(`${code} · ${loc}`,backView,backParams),
+    h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',marginBottom:'12px'}},[subtitle]),
+
+    // Estado selector
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Estado']),
+      h('div',{className:'estado-group',id:'estado-group'},
+        ESTADOS.map(e=>
+          h('div',{
+            className:'estado-opt'+(w.estado===e.id?' '+e.cls:''),
+            style:{opacity:isEditor()?1:0.6,pointerEvents:isEditor()?'auto':'none'},
+            onClick:()=>{
+              if(!isEditor())return;
+              updateWindow(key,'estado',e.id,`Estado: ${w.estado} → ${e.id}`);
+              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+            }
+          },[e.sym+' '+e.label])
+        )
+      ),
+    ]),
+
+    // Estado Vano
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Estado Vano']),
+      h('div',{className:'vano-group'},
+        VANO_OPTS.map(v=>
+          h('span',{
+            className:'vano-opt'+(w.estadoVano===v?' sel':''),
+            style:{opacity:isEditor()?1:0.6,pointerEvents:isEditor()?'auto':'none'},
+            onClick:()=>{
+              if(!isEditor())return;
+              const newVal=w.estadoVano===v?'':v;
+              updateWindow(key,'estadoVano',newVal,`Vano: ${w.estadoVano||'—'} → ${newVal||'—'}`);
+              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+            }
+          },[v])
+        )
+      ),
+    ]),
+
+    // Deficiencias — colapsable
+    h('div',{className:'card'},[
+      h('div',{
+        style:{display:'flex',alignItems:'center',justifyContent:'space-between',fontWeight:'600',fontSize:'0.85rem',marginBottom:defSectionOpen?'10px':'0',cursor:'pointer'},
+        onClick:()=>{ defSectionOpen=!defSectionOpen; renderWindowDetail(key,code,loc,subtitle,backView,backParams); }
+      },[
+        h('span',{},['Deficiencias'+(Object.values(w.deficiencias).filter(Boolean).length?' ('+Object.values(w.deficiencias).filter(Boolean).length+')':'')]),
+        h('span',{style:{fontSize:'1rem',color:'var(--tx-2)'}},[defSectionOpen?'▾':'▸']),
+      ]),
+      defSectionOpen?h('div',{className:'def-group'},
+        DEFICIENCIES.map(d=>{
+          const active=w.deficiencias[d.id]||false;
+          return h('span',{
+            className:'def-chip'+(active?' active':''),
+            style:{opacity:isEditor()?1:0.65,pointerEvents:isEditor()?'auto':'none'},
+            onClick:()=>{
+              if(!isEditor())return;
+              updateWindow(key,`deficiencias.${d.id}`,!active,
+                `Deficiencia ${d.label}: ${active?'Quitada':'Detectada'}`);
+              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+            }
+          },[d.icon+' '+d.label]);
+        })
+      ):null,
+    ].filter(Boolean)),
+
+    // Corrective Actions
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Acciones Correctivas']),
+      ...ACTIONS.map(a=>{
+        const act=w.acciones[a.id];
+        if(!act)return null;
+        const isAutoActive=Object.entries(DEF_ACTION_MAP).some(([dk,ak])=>ak===a.id&&w.deficiencias[dk]);
+        return h('div',{className:'action-row',style:{
+          background:act.active?`var(--ac-${a.color}-soft)`:'transparent',
+          border:act.active?`1px solid var(--ac-${a.color})`:'1px solid transparent',
+          borderRadius:'var(--radius-sm)',opacity:act.active?1:0.5
+        }},[
+          h('span',{className:'action-icon'},[a.icon]),
+          h('span',{className:'action-label',style:{fontSize:'0.82rem'}},[
+            a.label,
+            isAutoActive?h('span',{style:{fontSize:'0.65rem',color:'var(--tx-2)',marginLeft:'6px'}},['(auto)']):null,
+          ].filter(Boolean)),
+          act.active?h('div',{
+            className:'action-check'+(act.done?' done':''),
+            onClick:()=>{
+              updateWindow(key,`acciones.${a.id}.done`,!act.done,
+                `Acción ${a.label}: ${act.done?'Reabierta':'Completada'}`);
+              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+            }
+          },[act.done?'✓':'']):
+          h('div',{
+            className:'action-check',
+            style:{borderStyle:'dashed'},
+            onClick:()=>{
+              updateWindow(key,(w)=>{w.acciones[a.id].active=true;},null,
+                `Acción ${a.label}: Activada manualmente`);
+              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+            }
+          },['+']),
+        ]);
+      }).filter(Boolean),
+    ]),
+
+    // Observations
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Observaciones']),
+      h('textarea',{
+        className:'obs-area',
+        id:'obs-ta',
+        placeholder:isEditor()?'Agregar observaciones...':'Sin observaciones',
+        readOnly:!isEditor(),
+        onBlur:(e)=>{
+          if(!isEditor())return;
+          if(e.target.value!==w.observaciones){
+            updateWindow(key,'observaciones',e.target.value,'Observación actualizada');
+          }
+        }
+      },[]),
+    ]),
+
+    // Photo capture
+    h('div',{className:'card'},[
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['Fotos']),
+        h('label',{className:'btn btn-sm btn-ghost',style:{cursor:'pointer'}},[
+          '📷 Capturar',
+          h('input',{type:'file',accept:'image/*',capture:'environment',style:{display:'none'},
+            onChange:(e)=>{
+              const file=e.target.files[0];
+              if(!file)return;
+              const reader=new FileReader();
+              reader.onload=(ev)=>{
+                w.fotos.push({data:ev.target.result,ts:ts()});
+                if(w.fotos.length>5)w.fotos=w.fotos.slice(-5);
+                w.historial.unshift({t:ts(),cambio:'Foto agregada'});
+                saveLocal();
+                renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+              };
+              reader.readAsDataURL(file);
+            }
+          }),
+        ]),
+      ]),
+      w.fotos.length?
+        h('div',{style:{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'6px'}},
+          w.fotos.map((f,i)=>
+            h('div',{style:{position:'relative',flexShrink:0}},[
+              h('img',{src:f.data,style:{width:'80px',height:'80px',objectFit:'cover',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)'}}),
+              h('button',{className:'btn-icon',style:{position:'absolute',top:'-4px',right:'-4px',background:'var(--ac-red)',color:'#fff',borderRadius:'50%',width:'18px',height:'18px',fontSize:'0.6rem',display:'flex',alignItems:'center',justifyContent:'center'},
+                onClick:()=>{
+                  w.fotos.splice(i,1);
+                  w.historial.unshift({t:ts(),cambio:'Foto eliminada'});
+                  saveLocal();
+                  renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+                }
+              },['✗']),
+            ])
+          )
+        ):
+        h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',padding:'8px 0'}},['Sin fotos']),
+    ]),
+
+    // History
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Historial']),
+      w.historial.length?
+        h('div',{},w.historial.slice(0,15).map(hi=>
+          h('div',{className:'hist-item'},[
+            h('span',{className:'hist-time'},[hi.t+' ']),
+            h('span',{},[hi.cambio]),
+          ])
+        )):
+        h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)'}},['Sin cambios registrados']),
+    ]),
+
+    renderSyncBar(),
+  ]);
+  app().innerHTML='';
+  app().appendChild(el);
+  // Set textarea value
+  const ta=$('#obs-ta');
+  if(ta)ta.value=w.observaciones||'';
+}
+
+/* ============================================
+   BULK CHANGE / CLEAR HELPERS
+   ============================================ */
+function showBulkModal(scope,params){
+  if(!isEditor())return;
+  const scopeLabel=scope==='building'?`Edificio ${params.edif}`:
+                   scope==='dept'?`Depto ${params.depto} — Edif. ${params.edif}`:
+                   `Piso ${params.floor} — Edif. ${params.edif}`;
+  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+    h('div',{className:'modal'},[
+      h('h3',{},['⚡ Cambio Masivo']),
+      h('p',{style:{fontSize:'0.82rem',color:'var(--tx-2)',marginBottom:'12px'}},[scopeLabel]),
+      h('p',{style:{fontSize:'0.8rem',fontWeight:'600',marginBottom:'8px'}},['Aplicar estado a todas las ventanas:']),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:'6px'}},[
+        ...ESTADOS.map(e=>h('button',{
+          className:'btn btn-ghost',style:{justifyContent:'flex-start',gap:'10px'},
+          onClick:()=>{ applyBulkStatus(scope,params,e.id); overlay.remove(); render(); }
+        },[e.sym+'  '+e.label])),
+      ]),
+      // By-floor option when scope is building
+      scope==='building'?h('div',{},[
+        h('div',{style:{margin:'12px 0 8px',paddingTop:'12px',borderTop:'1px solid var(--border)',fontSize:'0.8rem',fontWeight:'600'}},['O cambiar un piso específico:']),
+        h('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap'}},
+          [1,2,3,4,5].map(f=>h('button',{
+            className:'btn btn-sm btn-ghost',
+            onClick:()=>{ overlay.remove(); showBulkModal('floor',{edif:params.edif,floor:f}); }
+          },['Piso '+f]))
+        ),
+      ]):null,
+    ].filter(Boolean)),
+  ]);
+  document.body.appendChild(overlay);
+}
+
+function applyBulkStatus(scope,params,newEstado){
+  if(!isEditor())return;
+  const e=parseInt(params.edif);
+  const label=`Cambio masivo → ${newEstado}`;
+  function changeWin(key){
+    if(!DATA.windows[key])return;
+    DATA.windows[key].estado=newEstado;
+    DATA.windows[key].historial.unshift({t:ts(),cambio:label});
+    if(DATA.windows[key].historial.length>50)DATA.windows[key].historial=DATA.windows[key].historial.slice(0,50);
+  }
+  if(scope==='dept'){
+    const depto=parseInt(params.depto);
+    const fl=Math.floor(depto/100),pi=(depto%100)-1;
+    getDeptWindows(getDeptType(e,fl,pi)).forEach(([c])=>changeWin(wKey(e,depto,c)));
+  } else if(scope==='floor'){
+    const f=params.floor;
+    for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>changeWin(wKey(e,deptNum(f,p),c)));}
+    getCommonWindows(f).forEach(([c])=>changeWin(wKey(e,`EC${f}`,c)));
+  } else if(scope==='building'){
+    for(let f=1;f<=5;f++){
+      for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>changeWin(wKey(e,deptNum(f,p),c)));}
+      getCommonWindows(f).forEach(([c])=>changeWin(wKey(e,`EC${f}`,c)));
+    }
+  }
+  saveLocal();
+}
+
+function confirmClearDept(edif,depto){
+  if(!isEditor())return;
+  if(!confirm(`¿Limpiar TODOS los datos del depto ${depto} (Edif. ${edif})?\n\nSe restablecen todas las ventanas a "No Instalada" y se borran deficiencias, acciones y observaciones.\n\nNo se puede deshacer.`))return;
+  const e=parseInt(edif);
+  const fl=Math.floor(depto/100),pi=(depto%100)-1;
+  getDeptWindows(getDeptType(e,fl,pi)).forEach(([c])=>{DATA.windows[wKey(e,depto,c)]=newWindowRecord();});
+  saveLocal();
+  renderDept();
+}
+
+function confirmClearBuilding(edif){
+  if(!isEditor())return;
+  if(!confirm(`¿Limpiar TODOS los datos del Edificio ${edif}?\n\nSe restablecen todas las ventanas y espacios comunes.\n\nNo se puede deshacer.`))return;
+  const e=parseInt(edif);
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>{DATA.windows[wKey(e,deptNum(f,p),c)]=newWindowRecord();});}
+    getCommonWindows(f).forEach(([c])=>{DATA.windows[wKey(e,`EC${f}`,c)]=newWindowRecord();});
+  }
+  DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{}};
+  saveLocal();
+  renderBuilding();
+}
+
+function renderBldgDefBreakdown(edif){
+  const e=parseInt(edif);
+  const counts={};
+  DEFICIENCIES.forEach(d=>{counts[d.id]=0;});
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      getDeptWindows(tipo).forEach(([c])=>{
+        const w=DATA.windows[wKey(e,deptNum(f,p),c)];
+        if(w)DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])counts[d.id]++;});
+      });
+    }
+    getCommonWindows(f).forEach(([c])=>{
+      const w=DATA.windows[wKey(e,`EC${f}`,c)];
+      if(w)DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])counts[d.id]++;});
+    });
+  }
+  const active=DEFICIENCIES.filter(d=>counts[d.id]>0);
+  if(!active.length)return h('p',{style:{fontSize:'0.8rem',color:'var(--tx-2)'}},[' Sin inconformidades']);
+  return h('div',{style:{display:'flex',flexDirection:'column',gap:'2px'}},
+    active.map(d=>h('div',{style:{display:'flex',alignItems:'center',gap:'8px',fontSize:'0.82rem',padding:'5px 0',borderBottom:'1px solid var(--border)'}},[
+      h('span',{},[d.icon]),
+      h('span',{style:{flex:1}},[d.label]),
+      h('span',{className:'badge badge-red'},[counts[d.id].toString()]),
+    ]))
+  );
+}
+
+/* ============================================
+   SYNC BAR
+   ============================================ */
+function renderSyncBar(){
+  return h('div',{className:'sync-bar'},[
+    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',onClick:doSync},['⟳ Sincronizar']),
+    h('span',{className:'sync-status',id:'sync-status'},[DATA.meta.lastSync?'Último: '+DATA.meta.lastSync:'Sin sincronizar']),
+    h('button',{className:'btn btn-sm btn-ghost',onClick:showExportMenu},['⋮']),
+  ]);
+}
+
+function showExportMenu(){
+  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+    h('div',{className:'modal'},[
+      h('h3',{},['Opciones']),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
+        h('button',{className:'btn btn-ghost',onClick:()=>{exportCSV();overlay.remove();}},['📥 Exportar CSV']),
+        h('button',{className:'btn btn-ghost',onClick:()=>{importCSV();overlay.remove();}},['📤 Importar CSV']),
+        h('button',{className:'btn btn-ghost',onClick:()=>{migrateV1();overlay.remove();}},['🔄 Migrar desde v1']),
+        h('button',{className:'btn btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>{
+          if(confirm('¿Borrar TODOS los datos locales? Esta acción no se puede deshacer.')){
+            localStorage.removeItem('ventacontrol_v2');
+            location.reload();
+          }
+          overlay.remove();
+        }},['🗑 Reset datos locales']),
+      ]),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+}
+
+/* ============================================
+   GOOGLE SHEETS SYNC
+   ============================================ */
+let syncing=false;
+
+async function doSync(){
+  if(syncing||!APPS_SCRIPT_URL)return showSyncMsg(APPS_SCRIPT_URL?'Sincronizando...':'⚠ Configura APPS_SCRIPT_URL');
+  syncing=true;
+  showSyncMsg('Sincronizando...');
+  const btn=$('#sync-btn');
+  if(btn)btn.disabled=true;
+
+  try{
+    // Pull desde Sheets
+    const pullRes=await fetch(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'});
+    const pullData=await pullRes.json();
+    if(pullData.status==='ok'&&(pullData.records||pullData.rows)){
+      mergeFromSheets(pullData.records||pullData.rows);
+    }
+
+    // Push local → Sheets
+    const payload=buildSyncPayload();
+    const pushRes=await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      redirect:'follow',
+      body:JSON.stringify({action:'sync',records:payload})
+    });
+    const pushResult=await pushRes.json();
+    if(pushResult.status==='ok'){
+      DATA.meta.lastSync=ts();
+      saveLocal();
+      showSyncMsg('✓ '+pushResult.message+' · '+ts());
+    }else{
+      showSyncMsg('⚠ Error: '+(pushResult.message||pushResult.error));
+    }
+  }catch(err){
+    showSyncMsg('⚠ Error de red: '+err.message);
+  }
+  syncing=false;
+  if(btn)btn.disabled=false;
+}
+
+function showSyncMsg(msg){
+  const el=$('#sync-status');
+  if(el)el.textContent=msg;
+}
+
+function buildSyncPayload(){
+  const rows=[];
+  for(const[key,w] of Object.entries(DATA.windows)){
+    const parts=key.split('-');
+    const edif=parts[0];
+    const depto=parts[1];                      // '101', 'EC1', etc.
+    const code=parts.slice(2).join('-');        // rejoin codes con guión como 'V1-Izq'
+
+    let piso='',tipoDept='',tipoElem='';
+    if(depto.startsWith('EC')){
+      piso=depto.replace('EC','');
+      tipoDept='EC';
+      tipoElem=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
+    } else {
+      const dNum=parseInt(depto);
+      piso=Math.floor(dNum/100);
+      const posIdx=(dNum%100)-1;
+      tipoDept=getDeptType(parseInt(edif),parseInt(piso),posIdx)||'?';
+      const winDef=(getDeptWindows(tipoDept)||[]).find(([c])=>c===code);
+      tipoElem=winDef?winDef[1]:code;
+    }
+
+    rows.push({
+      edif:parseInt(edif), piso, depto, tipo_depto:tipoDept,
+      elemento:code, tipo_elemento:tipoElem,
+      estado:w.estado,
+      separacion:w.deficiencias.separacion?1:0,
+      descuadre:w.deficiencias.descuadre?1:0,
+      desaplomo:w.deficiencias.desaplomo?1:0,
+      sinSellador:w.deficiencias.sinSellador?1:0,
+      sinSelladorFrente:w.deficiencias.sinSelladorFrente?1:0,
+      retornoMalla:w.deficiencias.retornoMalla?1:0,
+      mallaPulida:w.deficiencias.mallaPulida?1:0,
+      vidrioTrizado:w.deficiencias.vidrioTrizado?1:0,
+      marcoPerforado:w.deficiencias.marcoPerforado?1:0,
+      faltaFijacion:w.deficiencias.faltaFijacion?1:0,
+      vano:w.estadoVano||'',
+      obs:w.observaciones||'',
+      act_pulir:w.acciones.pulir.active?(w.acciones.pulir.done?'done':'pending'):'',
+      act_impermeabilizar:w.acciones.impermeabilizar.active?(w.acciones.impermeabilizar.done?'done':'pending'):'',
+      act_repararEIFS:w.acciones.repararEIFS.active?(w.acciones.repararEIFS.done?'done':'pending'):'',
+      act_aplomar:w.acciones.aplomar.active?(w.acciones.aplomar.done?'done':'pending'):'',
+    });
+  }
+  return rows;
+}
+
+function mergeFromSheets(rows){
+  // Helper: parsear bool desde valor del sheet (puede ser 0/1 o 'Sí'/'No' o undefined)
+  function pb(v){ if(v===undefined||v===null||v==='')return undefined; if(typeof v==='string')return v==='Sí'||v==='Si'||v==='1'||v==='true'; return !!parseInt(v); }
+  // Soporte de dos formatos: nuevo (script v2) y viejo (v2 app anterior)
+  function pd(r,newKey,oldKey,backcompat){ const v=r[newKey]!==undefined?r[newKey]:(r[oldKey]!==undefined?r[oldKey]:(backcompat!==undefined?r[backcompat]:undefined)); return pb(v); }
+
+  rows.forEach(r=>{
+    // Reconstruir key: script v2 usa edif+depto+elemento; old app usaba r.key o edif+depto+code
+    const key=r.key||`${r.edif}-${r.depto}-${r.elemento||r.code}`;
+    if(!DATA.windows[key])DATA.windows[key]=newWindowRecord();
+    const w=DATA.windows[key];
+    if(r.estado&&r.estado!==w.estado)w.estado=r.estado;
+    // vano: nuevo=r.vano, viejo=r.estadoVano
+    const vano=r.vano!==undefined?r.vano:r.estadoVano;
+    if(vano!==undefined&&vano!=='')w.estadoVano=vano;
+    // obs: nuevo=r.obs, viejo=r.observaciones
+    const obs=r.obs!==undefined?r.obs:r.observaciones;
+    if(obs!==undefined&&obs!=='')w.observaciones=obs;
+
+    const d=w.deficiencias;
+    const dmap={
+      separacion:   pd(r,'separacion',   'def_separacion'),
+      descuadre:    pd(r,'descuadre',    'def_descuadre'),
+      desaplomo:    pd(r,'desaplomo',    'def_desaplomo'),
+      // backward compat: fc11 era el nombre v1 para sinSellador
+      sinSellador:  pd(r,'sinSellador',  'def_sinSellador','fc11'),
+      sinSelladorFrente: pd(r,'sinSelladorFrente','def_sinSelladorFrente'),
+      // backward compat: eifs era el nombre v1 para retornoMalla
+      retornoMalla: pd(r,'retornoMalla', 'def_retornoMalla','eifs'),
+      mallaPulida:  pd(r,'mallaPulida',  'def_mallaPulida'),
+      vidrioTrizado:pd(r,'vidrioTrizado','def_vidrioTrizado'),
+      marcoPerforado:pd(r,'marcoPerforado','def_marcoPerforado'),
+      faltaFijacion:pd(r,'faltaFijacion','def_faltaFijacion'),
+    };
+    Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
+    ['pulir','impermeabilizar','repararEIFS','aplomar'].forEach(a=>{
+      const val=r['act_'+a];
+      if(val==='done'){w.acciones[a].active=true;w.acciones[a].done=true;}
+      else if(val==='pending'){w.acciones[a].active=true;w.acciones[a].done=false;}
+    });
+    syncDefToActions(w);
+  });
+  saveLocal();
+}
+
+/* ============================================
+   CSV EXPORT / IMPORT
+   ============================================ */
+function exportCSV(){
+  const rows=buildSyncPayload();
+  const headers=Object.keys(rows[0]);
+  let csv=headers.join(',')+'\n';
+  rows.forEach(r=>{
+    csv+=headers.map(h=>{
+      let v=String(r[h]||'');
+      if(v.includes(',')||v.includes('"')||v.includes('\n'))v='"'+v.replace(/"/g,'""')+'"';
+      return v;
+    }).join(',')+'\n';
+  });
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`VentaControl_v2_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+function importCSV(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='.csv';
+  input.onchange=(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=(ev)=>{
+      try{
+        const lines=ev.target.result.split('\n').filter(l=>l.trim());
+        const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+        for(let i=1;i<lines.length;i++){
+          const vals=parseCSVLine(lines[i]);
+          const row={};
+          headers.forEach((h,j)=>row[h]=vals[j]||'');
+          mergeFromSheets([row]);
+        }
+        saveLocal();
+        alert('Importación completada: '+(lines.length-1)+' filas');
+        render();
+      }catch(err){alert('Error importando: '+err.message);}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function parseCSVLine(line){
+  const result=[];let current='';let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(inQuotes){
+      if(c==='"'&&line[i+1]==='"'){current+='"';i++;}
+      else if(c==='"')inQuotes=false;
+      else current+=c;
+    }else{
+      if(c==='"')inQuotes=true;
+      else if(c===','){result.push(current);current='';}
+      else current+=c;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+/* ============================================
+   V1 MIGRATION
+   ============================================ */
+function migrateV1(){
+  // Try to read v1 localStorage
+  const v1Data=localStorage.getItem('ventanas_data')||localStorage.getItem('control_ventanas');
+  if(!v1Data){
+    // Try common v1 key patterns
+    const keys=Object.keys(localStorage).filter(k=>k.includes('ventana')||k.includes('window'));
+    if(keys.length===0){
+      alert('No se encontraron datos de v1 en localStorage.\n\nPuedes importar desde CSV usando el botón "Importar CSV".');
+      return;
+    }
+  }
+  try{
+    const parsed=JSON.parse(v1Data);
+    let migrated=0;
+    // V1 format: rows with Edificio, Depto, Elemento, Estado, deficiencies
+    if(Array.isArray(parsed)){
+      parsed.forEach(row=>{
+        const key=`${row.Edificio||row.edificio}-${row.Depto||row.depto}-${row.Elemento||row.elemento||row.Ventana||row.ventana}`;
+        if(!DATA.windows[key])DATA.windows[key]=newWindowRecord();
+        const w=DATA.windows[key];
+        // Map v1 estado
+        const est=(row.Estado||row.estado||'').toLowerCase();
+        if(est.includes('instal'))w.estado='instalada';
+        else if(est.includes('pend'))w.estado='pendiente';
+        else w.estado='noInstalada';
+        // Map v1 deficiencies
+        if(row.separacion||row['Separación']||row.sep)w.deficiencias.separacion=true;
+        if(row.descuadre||row['Descuadre'])w.deficiencias.descuadre=true;
+        if(row.sellador||row['Sin sellador']||row.sinSellador)w.deficiencias.sinSellador=true;
+        if(row.retorno||row['Retorno malla']||row.retornoMalla)w.deficiencias.retornoMalla=true;
+        // Map vano
+        const vano=(row.estadoVano||row.EstadoVano||row.vano||'');
+        if(vano)w.estadoVano=vano;
+        // Observations
+        if(row.observaciones||row.Observaciones)w.observaciones=row.observaciones||row.Observaciones;
+        syncDefToActions(w);
+        w.historial.unshift({t:ts(),cambio:'Migrado desde v1'});
+        migrated++;
+      });
+    }else if(typeof parsed==='object'){
+      // Could be key-value format
+      for(const[k,v] of Object.entries(parsed)){
+        if(DATA.windows[k]&&v){
+          Object.assign(DATA.windows[k],{...newWindowRecord(),...v});
+          syncDefToActions(DATA.windows[k]);
+          migrated++;
+        }
+      }
+    }
+    saveLocal();
+    alert(`Migración completada: ${migrated} registros importados.`);
+    render();
+  }catch(err){
+    alert('Error en migración: '+err.message+'\n\nIntenta importar desde CSV.');
+  }
+}
+
+/* ============================================
+   INITIALIZATION
+   ============================================ */
+(function init(){
+  // Apply saved theme
+  const savedTheme=localStorage.getItem('vc2_theme');
+  if(savedTheme)document.body.setAttribute('data-theme',savedTheme);
+
+  // Init data
+  initData();
+
+  // Verify data integrity - ensure all windows exist
+  let added=0;
+  for(const[edif,cfg] of Object.entries(BUILDINGS)){
+    const e=parseInt(edif);
+    if(!DATA.buildings[bKey(e)])DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{}};
+    for(let f=1;f<=5;f++){
+      for(let p=0;p<4;p++){
+        const tipo=getDeptType(e,f,p);
+        const dn=deptNum(f,p);
+        getDeptWindows(tipo).forEach(([code])=>{
+          const key=wKey(e,dn,code);
+          if(!DATA.windows[key]){DATA.windows[key]=newWindowRecord();added++;}
+          // Ensure v2 fields exist on old records
+          const w=DATA.windows[key];
+          if(!w.acciones)w.acciones={pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false}};
+          if(!w.historial)w.historial=[];
+          if(!w.fotos)w.fotos=[];
+          if(!w.deficiencias)w.deficiencias={};
+          // Ensure all deficiency fields exist (handles migration from older records)
+          ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion'].forEach(f=>{
+            if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
+          });
+          if(w.estado===undefined)w.estado='noInstalada';
+          syncDefToActions(w);
+        });
+      }
+      getCommonWindows(f).forEach(([code])=>{
+        const key=wKey(e,`EC${f}`,code);
+        if(!DATA.windows[key]){DATA.windows[key]=newWindowRecord();added++;}
+        const w=DATA.windows[key];
+        if(!w.acciones)w.acciones={pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false}};
+        if(!w.historial)w.historial=[];
+        if(!w.fotos)w.fotos=[];
+        if(!w.deficiencias)w.deficiencias={};
+        ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion'].forEach(f=>{
+          if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
+        });
+      });
+    }
+  }
+  if(added>0){saveLocal();console.log('Agregadas '+added+' ventanas faltantes');}
+
+  // Count total windows
+  const totalWins=Object.keys(DATA.windows).length;
+  console.log('VentaControl v2.1 — '+totalWins+' ventanas cargadas');
+
+  // Render
+  render();
+})();
+
+// PWA service worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(e=>console.log('SW:',e));
+}
+</script>
+</body>
+</html>
