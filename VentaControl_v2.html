@@ -1532,7 +1532,8 @@ function renderBldgIssueMap(edif){
    ============================================ */
 function renderSyncBar(){
   return h('div',{className:'sync-bar'},[
-    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',onClick:doSync},['⟳ Sincronizar']),
+    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',onClick:doSync},['⟳ Sync']),
+    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',onClick:doPullOnly},['⬇ Descargar']),
     h('span',{className:'sync-status',id:'sync-status'},[DATA.meta.lastSync?'Último: '+DATA.meta.lastSync:'Sin sincronizar']),
     h('button',{className:'btn btn-sm btn-ghost',onClick:showExportMenu},['⋮']),
   ]);
@@ -1722,6 +1723,34 @@ async function doSync(){
   if(btn)btn.disabled=false;
 }
 
+// Pull only — download data from Sheets without pushing anything
+async function doPullOnly(){
+  if(syncing)return showSyncMsg('Ya sincronizando, espera...');
+  if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
+  syncing=true;
+  showSyncMsg('⬇ Descargando datos de Sheets...');
+  const btn=$('#pull-btn');
+  if(btn)btn.disabled=true;
+  try{
+    const res=await fetchWithTimeout(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'},60000);
+    const data=await res.json();
+    if(data.status==='ok'&&(data.records||data.rows)){
+      const records=data.records||data.rows;
+      mergeFromSheets(records);
+      DATA.meta.lastSync=ts();
+      saveLocal();
+      showSyncMsg(`✓ ${records.length} registros descargados · ${ts()}`);
+      render();
+    } else {
+      showSyncMsg('⚠ '+(data.message||'Sin datos en respuesta'));
+    }
+  }catch(err){
+    showSyncMsg('⚠ '+err.message);
+  }
+  syncing=false;
+  if(btn)btn.disabled=false;
+}
+
 // Push all — for first-time full sync
 async function doFullSync(){
   if(syncing)return;
@@ -1866,14 +1895,18 @@ function importCSV(){
       try{
         const lines=ev.target.result.split('\n').filter(l=>l.trim());
         const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+        // Procesar todas las filas en un solo batch
+        const allRows=[];
         for(let i=1;i<lines.length;i++){
           const vals=parseCSVLine(lines[i]);
           const row={};
           headers.forEach((h,j)=>row[h]=vals[j]||'');
-          mergeFromSheets([row]);
+          allRows.push(row);
         }
+        // Merge en un solo paso (sin saveLocal por cada fila)
+        mergeFromSheets(allRows);
         saveLocal();
-        alert('Importación completada: '+(lines.length-1)+' filas');
+        alert('Importación completada: '+allRows.length+' filas');
         render();
       }catch(err){alert('Error importando: '+err.message);}
     };

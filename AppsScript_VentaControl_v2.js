@@ -138,66 +138,75 @@ function syncData(records) {
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) { setup(); sheet = ss.getSheetByName(SHEET_NAME); }
 
-  // Construir mapa clave → número de fila
-  // Clave: Edificio-Depto-Elemento  (columnas A=0, C=2, E=4)
+  // Leer todos los datos existentes de una vez
   var existing = sheet.getDataRange().getValues();
   var keyMap = {};
   for (var i = 1; i < existing.length; i++) {
     if (!existing[i][0]) continue;
     var k = String(existing[i][0]).trim() + '-' + String(existing[i][2]).trim() + '-' + String(existing[i][4]).trim();
-    if (!keyMap[k]) keyMap[k] = i + 1; // row 1-indexed
+    if (!keyMap[k]) keyMap[k] = i; // index en existing[] (0-based desde fila 1)
   }
 
   var ts = Utilities.formatDate(new Date(), 'America/Santiago', 'yyyy-MM-dd HH:mm:ss');
   var updates = 0, inserts = 0;
+  var newRows = [];
 
   for (var r = 0; r < records.length; r++) {
     var rec = records[r];
     var key = String(rec.edif) + '-' + String(rec.depto) + '-' + String(rec.elemento || rec.code || '');
 
     var row = [
-      rec.edif,                            // A Edificio
-      rec.piso || '',                      // B Piso
-      rec.depto,                           // C N° Depto
-      rec.tipo_depto || '',                // D Tipo Depto
-      rec.elemento || rec.code || '',      // E Elemento
-      rec.tipo_elemento || '',             // F Tipo Elemento
-      rec.estado || '',                    // G Estado
-      yesNo(rec.separacion),              // H Separación
-      yesNo(rec.descuadre),               // I Descuadre
-      // backward compat: fc11 (v1 format) o sinSellador (v2)
-      yesNo(rec.sinSellador !== undefined ? rec.sinSellador : rec.fc11),  // J
-      // backward compat: eifs (v1 format) o retornoMalla (v2)
-      yesNo(rec.retornoMalla !== undefined ? rec.retornoMalla : rec.eifs), // K
-      rec.vano || rec.estadoVano || '',    // L Estado Vano
-      rec.obs || rec.observaciones || '', // M Observaciones
-      ts,                                  // N Timestamp
-      // Nuevas columnas
-      yesNo(rec.desaplomo),               // O
-      yesNo(rec.sinSelladorFrente),       // P
-      yesNo(rec.mallaPulida),             // Q
-      yesNo(rec.vidrioTrizado),           // R
-      yesNo(rec.marcoPerforado),          // S
-      yesNo(rec.faltaFijacion),           // T
-      rec.act_pulir || '',                 // U
-      rec.act_impermeabilizar || '',       // V
-      rec.act_repararEIFS || '',           // W
-      rec.act_aplomar || '',               // X
-      rec.act_sellarFrente || '',          // Y
-      rec.act_reemplazarVidrio || '',      // Z
-      rec.act_repararMarco || '',          // AA
-      rec.act_instalarFijacion || '',      // AB
-      rec.etapa !== undefined ? rec.etapa : '',  // AC
+      rec.edif,
+      rec.piso || '',
+      rec.depto,
+      rec.tipo_depto || '',
+      rec.elemento || rec.code || '',
+      rec.tipo_elemento || '',
+      rec.estado || '',
+      yesNo(rec.separacion),
+      yesNo(rec.descuadre),
+      yesNo(rec.sinSellador !== undefined ? rec.sinSellador : rec.fc11),
+      yesNo(rec.retornoMalla !== undefined ? rec.retornoMalla : rec.eifs),
+      rec.vano || rec.estadoVano || '',
+      rec.obs || rec.observaciones || '',
+      ts,
+      yesNo(rec.desaplomo),
+      yesNo(rec.sinSelladorFrente),
+      yesNo(rec.mallaPulida),
+      yesNo(rec.vidrioTrizado),
+      yesNo(rec.marcoPerforado),
+      yesNo(rec.faltaFijacion),
+      rec.act_pulir || '',
+      rec.act_impermeabilizar || '',
+      rec.act_repararEIFS || '',
+      rec.act_aplomar || '',
+      rec.act_sellarFrente || '',
+      rec.act_reemplazarVidrio || '',
+      rec.act_repararMarco || '',
+      rec.act_instalarFijacion || '',
+      rec.etapa !== undefined ? rec.etapa : '',
     ];
 
-    if (keyMap[key]) {
-      sheet.getRange(keyMap[key], 1, 1, row.length).setValues([row]);
+    if (keyMap[key] !== undefined) {
+      // Actualizar fila existente en el array
+      existing[keyMap[key]] = row;
       updates++;
     } else {
-      sheet.appendRow(row);
+      // Acumular filas nuevas
+      newRows.push(row);
       inserts++;
-      keyMap[key] = sheet.getLastRow();
     }
+  }
+
+  // BATCH WRITE: sobreescribir todo el rango de datos existentes de una vez
+  if (updates > 0 && existing.length > 1) {
+    sheet.getRange(2, 1, existing.length - 1, HEADERS.length).setValues(existing.slice(1));
+  }
+
+  // BATCH APPEND: agregar todas las filas nuevas de una vez
+  if (newRows.length > 0) {
+    var lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow + 1, 1, newRows.length, HEADERS.length).setValues(newRows);
   }
 
   return {
