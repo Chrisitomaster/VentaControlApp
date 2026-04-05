@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.2</title>
+<title>VentaControl v2.3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -256,7 +256,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.2 — Configuration & Data
+   VentaControl v2.3 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (editable desde la app) ----
@@ -672,7 +672,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.2']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.3']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('p',{style:{color:'var(--tx-1)',marginBottom:'20px',fontSize:'0.9rem',fontWeight:'500'}},['Selecciona tu perfil de acceso']),
@@ -739,7 +739,7 @@ function toggleTheme(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.2'),
+    topbar('VentaControl v2.3'),
     // Global stats
     h('div',{className:'stats-row'},[
       statBox(g.instaladas.toLocaleString(),'Instaladas'),
@@ -2516,7 +2516,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  console.log('VentaControl v2.2 — '+totalWins+' ventanas cargadas');
+  console.log('VentaControl v2.3 — '+totalWins+' ventanas cargadas');
 
   // Render
   render();
