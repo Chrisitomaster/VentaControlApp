@@ -413,8 +413,10 @@ function pct(n,t){return t?Math.round(n/t*100):0;}
    DATA MODEL
    ============================================ */
 let DATA = {windows:{},buildings:{},meta:{version:'2.0',lastSync:null}};
-// Track which window keys have been modified since last sync
+// Track which window keys have been modified since last sync — persisted in localStorage
 let dirtyKeys = new Set();
+function saveDirtyKeys(){localStorage.setItem('vc2_dirty',JSON.stringify([...dirtyKeys]));}
+function loadDirtyKeys(){try{const s=localStorage.getItem('vc2_dirty');if(s)dirtyKeys=new Set(JSON.parse(s));}catch(e){dirtyKeys=new Set();}}
 
 // Generate building key
 function wKey(edif,depto,win){return `${edif}-${depto}-${win}`;}
@@ -451,6 +453,7 @@ function getCommonWindows(floor){return floor===1?COMMON_WIN[1]:COMMON_WIN.other
 
 // Initialize all window data
 function initData(){
+  loadDirtyKeys();
   const stored=localStorage.getItem('ventacontrol_v2');
   if(stored){
     try{DATA=JSON.parse(stored);return;}catch(e){console.error('Parse error',e);}
@@ -497,6 +500,7 @@ function newWindowRecord(){
 function saveLocal(){
   DATA.meta.lastSave=ts();
   localStorage.setItem('ventacontrol_v2',JSON.stringify(DATA));
+  saveDirtyKeys();
 }
 
 // Update window field with history tracking
@@ -2007,6 +2011,7 @@ async function doSync(){
         totalInserts+=(result.inserts||0);
       }
       dirtyKeys.clear();
+      saveDirtyKeys();
       DATA.meta.lastSync=ts();
       saveLocal();
       showSyncMsg(`✓ ${totalUpdates} actualizados, ${totalInserts} nuevos · ${ts()}`);
@@ -2237,6 +2242,14 @@ function mergeFromSheets(rows){
 
     const key=r.key||`${edif}-${depto}-${elem}`;
     const exists=!!DATA.windows[key];
+
+    // CRITICAL: Skip keys with unsaved local changes — local wins over remote
+    if(dirtyKeys.has(key)){
+      logMsg(`merge SKIP dirty key: ${key}`);
+      skipped++;
+      return;
+    }
+
     if(!exists){
       DATA.windows[key]=newWindowRecord();
       noMatch++;
