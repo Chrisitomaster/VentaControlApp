@@ -1531,12 +1531,23 @@ function renderBldgIssueMap(edif){
    SYNC BAR
    ============================================ */
 function renderSyncBar(){
-  return h('div',{className:'sync-bar'},[
+  // Determinar contexto actual para sync por sección
+  const inBuilding=currentView==='building'||currentView==='dept'||currentView==='window'||currentView==='common';
+  const inDept=currentView==='dept'||currentView==='window';
+  const edif=viewParams.edif;
+  const depto=viewParams.depto;
+
+  return h('div',{className:'sync-bar',style:{flexWrap:'wrap',gap:'6px'}},[
+    // Botones globales
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',onClick:doSync},['⟳ Sync']),
-    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',onClick:doPullOnly},['⬇ Descargar']),
-    h('span',{className:'sync-status',id:'sync-status'},[DATA.meta.lastSync?'Último: '+DATA.meta.lastSync:'Sin sincronizar']),
+    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',onClick:doPullOnly},['⬇ Todo']),
+    // Botón de sección — solo si estamos dentro de un edificio
+    inBuilding&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-cyan)'},
+      onClick:()=>doPullSection(edif,inDept?depto:null)
+    },['⬇ '+(inDept?'Depto '+depto:'Edif. '+edif)]):null,
+    h('span',{className:'sync-status',id:'sync-status',style:{flex:'1 1 100%',textAlign:'center',marginTop:'2px'}},[DATA.meta.lastSync?'Último: '+DATA.meta.lastSync:'Sin sincronizar']),
     h('button',{className:'btn btn-sm btn-ghost',onClick:showExportMenu},['⋮']),
-  ]);
+  ].filter(Boolean));
 }
 
 function showLegend(){
@@ -1750,6 +1761,45 @@ async function doPullOnly(){
     }
   }catch(err){
     showSyncMsg('⚠ '+err.message);
+  }
+  syncing=false;
+  if(btn)btn.disabled=false;
+}
+
+// Pull section — download data for a specific building (optionally filtered to dept client-side)
+async function doPullSection(edif,depto){
+  if(syncing)return showSyncMsg('Ya sincronizando, espera...');
+  if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
+  syncing=true;
+  const label=depto?`Depto ${depto} (Edif. ${edif})`:`Edif. ${edif}`;
+  showSyncMsg(`⬇ Descargando ${label}...`);
+  logMsg(`Pull sección: ${label}`);
+  const btn=$('#pull-btn');
+  if(btn)btn.disabled=true;
+  try{
+    // Pedir solo el edificio al servidor
+    const res=await fetchWithTimeout(APPS_SCRIPT_URL+`?action=read&edif=${edif}`,{redirect:'follow'},45000);
+    const data=await res.json();
+    if(data.status==='ok'&&(data.records||data.rows)){
+      let records=data.records||data.rows;
+      logMsg(`Pull sección: ${records.length} registros para Edif. ${edif}`);
+      // Si se pidió un depto específico, filtrar client-side
+      if(depto){
+        const deptoStr=String(depto);
+        records=records.filter(r=>String(r.depto).trim()===deptoStr);
+        logMsg(`Filtrado a depto ${depto}: ${records.length} registros`);
+      }
+      mergeFromSheets(records);
+      DATA.meta.lastSync=ts();
+      saveLocal();
+      showSyncMsg(`✓ ${records.length} reg. de ${label} · ${ts()}`);
+      render();
+    } else {
+      showSyncMsg('⚠ '+(data.message||'Sin datos'));
+    }
+  }catch(err){
+    showSyncMsg('⚠ '+err.message);
+    logMsg('Pull sección error: '+err.message);
   }
   syncing=false;
   if(btn)btn.disabled=false;

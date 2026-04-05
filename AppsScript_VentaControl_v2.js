@@ -100,12 +100,15 @@ function handleRequest(e) {
       action = (body && body.action) || '';
     }
 
+    // Filtro opcional por edificio
+    var edifFilter = (e.parameter && e.parameter.edif) ? String(e.parameter.edif) : null;
+
     var result;
     if (action === 'sync')   result = syncData(body.records || body.rows || []);
-    else if (action === 'read')   result = readAll();
-    // Aliases para compatibilidad con versión anterior de la app
+    else if (action === 'read')   result = readAll(edifFilter);
+    // Aliases
     else if (action === 'push')  result = syncData((body && (body.records || body.rows)) || []);
-    else if (action === 'pull')  result = readAll();
+    else if (action === 'pull')  result = readAll(edifFilter);
     else result = { status: 'error', message: 'Accion no reconocida: ' + action };
 
     return jsonOut(result);
@@ -216,7 +219,7 @@ function syncData(records) {
 }
 
 // ----------------------------------------------------------------
-function readAll() {
+function readAll(edifFilter) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) return { status: 'ok', records: [] };
@@ -228,6 +231,8 @@ function readAll() {
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
     if (!row[0]) continue;
+    // Filtrar por edificio si se especificó
+    if (edifFilter && String(row[0]).trim() !== edifFilter) continue;
 
     function sv(v) { return (v === 'Sí' || v === 'Si') ? 1 : 0; }
 

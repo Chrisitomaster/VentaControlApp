@@ -1,5 +1,5 @@
 // VentaControl Service Worker — cache-first para uso offline
-const CACHE = 'ventacontrol-v2.8';
+const CACHE = 'ventacontrol-v2.9';
 const URLS = ['./VentaControl_v2.html', './manifest.json'];
 
 self.addEventListener('install', e => {
