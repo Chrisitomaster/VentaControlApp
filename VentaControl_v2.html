@@ -1736,6 +1736,13 @@ async function doPullOnly(){
     const data=await res.json();
     if(data.status==='ok'&&(data.records||data.rows)){
       const records=data.records||data.rows;
+      // Debug: mostrar primer registro para diagnosticar formato
+      if(records.length>0){
+        const sample=records.find(r=>r.estado)||records[0];
+        console.log('Muestra dato recibido:',JSON.stringify(sample));
+        console.log('Key generada:',`${sample.edif}-${sample.depto}-${sample.elemento||sample.code}`);
+        console.log('Total registros:',records.length);
+      }
       mergeFromSheets(records);
       DATA.meta.lastSync=ts();
       saveLocal();
@@ -1823,13 +1830,31 @@ function mergeFromSheets(rows){
   function pb(v){ if(v===undefined||v===null||v==='')return undefined; if(typeof v==='string')return v==='Sí'||v==='Si'||v==='1'||v==='true'; return !!parseInt(v); }
   // Soporte de dos formatos: nuevo (script v2) y viejo (v2 app anterior)
   function pd(r,newKey,oldKey,backcompat){ const v=r[newKey]!==undefined?r[newKey]:(r[oldKey]!==undefined?r[oldKey]:(backcompat!==undefined?r[backcompat]:undefined)); return pb(v); }
+  // Normalizar estado desde cualquier formato de la hoja
+  function normalizeEstado(val){
+    if(!val)return null;
+    const s=String(val).toLowerCase().trim();
+    if(s==='instalada'||s==='instalado'||s==='si'||s==='sí')return 'instalada';
+    if(s==='pendiente')return 'pendiente';
+    if(s.includes('no instal')||s==='no'||s==='noinstalada')return 'noInstalada';
+    if(s==='quitar'||s==='desinstalar'||s==='retirar')return 'quitar';
+    // Si ya viene en formato interno, devolver tal cual
+    if(['instalada','pendiente','noInstalada','quitar'].includes(val))return val;
+    return null;
+  }
 
   rows.forEach(r=>{
-    // Reconstruir key: script v2 usa edif+depto+elemento; old app usaba r.key o edif+depto+code
-    const key=r.key||`${r.edif}-${r.depto}-${r.elemento||r.code}`;
+    // Reconstruir key — normalizar tipos: edif y depto pueden venir como número o string
+    const edif=String(r.edif||'').trim();
+    const depto=String(r.depto||'').trim();
+    const elem=String(r.elemento||r.code||'').trim();
+    const key=r.key||`${edif}-${depto}-${elem}`;
+    if(!edif||!elem)return; // Skip filas vacías
     if(!DATA.windows[key])DATA.windows[key]=newWindowRecord();
     const w=DATA.windows[key];
-    if(r.estado&&r.estado!==w.estado)w.estado=r.estado;
+    // Estado — normalizar desde formato hoja
+    const estado=normalizeEstado(r.estado);
+    if(estado)w.estado=estado;
     // vano: nuevo=r.vano, viejo=r.estadoVano
     const vano=r.vano!==undefined?r.vano:r.estadoVano;
     if(vano!==undefined&&vano!=='')w.estadoVano=vano;
