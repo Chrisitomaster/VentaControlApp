@@ -51,7 +51,7 @@ body{
   min-height:100vh;min-height:100dvh;transition:background var(--transition),color var(--transition);
   -webkit-tap-highlight-color:transparent;
 }
-#app{max-width:640px;margin:0 auto;padding:0 var(--gap) var(--gap);padding-bottom:80px;}
+#app{max-width:640px;margin:0 auto;padding:0 var(--gap) var(--gap);padding-bottom:120px;}
 /* NAV */
 .topbar{
   position:sticky;top:0;z-index:100;background:var(--bg-1);border-bottom:1px solid var(--border);
@@ -215,8 +215,8 @@ body{
 .sync-bar{
   position:fixed;bottom:0;left:0;right:0;z-index:150;
   background:var(--bg-1);border-top:1px solid var(--border);
-  padding:10px var(--gap);display:flex;align-items:center;justify-content:center;gap:12px;
-  max-width:640px;margin:0 auto;
+  padding:6px var(--gap);display:flex;align-items:center;justify-content:center;gap:6px;
+  max-width:640px;margin:0 auto;flex-wrap:nowrap;
 }
 .sync-status{font-size:0.75rem;color:var(--tx-2);}
 /* TYPE COUNT TABLE */
@@ -763,11 +763,8 @@ function renderDashboard(){
     // Deficiency summary
     h('div',{className:'section-hdr'},[h('h2',{},['Resumen Global']),h('span',{className:'badge badge-red'},[g.defCount+' inconformidades'])]),
 
-    // Global corrective actions panel
-    h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},['Acciones Correctivas — Proyecto']),
-      renderActionsPanel(collectActions(1,34),'Proyecto',true),
-    ]),
+    // Global corrective actions panel (lazy — expands on click to avoid scanning 4740 windows on every render)
+    renderLazyActionsCard('Acciones Correctivas — Proyecto',1,34,true),
 
     // Sync bar
     renderSyncBar(),
@@ -827,11 +824,8 @@ function renderSA(){
       ].filter(Boolean));
     }),
 
-    // SA corrective actions panel
-    h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},['Acciones Correctivas — '+SA_NAMES[sa]]),
-      renderActionsPanel(collectActions(start,end),SA_NAMES[sa],true),
-    ]),
+    // SA corrective actions panel (lazy)
+    renderLazyActionsCard('Acciones Correctivas — '+SA_NAMES[sa],start,end,true),
 
     renderSyncBar(),
   ]);
@@ -1552,6 +1546,24 @@ function collectActions(edifStart,edifEnd){
   return items;
 }
 
+// Lazy-loaded actions card — avoids scanning thousands of windows on initial render
+function renderLazyActionsCard(title,edifStart,edifEnd,showEdif){
+  const card=h('div',{className:'card'},[
+    h('div',{style:{display:'flex',alignItems:'center',cursor:'pointer',gap:'8px'},onClick:()=>{
+      // Replace card content with actual data on first click
+      const items=collectActions(edifStart,edifEnd);
+      card.innerHTML='';
+      const header=h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},[title]);
+      card.appendChild(header);
+      card.appendChild(renderActionsPanel(items,title,showEdif));
+    }},[
+      h('span',{style:{fontWeight:'600',fontSize:'0.9rem',flex:1}},[title]),
+      h('span',{style:{fontSize:'0.78rem',color:'var(--ac-blue)',fontWeight:'500'}},['Toca para cargar ▸']),
+    ]),
+  ]);
+  return card;
+}
+
 // Render corrective actions panel (used in dashboard, SA, and building detail)
 function renderActionsPanel(items,title,showEdif=true){
   if(!items.length)return h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',padding:'8px 0'}},['Sin acciones correctivas registradas']);
@@ -1805,22 +1817,19 @@ function renderBldgIssueMap(edif){
    SYNC BAR
    ============================================ */
 function renderSyncBar(){
-  // Determinar contexto actual para sync por sección
   const inBuilding=currentView==='building'||currentView==='dept'||currentView==='window'||currentView==='common';
   const inDept=currentView==='dept'||currentView==='window';
   const edif=viewParams.edif;
   const depto=viewParams.depto;
 
-  return h('div',{className:'sync-bar',style:{flexWrap:'wrap',gap:'6px'}},[
-    // Botones globales
-    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',onClick:doSync},['⟳ Sync']),
-    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',onClick:doPullOnly},['⬇ Todo']),
-    // Botón de sección — solo si estamos dentro de un edificio
-    inBuilding&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-cyan)'},
+  return h('div',{className:'sync-bar'},[
+    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'5px 10px',fontSize:'0.78rem'},onClick:doSync},['⟳']),
+    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',style:{padding:'5px 8px',fontSize:'0.75rem'},onClick:doPullOnly},['⬇All']),
+    inBuilding&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{padding:'5px 8px',fontSize:'0.75rem',color:'var(--ac-cyan)'},
       onClick:()=>doPullSection(edif,inDept?depto:null)
-    },['⬇ '+(inDept?'Depto '+depto:'Edif. '+edif)]):null,
-    h('span',{className:'sync-status',id:'sync-status',style:{flex:'1 1 100%',textAlign:'center',marginTop:'2px'}},[DATA.meta.lastSync?'Último: '+DATA.meta.lastSync:'Sin sincronizar']),
-    h('button',{className:'btn btn-sm btn-ghost',onClick:showExportMenu},['⋮']),
+    },['⬇'+(inDept?depto:'E'+edif)]):null,
+    h('span',{className:'sync-status',id:'sync-status',style:{flex:1,fontSize:'0.68rem',textAlign:'center',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},[DATA.meta.lastSync?DATA.meta.lastSync:'Sin sync']),
+    h('button',{className:'btn btn-sm btn-ghost',style:{padding:'5px 8px'},onClick:showExportMenu},['⋮']),
   ].filter(Boolean));
 }
 
@@ -1980,8 +1989,8 @@ async function doSync(){
       showSyncMsg('✓ Sin cambios locales · '+ts());
     } else {
       showSyncMsg(`⏳ Enviando ${payload.length} registros...`);
-      // Enviar en lotes de 200 para no exceder timeout de Apps Script
-      const CHUNK=200;
+      // Enviar en lotes de 100 para no exceder timeout de Apps Script
+      const CHUNK=100;
       let totalUpdates=0,totalInserts=0;
       for(let i=0;i<payload.length;i+=CHUNK){
         const chunk=payload.slice(i,i+CHUNK);
@@ -1991,7 +2000,7 @@ async function doSync(){
           headers:{'Content-Type':'text/plain'},
           redirect:'follow',
           body:JSON.stringify({action:'sync',records:chunk})
-        },60000);
+        },120000);
         const result=await pushRes.json();
         if(result.status!=='ok') throw new Error(result.message||'Error del servidor');
         totalUpdates+=(result.updates||0);
