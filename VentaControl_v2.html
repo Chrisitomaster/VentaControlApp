@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.1</title>
+<title>VentaControl v2.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -45,7 +45,7 @@
   --card-hover:#1a2540;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html{font-size:15px;}
+html{font-size:16px;}
 body{
   font-family:var(--font-main);background:var(--bg-0);color:var(--tx-0);
   min-height:100vh;min-height:100dvh;transition:background var(--transition),color var(--transition);
@@ -67,13 +67,13 @@ body{
 .topbar .logo{font-family:var(--font-mono);font-size:0.75rem;color:var(--ac-blue);font-weight:600;letter-spacing:1px;}
 /* BUTTONS */
 .btn{
-  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+  display:inline-flex;align-items:center;gap:6px;padding:10px 16px;
   border:none;border-radius:var(--radius-sm);font-family:var(--font-main);
-  font-size:0.85rem;font-weight:500;cursor:pointer;transition:all var(--transition);
+  font-size:0.9rem;font-weight:500;cursor:pointer;transition:all var(--transition);
 }
 .btn-primary{background:var(--ac-blue);color:#fff;}
 .btn-primary:hover{filter:brightness(1.1);}
-.btn-sm{padding:5px 10px;font-size:0.78rem;}
+.btn-sm{padding:7px 12px;font-size:0.82rem;}
 .btn-ghost{background:transparent;color:var(--tx-1);border:1px solid var(--border);}
 .btn-ghost:hover{background:var(--bg-2);}
 .btn-icon{
@@ -109,8 +109,8 @@ body{
   text-align:center;padding:10px 4px;cursor:pointer;transition:all var(--transition);
 }
 .dept-cell:hover{border-color:var(--ac-blue);background:var(--card-hover);}
-.dept-cell .dept-num{font-weight:600;font-size:0.95rem;}
-.dept-cell .dept-info{font-size:0.7rem;color:var(--tx-2);margin-top:2px;}
+.dept-cell .dept-num{font-weight:600;font-size:1rem;}
+.dept-cell .dept-info{font-size:0.75rem;color:var(--tx-2);margin-top:2px;}
 .dept-cell.complete{border-color:var(--ac-green);background:var(--ac-green-soft);}
 .dept-cell.partial{border-color:var(--ac-orange);background:var(--ac-orange-soft);}
 .dept-cell.has-issues{border-left:3px solid var(--ac-red);}
@@ -126,8 +126,8 @@ body{
 .win-status{font-size:1.1rem;cursor:pointer;padding:4px;user-select:none;}
 /* STATUS BADGES */
 .badge{
-  display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;
-  font-size:0.7rem;font-weight:600;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;
+  font-size:0.75rem;font-weight:600;white-space:nowrap;
 }
 .badge-blue{background:var(--ac-blue-soft);color:var(--ac-blue);}
 .badge-green{background:var(--ac-green-soft);color:var(--ac-green);}
@@ -138,14 +138,14 @@ body{
 /* STATS ROW */
 .stats-row{display:flex;gap:var(--gap);flex-wrap:wrap;margin-bottom:var(--gap);}
 .stat-box{flex:1;min-width:80px;text-align:center;padding:10px 6px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-sm);}
-.stat-val{font-size:1.4rem;font-weight:700;font-family:var(--font-mono);}
-.stat-label{font-size:0.65rem;color:var(--tx-2);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+.stat-val{font-size:1.5rem;font-weight:700;font-family:var(--font-mono);}
+.stat-label{font-size:0.72rem;color:var(--tx-2);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
 /* DEFICIENCY CHIPS */
 .def-group{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
 .def-chip{
-  display:inline-flex;align-items:center;gap:4px;padding:5px 10px;
-  border:1px solid var(--border);border-radius:20px;font-size:0.75rem;
-  cursor:pointer;transition:all var(--transition);user-select:none;
+  display:inline-flex;align-items:center;gap:5px;padding:7px 12px;
+  border:1px solid var(--border);border-radius:20px;font-size:0.82rem;
+  cursor:pointer;transition:all var(--transition);user-select:none;min-height:38px;
 }
 .def-chip.active{border-color:var(--ac-red);background:var(--ac-red-soft);color:var(--ac-red);font-weight:600;}
 /* CORRECTIVE ACTIONS */
@@ -156,9 +156,9 @@ body{
 .action-row .action-icon{font-size:1rem;}
 .action-row .action-label{flex:1;}
 .action-row .action-check{
-  width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+  width:32px;height:32px;border-radius:50%;border:2px solid var(--border);
   cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:0.7rem;transition:all var(--transition);
+  font-size:0.85rem;transition:all var(--transition);
 }
 .action-row .action-check.done{background:var(--ac-green);border-color:var(--ac-green);color:#fff;}
 /* VANO STATUS */
@@ -256,7 +256,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.1 — Configuration & Data
+   VentaControl v2.2 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (editable desde la app) ----
@@ -335,9 +335,13 @@ const DEFICIENCIES = [
 
 const ACTIONS = [
   {id:'pulir',label:'Pulir Vano',icon:'🟣',color:'purple'},
-  {id:'impermeabilizar',label:'Impermeabilizar',icon:'🔵',color:'cyan'},
+  {id:'aplomar',label:'Aplomar ventana',icon:'🔴',color:'red'},
+  {id:'impermeabilizar',label:'Aplicar sello bajo marco',icon:'💧',color:'cyan'},
+  {id:'sellarFrente',label:'Aplicar sello frente ventana',icon:'💦',color:'blue'},
   {id:'repararEIFS',label:'Reparar retorno EIFS',icon:'🟠',color:'orange'},
-  {id:'aplomar',label:'Aplomar ventana',icon:'🔴',color:'red'}
+  {id:'reemplazarVidrio',label:'Reemplazar vidrio',icon:'🔍',color:'red'},
+  {id:'repararMarco',label:'Reparar/sellar marco',icon:'🔧',color:'orange'},
+  {id:'instalarFijacion',label:'Instalar fijación',icon:'🔩',color:'purple'},
 ];
 
 // Deficiency → Action mapping
@@ -346,9 +350,12 @@ const DEF_ACTION_MAP = {
   descuadre:'aplomar',
   desaplomo:'aplomar',
   sinSellador:'impermeabilizar',
-  sinSelladorFrente:'impermeabilizar',
+  sinSelladorFrente:'sellarFrente',
   retornoMalla:'repararEIFS',
   mallaPulida:'repararEIFS',
+  vidrioTrizado:'reemplazarVidrio',
+  marcoPerforado:'repararMarco',
+  faltaFijacion:'instalarFijacion',
 };
 
 const ESTADOS = [
@@ -359,6 +366,16 @@ const ESTADOS = [
 ];
 
 const VANO_OPTS = ['OK','Sobredimensionado','Pulir'];
+
+// Building construction stages
+const BLDG_STAGES = [
+  {id:1,label:'Pegado EPS muro exterior',short:'EPS'},
+  {id:2,label:'Refuerzo vanos con malla 1ra mano',short:'Malla 1'},
+  {id:3,label:'Pegado malla en EPS',short:'Malla EPS'},
+  {id:4,label:'Instalación esquineros',short:'Esquineros'},
+  {id:5,label:'Aplicación 2da mano yeso',short:'Yeso 2'},
+  {id:6,label:'Revestimiento granulado',short:'Granulado'},
+];
 
 const SA_NAMES = {1:'SA1',2:'SA2',3:'SA3',4:'SA4',5:'SA5'};
 const SA_RANGES = {1:[1,8],2:[9,17],3:[18,25],4:[26,29],5:[30,34]};
@@ -440,7 +457,7 @@ function initData(){
   for(const[edif,cfg] of Object.entries(BUILDINGS)){
     const e=parseInt(edif);
     // Building-level data
-    DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{}};
+    DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
     // Department windows
     for(let f=1;f<=5;f++){
       for(let p=0;p<4;p++){
@@ -468,7 +485,7 @@ function newWindowRecord(){
     estado:'noInstalada',
     estadoVano:'',
     deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false},
-    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false}},
+    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false}},
     observaciones:'',
     historial:[],
     fotos:[]
@@ -486,9 +503,17 @@ function updateWindow(key,field,value,label){
   if(!w)return;
   const old=typeof field==='function'?'':JSON.stringify(getNestedVal(w,field));
   if(typeof field==='function'){field(w,value);}
-  else{setNestedVal(w,field,value);}
-  w.historial.unshift({t:ts(),cambio:label||`${field}: ${old} → ${JSON.stringify(value)}`});
-  if(w.historial.length>50)w.historial=w.historial.slice(0,50);
+  else{
+    // Skip if value unchanged
+    if(JSON.stringify(getNestedVal(w,field))===JSON.stringify(value))return;
+    setNestedVal(w,field,value);
+  }
+  const desc=label||`${field}: ${old} → ${JSON.stringify(value)}`;
+  // Deduplicate: skip if last entry has same description
+  if(!w.historial.length||w.historial[0].cambio!==desc){
+    w.historial.unshift({t:ts(),cambio:desc});
+    if(w.historial.length>50)w.historial=w.historial.slice(0,50);
+  }
   // Auto-generate corrective actions from deficiencies
   syncDefToActions(w);
   saveLocal();
@@ -572,15 +597,21 @@ function getDeptStats(edif,depto){
   const posIdx=(depto%100)-1;
   const tipo=getDeptType(e,floor,posIdx);
   const wins=getDeptWindows(tipo);
-  let total=wins.length,instaladas=0,quitar=0,defCount=0;
+  let total=wins.length,instaladas=0,quitar=0,defCount=0,actionsPending=0,actionsDone=0;
+  const defDetails=[];
   wins.forEach(([code])=>{
     const w=DATA.windows[wKey(e,depto,code)];
     if(!w)return;
     if(w.estado==='instalada')instaladas++;
     if(w.estado==='quitar')quitar++;
-    Object.values(w.deficiencias).forEach(v=>{if(v)defCount++;});
+    const defs=DEFICIENCIES.filter(d=>w.deficiencias[d.id]);
+    defs.forEach(d=>{defCount++;defDetails.push({code,def:d});});
+    Object.values(w.acciones).forEach(a=>{
+      if(a.active&&!a.done)actionsPending++;
+      if(a.active&&a.done)actionsDone++;
+    });
   });
-  return{total,instaladas,quitar,defCount,tipo};
+  return{total,instaladas,quitar,defCount,tipo,actionsPending,actionsDone,defDetails};
 }
 
 function getCommonStats(edif,floor){
@@ -634,7 +665,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.1']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.2']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('p',{style:{color:'var(--tx-1)',marginBottom:'20px',fontSize:'0.9rem',fontWeight:'500'}},['Selecciona tu perfil de acceso']),
@@ -700,7 +731,7 @@ function toggleTheme(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.1'),
+    topbar('VentaControl v2.2'),
     // Global stats
     h('div',{className:'stats-row'},[
       statBox(g.instaladas.toLocaleString(),'Instaladas'),
@@ -760,6 +791,9 @@ function renderSA(){
       const e=start+i;
       const b=BUILDINGS[e];
       const s=getBldgStats(e);
+      const bData=DATA.buildings[bKey(e)]||{};
+      const stg=bData.stage||0;
+      const stgInfo=stg?BLDG_STAGES.find(x=>x.id===stg):null;
       return h('div',{className:'card card-click bld-card',onClick:()=>navigate('building',{edif:e})},[
         h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},[
           h('div',{},[
@@ -768,7 +802,8 @@ function renderSA(){
           ]),
           h('span',{className:'badge '+(s.pctBruto>=100?'badge-green':s.pctBruto>0?'badge-blue':'badge-orange')},[s.pctBruto+'%']),
         ]),
-        h('div',{className:'pbar',style:{marginTop:'8px'}},[h('div',{className:'pbar-fill blue',style:{width:s.pctBruto+'%'}})]),
+        stgInfo?h('div',{style:{fontSize:'0.73rem',color:'var(--ac-cyan)',marginTop:'4px',fontWeight:'500'}},['Etapa '+stg+': '+stgInfo.short]):null,
+        h('div',{className:'pbar',style:{marginTop:'6px'}},[h('div',{className:'pbar-fill blue',style:{width:s.pctBruto+'%'}})]),
         h('div',{style:{display:'flex',gap:'6px',marginTop:'8px',flexWrap:'wrap'}},[
           s.defCount?h('span',{className:'badge badge-red'},[s.defCount+' def.']):null,
           s.actionsPending?h('span',{className:'badge badge-orange'},[s.actionsPending+' acc.']):null,
@@ -802,6 +837,39 @@ function renderBuilding(){
       statBox(s.defCount.toString(),'Defectos'),
     ]),
 
+    // Building stage tracker
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},['Etapa de Construcción']),
+      h('div',{style:{display:'flex',flexWrap:'wrap',gap:'6px'}},
+        BLDG_STAGES.map(st=>{
+          const current=bData.stage||0;
+          const isDone=st.id<=current;
+          const isCurrent=st.id===current;
+          return h('div',{
+            style:{
+              padding:'8px 10px',borderRadius:'var(--radius-sm)',fontSize:'0.78rem',
+              border:isCurrent?'2px solid var(--ac-blue)':isDone?'1px solid var(--ac-green)':'1px solid var(--border)',
+              background:isDone?'var(--ac-green-soft)':'transparent',
+              color:isDone?'var(--ac-green)':'var(--tx-2)',
+              cursor:isEditor()?'pointer':'default',fontWeight:isCurrent?'700':'400',
+              minWidth:'90px',textAlign:'center',flex:'1 1 calc(33% - 6px)'
+            },
+            title:st.label,
+            onClick:()=>{
+              if(!isEditor())return;
+              if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
+              DATA.buildings[bKey(edif)].stage=DATA.buildings[bKey(edif)].stage===st.id?st.id-1:st.id;
+              saveLocal();
+              renderBuilding();
+            }
+          },[`${st.id}. ${st.short}`]);
+        })
+      ),
+      (bData.stage||0)>0?h('div',{style:{marginTop:'8px',fontSize:'0.8rem',color:'var(--ac-blue)',fontWeight:'500'}},[
+        '→ '+BLDG_STAGES.find(s=>s.id===(bData.stage||0))?.label
+      ]):null,
+    ].filter(Boolean)),
+
     // Bulk actions (editor only)
     isEditor()?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']),
@@ -826,7 +894,8 @@ function renderBuilding(){
               return h('div',{className:cls,onClick:()=>navigate('dept',{edif,depto:dn})},[
                 h('div',{className:'dept-num'},[dn.toString()]),
                 h('div',{className:'dept-info'},[`${tipo} · ${st.instaladas}/${st.total}`]),
-                st.defCount?h('div',{style:{fontSize:'0.65rem',color:'var(--ac-red)',marginTop:'2px'}},[st.defCount+' def']):null,
+                st.defCount?h('div',{style:{fontSize:'0.68rem',color:'var(--ac-red)',marginTop:'2px'}},[st.defCount+' def']):null,
+                st.actionsPending?h('div',{style:{fontSize:'0.68rem',color:'var(--ac-orange)',marginTop:'1px'}},[st.actionsPending+' acc']):null,
               ].filter(Boolean));
             }),
           ]),
@@ -834,30 +903,43 @@ function renderBuilding(){
       })),
     ]),
 
-    // Common areas — improved view
+    // Common areas — improved view with quick status
     h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.85rem'}},['Espacios Comunes']),
+      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.9rem'}},['Espacios Comunes']),
       ...[1,2,3,4,5].flatMap(f=>{
         const cw=getCommonWindows(f);
         return [
           h('div',{className:'floor-label'},['Piso '+f]),
           ...cw.map(([code])=>{
-            const w=DATA.windows[wKey(edif,`EC${f}`,code)];
+            const wk=wKey(edif,`EC${f}`,code);
+            const w=DATA.windows[wk];
             const loc=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
             const hasD=w&&Object.values(w.deficiencias).some(v=>v);
             const activeDefIcons=w?DEFICIENCIES.filter(d=>w.deficiencias[d.id]):[];
-            return h('div',{style:{padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'},
-              onClick:()=>navigate('common',{edif,floor:f,code})},[
-              h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},[
-                h('span',{className:'win-code'},[code]),
-                h('span',{className:'win-loc'},[loc]),
+            return h('div',{style:{padding:'8px 0',borderBottom:'1px solid var(--border)'}},[
+              h('div',{style:{display:'flex',alignItems:'center',gap:'8px',cursor:'pointer'},
+                onClick:()=>navigate('common',{edif,floor:f,code})},[
+                h('span',{className:'win-code',style:{fontSize:'0.9rem'}},[code]),
+                h('span',{className:'win-loc',style:{fontSize:'0.8rem'}},[loc]),
                 h('span',{style:{flex:1}}),
                 renderEstadoMini(w?w.estado:'noInstalada'),
                 w?.estadoVano?h('span',{className:'badge badge-cyan',style:{fontSize:'0.65rem'}},[w.estadoVano]):null,
               ]),
-              (hasD||w?.observaciones)?h('div',{style:{marginTop:'3px',paddingLeft:'60px',display:'flex',gap:'3px',flexWrap:'wrap',alignItems:'center'}},[
-                ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.85rem'}},[d.icon])),
-                w?.observaciones?h('span',{style:{fontSize:'0.7rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,50)+(w.observaciones.length>50?'…':'')]):null,
+              // Quick status buttons for common areas (editor only)
+              isEditor()?h('div',{style:{display:'flex',gap:'4px',marginTop:'6px',flexWrap:'wrap'}},
+                ESTADOS.map(e=>h('div',{
+                  className:'estado-opt'+(w&&w.estado===e.id?' '+e.cls:''),
+                  style:{padding:'4px 10px',fontSize:'0.75rem'},
+                  onClick:(ev)=>{
+                    ev.stopPropagation();
+                    updateWindow(wk,'estado',e.id,`Estado: ${w?.estado||'—'} → ${e.id}`);
+                    renderBuilding();
+                  }
+                },[e.sym+' '+e.label]))
+              ):null,
+              (hasD||w?.observaciones)?h('div',{style:{marginTop:'4px',paddingLeft:'60px',display:'flex',gap:'3px',flexWrap:'wrap',alignItems:'center'}},[
+                ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.9rem'}},[d.icon])),
+                w?.observaciones?h('span',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,50)+(w.observaciones.length>50?'…':'')]):null,
               ].filter(Boolean)):null,
             ].filter(Boolean));
           }),
@@ -871,9 +953,16 @@ function renderBuilding(){
       renderBldgDefBreakdown(edif),
     ]):null,
 
+    // Issue map — deptos with inconformidades/actions
+    (s.defCount>0||s.actionsPending>0)?h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.9rem'}},['Mapa de Incidencias']),
+      h('div',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'8px'}},['Departamentos con inconformidades o acciones pendientes']),
+      ...renderBldgIssueMap(edif),
+    ]):null,
+
     // Type counts table
     h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',marginBottom:'4px',fontSize:'0.85rem'}},['Por Tipo (Edif. '+edif+')']),
+      h('div',{style:{fontWeight:'600',marginBottom:'4px',fontSize:'0.9rem'}},['Por Tipo (Edif. '+edif+')']),
       renderTypeTable(s.tipoCounts),
     ]),
 
@@ -975,7 +1064,28 @@ function renderDept(){
       statBox(`${st.instaladas}/${st.total}`,'Ventanas'),
       statBox(pct(st.instaladas,st.total)+'%','Avance'),
       statBox(st.defCount.toString(),'Defectos'),
+      statBox(st.actionsPending.toString(),'Acc. Pend.'),
     ]),
+
+    // Deficiency & action summary for this dept
+    (st.defCount>0||st.actionsPending>0)?h('div',{className:'card',style:{padding:'10px 12px'}},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'6px'}},['Resumen Depto '+depto]),
+      st.defCount>0?h('div',{style:{marginBottom:'6px'}},[
+        h('div',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'4px',fontWeight:'600'}},['Inconformidades:']),
+        ...st.defDetails.map(({code,def})=>
+          h('div',{style:{fontSize:'0.78rem',display:'flex',gap:'6px',alignItems:'center',padding:'2px 0'}},[
+            h('span',{style:{fontSize:'0.9rem'}},[def.icon]),
+            h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'600',minWidth:'55px'}},[code]),
+            h('span',{style:{color:'var(--tx-1)'}},[def.label]),
+          ])
+        ),
+      ]):null,
+      st.actionsPending>0?h('div',{},[
+        h('div',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'4px',fontWeight:'600'}},['Acciones pendientes: '+st.actionsPending]),
+      ]):null,
+      st.actionsDone>0?h('div',{style:{fontSize:'0.78rem',color:'var(--ac-green)'}},[st.actionsDone+' acciones completadas']):null,
+    ].filter(Boolean)):null,
+
     // Toolbar (editor only)
     isEditor()?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('dept',{edif,depto})},['⚡ Cambio masivo']),
@@ -988,26 +1098,41 @@ function renderDept(){
         if(!w)return null;
         const hasD=Object.values(w.deficiencias).some(v=>v);
         const activeDefIcons=DEFICIENCIES.filter(d=>w.deficiencias[d.id]);
-        return h('div',{style:{borderBottom:'1px solid var(--border)',padding:'10px 12px'}},[
-          // Header row — tap to open detail
-          h('div',{style:{display:'flex',alignItems:'center',gap:'8px',cursor:'pointer'},
-            onClick:()=>navigate('window',{edif,depto,code,loc})},[
-            h('span',{className:'win-code'},[code]),
-            h('span',{className:'win-loc'},[loc]),
+        const activeActions=ACTIONS.filter(a=>w.acciones[a.id]?.active);
+        return h('div',{style:{borderBottom:'1px solid var(--border)',padding:'12px'}},[
+          // Header row with info + link icon to detail
+          h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},[
+            h('span',{className:'win-code',style:{fontSize:'0.9rem'}},[code]),
+            h('span',{className:'win-loc',style:{fontSize:'0.8rem'}},[loc]),
             h('span',{style:{flex:1}}),
             renderEstadoMini(w.estado),
-            w.estadoVano?h('span',{className:'badge badge-cyan',style:{fontSize:'0.65rem'}},[w.estadoVano]):null,
+            w.estadoVano?h('span',{className:'badge badge-cyan',style:{fontSize:'0.7rem'}},[w.estadoVano]):null,
+            // Dedicated detail button — separate click target
+            h('button',{
+              className:'btn-icon',
+              style:{fontSize:'1rem',padding:'6px 8px',marginLeft:'4px',color:'var(--ac-blue)'},
+              title:'Ver detalle',
+              onClick:(ev)=>{ev.stopPropagation();navigate('window',{edif,depto,code,loc});}
+            },['▸']),
           ]),
-          // Deficiency icons + observation preview
-          (hasD||w.observaciones)?h('div',{style:{marginTop:'4px',paddingLeft:'60px',display:'flex',gap:'3px',alignItems:'center',flexWrap:'wrap'}},[
-            ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.85rem'}},[d.icon])),
-            w.observaciones?h('span',{style:{fontSize:'0.7rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,50)+(w.observaciones.length>50?'…':'')]):null,
+          // Deficiency + action icons row
+          (hasD||activeActions.length||w.observaciones)?h('div',{style:{marginTop:'5px',paddingLeft:'4px',display:'flex',gap:'4px',alignItems:'center',flexWrap:'wrap'}},[
+            ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.95rem'}},[d.icon])),
+            ...activeActions.map(a=>{
+              const act=w.acciones[a.id];
+              return h('span',{title:a.label+(act.done?' ✓':' pendiente'),style:{
+                fontSize:'0.75rem',padding:'1px 5px',borderRadius:'8px',
+                background:act.done?'var(--ac-green-soft)':'var(--ac-orange-soft)',
+                color:act.done?'var(--ac-green)':'var(--ac-orange)',fontWeight:'600'
+              }},[a.icon+(act.done?'✓':'')]);
+            }),
+            w.observaciones?h('span',{style:{fontSize:'0.73rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,40)+(w.observaciones.length>40?'…':'')]):null,
           ].filter(Boolean)):null,
-          // Quick status buttons (editor only)
-          isEditor()?h('div',{style:{display:'flex',gap:'4px',marginTop:'7px',flexWrap:'wrap'}},
+          // Quick status buttons (editor only) — clearly separated area
+          isEditor()?h('div',{style:{display:'flex',gap:'5px',marginTop:'8px',flexWrap:'wrap',paddingTop:'6px',borderTop:'1px dashed var(--border)'}},
             ESTADOS.map(e=>h('div',{
               className:'estado-opt'+(w.estado===e.id?' '+e.cls:''),
-              style:{padding:'3px 8px',fontSize:'0.72rem'},
+              style:{padding:'6px 12px',fontSize:'0.8rem',flex:'1',textAlign:'center',justifyContent:'center',minHeight:'36px'},
               onClick:(ev)=>{
                 ev.stopPropagation();
                 updateWindow(key,'estado',e.id,`Estado: ${w.estado} → ${e.id}`);
@@ -1125,40 +1250,52 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
 
     // Corrective Actions
     h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Acciones Correctivas']),
+      h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},['Acciones Correctivas']),
       ...ACTIONS.map(a=>{
+        if(!w.acciones[a.id])w.acciones[a.id]={active:false,done:false};
         const act=w.acciones[a.id];
-        if(!act)return null;
         const isAutoActive=Object.entries(DEF_ACTION_MAP).some(([dk,ak])=>ak===a.id&&w.deficiencias[dk]);
         return h('div',{className:'action-row',style:{
           background:act.active?`var(--ac-${a.color}-soft)`:'transparent',
           border:act.active?`1px solid var(--ac-${a.color})`:'1px solid transparent',
-          borderRadius:'var(--radius-sm)',opacity:act.active?1:0.5
+          borderRadius:'var(--radius-sm)',opacity:act.active?1:0.5,
+          padding:'10px 12px',minHeight:'44px',cursor:'pointer'
+        },onClick:(ev)=>{
+          if(!isEditor())return;
+          ev.stopPropagation();
+          if(!act.active){
+            updateWindow(key,(w)=>{w.acciones[a.id].active=true;},null,`Acción ${a.label}: Activada`);
+          } else if(!act.done){
+            updateWindow(key,`acciones.${a.id}.done`,true,`Acción ${a.label}: Completada`);
+          } else {
+            updateWindow(key,(w)=>{w.acciones[a.id].done=false;},null,`Acción ${a.label}: Reabierta`);
+          }
+          renderWindowDetail(key,code,loc,subtitle,backView,backParams);
         }},[
-          h('span',{className:'action-icon'},[a.icon]),
-          h('span',{className:'action-label',style:{fontSize:'0.82rem'}},[
+          h('span',{className:'action-icon',style:{fontSize:'1.2rem'}},[a.icon]),
+          h('span',{className:'action-label',style:{fontSize:'0.88rem',flex:1}},[
             a.label,
             isAutoActive?h('span',{style:{fontSize:'0.65rem',color:'var(--tx-2)',marginLeft:'6px'}},['(auto)']):null,
           ].filter(Boolean)),
+          // Status indicator
           act.active?h('div',{
             className:'action-check'+(act.done?' done':''),
-            onClick:()=>{
-              updateWindow(key,`acciones.${a.id}.done`,!act.done,
-                `Acción ${a.label}: ${act.done?'Reabierta':'Completada'}`);
+            style:{width:'32px',height:'32px',fontSize:'0.9rem',flexShrink:0},
+          },[act.done?'✓':'⏳']):
+          h('div',{className:'action-check',style:{width:'32px',height:'32px',borderStyle:'dashed',flexShrink:0}},['+']),
+          // Remove button (only if active and editor)
+          (act.active&&isEditor())?h('button',{
+            className:'btn-icon',
+            style:{fontSize:'0.85rem',color:'var(--ac-red)',padding:'4px 8px',marginLeft:'4px',flexShrink:0},
+            title:'Quitar acción',
+            onClick:(ev)=>{
+              ev.stopPropagation();
+              updateWindow(key,(w)=>{w.acciones[a.id].active=false;w.acciones[a.id].done=false;},null,`Acción ${a.label}: Quitada`);
               renderWindowDetail(key,code,loc,subtitle,backView,backParams);
             }
-          },[act.done?'✓':'']):
-          h('div',{
-            className:'action-check',
-            style:{borderStyle:'dashed'},
-            onClick:()=>{
-              updateWindow(key,(w)=>{w.acciones[a.id].active=true;},null,
-                `Acción ${a.label}: Activada manualmente`);
-              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
-            }
-          },['+']),
-        ]);
-      }).filter(Boolean),
+          },['✗']):null,
+        ].filter(Boolean));
+      }),
     ]),
 
     // Observations
@@ -1354,6 +1491,38 @@ function renderBldgDefBreakdown(edif){
   );
 }
 
+function renderBldgIssueMap(edif){
+  const e=parseInt(edif);
+  const items=[];
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const dn=deptNum(f,p);
+      const st=getDeptStats(e,dn);
+      if(st.defCount>0||st.actionsPending>0){
+        items.push(h('div',{
+          style:{padding:'8px 10px',borderBottom:'1px solid var(--border)',cursor:'pointer',fontSize:'0.82rem'},
+          onClick:()=>navigate('dept',{edif:e,depto:dn})
+        },[
+          h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},[
+            h('span',{style:{fontWeight:'700',fontFamily:'var(--font-mono)',minWidth:'40px'}},[dn.toString()]),
+            h('span',{style:{color:'var(--tx-2)'}},[st.tipo]),
+            h('span',{style:{flex:1}}),
+            st.defCount?h('span',{className:'badge badge-red'},[st.defCount+' def']):null,
+            st.actionsPending?h('span',{className:'badge badge-orange'},[st.actionsPending+' acc']):null,
+          ]),
+          st.defDetails.length?h('div',{style:{marginTop:'3px',paddingLeft:'48px',display:'flex',gap:'3px',flexWrap:'wrap'}},
+            st.defDetails.map(({code,def})=>
+              h('span',{title:`${code}: ${def.label}`,style:{fontSize:'0.85rem'}},[def.icon])
+            )
+          ):null,
+        ].filter(Boolean)));
+      }
+    }
+  }
+  if(!items.length)return[h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',padding:'4px 0'}},['Sin incidencias registradas'])];
+  return items;
+}
+
 /* ============================================
    SYNC BAR
    ============================================ */
@@ -1365,11 +1534,78 @@ function renderSyncBar(){
   ]);
 }
 
+function showLegend(){
+  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+    h('div',{className:'modal',style:{maxHeight:'90vh',overflowY:'auto'}},[
+      h('h3',{style:{marginBottom:'14px'}},['Leyenda de Iconos y Colores']),
+      // Estados
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'6px',color:'var(--ac-blue)'}},['Estados de Ventana']),
+      ...ESTADOS.map(e=>h('div',{style:{display:'flex',alignItems:'center',gap:'10px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{fontSize:'1.2rem',width:'28px',textAlign:'center'}},[e.sym]),
+        h('span',{},[e.label]),
+      ])),
+      h('div',{style:{height:'12px'}}),
+      // Colores de departamento
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'6px',color:'var(--ac-blue)'}},['Colores en Vista Edificio']),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{width:'20px',height:'20px',borderRadius:'4px',background:'var(--ac-green-soft)',border:'1px solid var(--ac-green)',flexShrink:0}}),
+        h('span',{},['Depto completo (todas instaladas)']),
+      ]),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{width:'20px',height:'20px',borderRadius:'4px',background:'var(--ac-orange-soft)',border:'1px solid var(--ac-orange)',flexShrink:0}}),
+        h('span',{},['Depto parcial (algunas instaladas)']),
+      ]),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{width:'20px',height:'20px',borderRadius:'4px',borderLeft:'3px solid var(--ac-red)',background:'var(--bg-2)',flexShrink:0}}),
+        h('span',{},['Depto con defectos']),
+      ]),
+      h('div',{style:{height:'12px'}}),
+      // Deficiencias
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'6px',color:'var(--ac-blue)'}},['Inconformidades']),
+      ...DEFICIENCIES.map(d=>h('div',{style:{display:'flex',alignItems:'center',gap:'10px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{fontSize:'1.1rem',width:'28px',textAlign:'center'}},[d.icon]),
+        h('span',{},[d.label]),
+      ])),
+      h('div',{style:{height:'12px'}}),
+      // Acciones correctivas
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'6px',color:'var(--ac-blue)'}},['Acciones Correctivas']),
+      ...ACTIONS.map(a=>h('div',{style:{display:'flex',alignItems:'center',gap:'10px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{fontSize:'1.1rem',width:'28px',textAlign:'center'}},[a.icon]),
+        h('span',{},[a.label]),
+      ])),
+      h('div',{style:{height:'12px'}}),
+      // Action status indicators
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'6px',color:'var(--ac-blue)'}},['Estado de Acciones']),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{padding:'2px 6px',borderRadius:'8px',background:'var(--ac-orange-soft)',color:'var(--ac-orange)',fontSize:'0.78rem',fontWeight:'600'}},['⏳']),
+        h('span',{},['Acción pendiente']),
+      ]),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'4px 0',fontSize:'0.85rem'}},[
+        h('span',{style:{padding:'2px 6px',borderRadius:'8px',background:'var(--ac-green-soft)',color:'var(--ac-green)',fontSize:'0.78rem',fontWeight:'600'}},['✓']),
+        h('span',{},['Acción completada']),
+      ]),
+      h('div',{style:{height:'12px'}}),
+      // Badges
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'6px',color:'var(--ac-blue)'}},['Badges en listado']),
+      h('div',{style:{display:'flex',flexWrap:'wrap',gap:'8px',padding:'4px 0'}},[
+        h('span',{className:'badge badge-red'},['N def = inconformidades']),
+        h('span',{className:'badge badge-orange'},['N acc = acciones pendientes']),
+        h('span',{className:'badge badge-purple'},['N quitar = a desinstalar']),
+        h('span',{className:'badge badge-cyan'},['estado vano']),
+      ]),
+      h('div',{style:{height:'16px'}}),
+      h('button',{className:'btn btn-primary',style:{width:'100%',justifyContent:'center'},onClick:()=>overlay.remove()},['Cerrar']),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+}
+
 function showExportMenu(){
   const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
     h('div',{className:'modal'},[
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
+        h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLegend();}},['📖 Leyenda de iconos']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showUrlConfig();}},['⚙️ Configurar URL Sync']),
         h('button',{className:'btn btn-ghost',onClick:()=>{exportCSV();overlay.remove();}},['📥 Exportar CSV']),
         h('button',{className:'btn btn-ghost',onClick:()=>{importCSV();overlay.remove();}},['📤 Importar CSV']),
@@ -1501,10 +1737,14 @@ function buildSyncPayload(){
       faltaFijacion:w.deficiencias.faltaFijacion?1:0,
       vano:w.estadoVano||'',
       obs:w.observaciones||'',
-      act_pulir:w.acciones.pulir.active?(w.acciones.pulir.done?'done':'pending'):'',
-      act_impermeabilizar:w.acciones.impermeabilizar.active?(w.acciones.impermeabilizar.done?'done':'pending'):'',
-      act_repararEIFS:w.acciones.repararEIFS.active?(w.acciones.repararEIFS.done?'done':'pending'):'',
-      act_aplomar:w.acciones.aplomar.active?(w.acciones.aplomar.done?'done':'pending'):'',
+      act_pulir:w.acciones.pulir?.active?(w.acciones.pulir.done?'done':'pending'):'',
+      act_impermeabilizar:w.acciones.impermeabilizar?.active?(w.acciones.impermeabilizar.done?'done':'pending'):'',
+      act_repararEIFS:w.acciones.repararEIFS?.active?(w.acciones.repararEIFS.done?'done':'pending'):'',
+      act_aplomar:w.acciones.aplomar?.active?(w.acciones.aplomar.done?'done':'pending'):'',
+      act_sellarFrente:w.acciones.sellarFrente?.active?(w.acciones.sellarFrente.done?'done':'pending'):'',
+      act_reemplazarVidrio:w.acciones.reemplazarVidrio?.active?(w.acciones.reemplazarVidrio.done?'done':'pending'):'',
+      act_repararMarco:w.acciones.repararMarco?.active?(w.acciones.repararMarco.done?'done':'pending'):'',
+      act_instalarFijacion:w.acciones.instalarFijacion?.active?(w.acciones.instalarFijacion.done?'done':'pending'):'',
     });
   }
   return rows;
@@ -1545,7 +1785,8 @@ function mergeFromSheets(rows){
       faltaFijacion:pd(r,'faltaFijacion','def_faltaFijacion'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    ['pulir','impermeabilizar','repararEIFS','aplomar'].forEach(a=>{
+    ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion'].forEach(a=>{
+      if(!w.acciones[a])w.acciones[a]={active:false,done:false};
       const val=r['act_'+a];
       if(val==='done'){w.acciones[a].active=true;w.acciones[a].done=true;}
       else if(val==='pending'){w.acciones[a].active=true;w.acciones[a].done=false;}
@@ -1695,7 +1936,8 @@ function migrateV1(){
   let added=0;
   for(const[edif,cfg] of Object.entries(BUILDINGS)){
     const e=parseInt(edif);
-    if(!DATA.buildings[bKey(e)])DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{}};
+    if(!DATA.buildings[bKey(e)])DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
+    if(DATA.buildings[bKey(e)].stage===undefined)DATA.buildings[bKey(e)].stage=0;
     for(let f=1;f<=5;f++){
       for(let p=0;p<4;p++){
         const tipo=getDeptType(e,f,p);
@@ -1705,7 +1947,11 @@ function migrateV1(){
           if(!DATA.windows[key]){DATA.windows[key]=newWindowRecord();added++;}
           // Ensure v2 fields exist on old records
           const w=DATA.windows[key];
-          if(!w.acciones)w.acciones={pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false}};
+          if(!w.acciones)w.acciones={};
+          // Ensure all action fields exist
+          ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion'].forEach(a=>{
+            if(!w.acciones[a])w.acciones[a]={active:false,done:false};
+          });
           if(!w.historial)w.historial=[];
           if(!w.fotos)w.fotos=[];
           if(!w.deficiencias)w.deficiencias={};
@@ -1721,7 +1967,10 @@ function migrateV1(){
         const key=wKey(e,`EC${f}`,code);
         if(!DATA.windows[key]){DATA.windows[key]=newWindowRecord();added++;}
         const w=DATA.windows[key];
-        if(!w.acciones)w.acciones={pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false}};
+        if(!w.acciones)w.acciones={};
+        ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion'].forEach(a=>{
+          if(!w.acciones[a])w.acciones[a]={active:false,done:false};
+        });
         if(!w.historial)w.historial=[];
         if(!w.fotos)w.fotos=[];
         if(!w.deficiencias)w.deficiencias={};
@@ -1735,7 +1984,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  console.log('VentaControl v2.1 — '+totalWins+' ventanas cargadas');
+  console.log('VentaControl v2.2 — '+totalWins+' ventanas cargadas');
 
   // Render
   render();
