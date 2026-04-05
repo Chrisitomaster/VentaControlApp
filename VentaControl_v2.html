@@ -1846,10 +1846,22 @@ function mergeFromSheets(rows){
   rows.forEach(r=>{
     // Reconstruir key — normalizar tipos: edif y depto pueden venir como número o string
     const edif=String(r.edif||'').trim();
-    const depto=String(r.depto||'').trim();
+    let depto=String(r.depto||'').trim();
     const elem=String(r.elemento||r.code||'').trim();
-    const key=r.key||`${edif}-${depto}-${elem}`;
+    const piso=String(r.piso||'').trim();
     if(!edif||!elem)return; // Skip filas vacías
+
+    // Espacios comunes: si depto está vacío y el elemento es V8/V9/PV1/PV2, reconstruir como EC{piso}
+    if(!depto&&piso&&['V8','V9','PV1','PV2'].includes(elem)){
+      depto='EC'+piso;
+    }
+    // Si tipo_depto es EC, también reconstruir
+    if((!depto||depto==='EC')&&(r.tipo_depto==='EC')&&piso){
+      depto='EC'+piso;
+    }
+    if(!depto)return; // Skip si aún no tenemos depto
+
+    const key=r.key||`${edif}-${depto}-${elem}`;
     if(!DATA.windows[key])DATA.windows[key]=newWindowRecord();
     const w=DATA.windows[key];
     // Estado — normalizar desde formato hoja
