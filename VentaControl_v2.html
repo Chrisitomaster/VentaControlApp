@@ -1745,6 +1745,7 @@ function buildSyncPayload(){
       act_reemplazarVidrio:w.acciones.reemplazarVidrio?.active?(w.acciones.reemplazarVidrio.done?'done':'pending'):'',
       act_repararMarco:w.acciones.repararMarco?.active?(w.acciones.repararMarco.done?'done':'pending'):'',
       act_instalarFijacion:w.acciones.instalarFijacion?.active?(w.acciones.instalarFijacion.done?'done':'pending'):'',
+      etapa:(DATA.buildings[bKey(parseInt(edif))]||{}).stage||'',
     });
   }
   return rows;
