@@ -369,12 +369,12 @@ const VANO_OPTS = ['OK','Sobredimensionado','Pulir'];
 
 // Building construction stages
 const BLDG_STAGES = [
-  {id:1,label:'Pegado EPS muro exterior',short:'EPS'},
-  {id:2,label:'Refuerzo vanos con malla 1ra mano',short:'Malla 1'},
-  {id:3,label:'Pegado malla en EPS',short:'Malla EPS'},
-  {id:4,label:'Instalación esquineros',short:'Esquineros'},
-  {id:5,label:'Aplicación 2da mano yeso',short:'Yeso 2'},
-  {id:6,label:'Revestimiento granulado',short:'Granulado'},
+  {id:1,label:'Pegado de EPS a muro cara exterior',short:'1. EPS muro'},
+  {id:2,label:'Refuerzo en vanos con malla + 1ra mano yeso',short:'2. Malla+Yeso 1'},
+  {id:3,label:'Pegado malla en EPS con yeso en fachada exterior',short:'3. Malla EPS'},
+  {id:4,label:'Instalación esquineros y cortagoteras',short:'4. Esquineros'},
+  {id:5,label:'Aplicación 2da mano yeso en vanos',short:'5. Yeso vanos'},
+  {id:6,label:'Revestimiento granulado en fachada exterior',short:'6. Granulado'},
 ];
 
 const SA_NAMES = {1:'SA1',2:'SA2',3:'SA3',4:'SA4',5:'SA5'};
@@ -693,7 +693,8 @@ function render(){
     building:renderBuilding,
     dept:renderDept,
     window:renderWindow,
-    common:renderCommon
+    common:renderCommon,
+    actionDetail:renderActionDetail
   };
   (views[currentView]||renderDashboard)();
 }
@@ -761,6 +762,13 @@ function renderDashboard(){
     ),
     // Deficiency summary
     h('div',{className:'section-hdr'},[h('h2',{},['Resumen Global']),h('span',{className:'badge badge-red'},[g.defCount+' inconformidades'])]),
+
+    // Global corrective actions panel
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},['Acciones Correctivas — Proyecto']),
+      renderActionsPanel(collectActions(1,34),'Proyecto',true),
+    ]),
+
     // Sync bar
     renderSyncBar(),
   ]);
@@ -805,15 +813,26 @@ function renderSA(){
           ]),
           h('span',{className:'badge '+(s.pctBruto>=100?'badge-green':s.pctBruto>0?'badge-blue':'badge-orange')},[s.pctBruto+'%']),
         ]),
-        stgInfo?h('div',{style:{fontSize:'0.73rem',color:'var(--ac-cyan)',marginTop:'4px',fontWeight:'500'}},['Etapa '+stg+': '+stgInfo.short]):null,
+        stgInfo?h('div',{style:{fontSize:'0.75rem',color:'var(--ac-cyan)',marginTop:'4px',fontWeight:'500'}},['📋 '+stgInfo.short+' ('+stg+'/6)']):null,
         h('div',{className:'pbar',style:{marginTop:'6px'}},[h('div',{className:'pbar-fill blue',style:{width:s.pctBruto+'%'}})]),
         h('div',{style:{display:'flex',gap:'6px',marginTop:'8px',flexWrap:'wrap'}},[
           s.defCount?h('span',{className:'badge badge-red'},[s.defCount+' def.']):null,
           s.actionsPending?h('span',{className:'badge badge-orange'},[s.actionsPending+' acc.']):null,
           s.quitar?h('span',{className:'badge badge-purple'},[s.quitar+' quitar']):null,
         ]),
-      ]);
+        // Comentario del edificio (si existe)
+        bData.comment?h('div',{style:{marginTop:'6px',fontSize:'0.75rem',color:'var(--tx-1)',fontStyle:'italic',borderTop:'1px dashed var(--border)',paddingTop:'6px'}},[
+          '💬 '+bData.comment.slice(0,80)+(bData.comment.length>80?'…':'')
+        ]):null,
+      ].filter(Boolean));
     }),
+
+    // SA corrective actions panel
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},['Acciones Correctivas — '+SA_NAMES[sa]]),
+      renderActionsPanel(collectActions(start,end),SA_NAMES[sa],true),
+    ]),
+
     renderSyncBar(),
   ]);
   app().innerHTML='';
@@ -840,38 +859,49 @@ function renderBuilding(){
       statBox(s.defCount.toString(),'Defectos'),
     ]),
 
-    // Building stage tracker
+    // Building stage tracker — vertical list with progress
     h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},['Etapa de Construcción']),
-      h('div',{style:{display:'flex',flexWrap:'wrap',gap:'6px'}},
-        BLDG_STAGES.map(st=>{
-          const current=bData.stage||0;
-          const isDone=st.id<=current;
-          const isCurrent=st.id===current;
-          return h('div',{
-            style:{
-              padding:'8px 10px',borderRadius:'var(--radius-sm)',fontSize:'0.78rem',
-              border:isCurrent?'2px solid var(--ac-blue)':isDone?'1px solid var(--ac-green)':'1px solid var(--border)',
-              background:isDone?'var(--ac-green-soft)':'transparent',
-              color:isDone?'var(--ac-green)':'var(--tx-2)',
-              cursor:isEditor()?'pointer':'default',fontWeight:isCurrent?'700':'400',
-              minWidth:'90px',textAlign:'center',flex:'1 1 calc(33% - 6px)'
-            },
-            title:st.label,
-            onClick:()=>{
-              if(!isEditor())return;
-              if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
-              DATA.buildings[bKey(edif)].stage=DATA.buildings[bKey(edif)].stage===st.id?st.id-1:st.id;
-              saveLocal();
-              renderBuilding();
-            }
-          },[`${st.id}. ${st.short}`]);
-        })
-      ),
-      (bData.stage||0)>0?h('div',{style:{marginTop:'8px',fontSize:'0.8rem',color:'var(--ac-blue)',fontWeight:'500'}},[
-        '→ '+BLDG_STAGES.find(s=>s.id===(bData.stage||0))?.label
-      ]):null,
-    ].filter(Boolean)),
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapa de Construcción']),
+        (bData.stage||0)>0?h('span',{className:'badge badge-blue'},[`Etapa ${bData.stage}/6`]):h('span',{className:'badge badge-orange'},['Sin iniciar']),
+      ]),
+      // Progress bar
+      h('div',{className:'pbar',style:{marginBottom:'10px'}},[
+        h('div',{className:'pbar-fill green',style:{width:pct(bData.stage||0,6)+'%'}})
+      ]),
+      // Stage list
+      ...BLDG_STAGES.map(st=>{
+        const current=bData.stage||0;
+        const isDone=st.id<=current;
+        const isCurrent=st.id===current;
+        return h('div',{
+          style:{
+            display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',
+            borderRadius:'var(--radius-sm)',marginBottom:'4px',
+            border:isCurrent?'2px solid var(--ac-blue)':isDone?'1px solid var(--ac-green)':'1px solid var(--border)',
+            background:isCurrent?'var(--ac-blue-soft)':isDone?'var(--ac-green-soft)':'transparent',
+            cursor:isEditor()?'pointer':'default',transition:'all var(--transition)'
+          },
+          onClick:()=>{
+            if(!isEditor())return;
+            if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
+            DATA.buildings[bKey(edif)].stage=DATA.buildings[bKey(edif)].stage===st.id?st.id-1:st.id;
+            saveLocal();
+            renderBuilding();
+          }
+        },[
+          h('div',{style:{
+            width:'28px',height:'28px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
+            fontSize:'0.8rem',fontWeight:'700',flexShrink:0,
+            background:isDone?'var(--ac-green)':isCurrent?'var(--ac-blue)':'var(--bg-3)',
+            color:isDone||isCurrent?'#fff':'var(--tx-2)'
+          }},[isDone?'✓':String(st.id)]),
+          h('div',{style:{flex:1}},[
+            h('div',{style:{fontSize:'0.82rem',fontWeight:isCurrent?'600':'400',color:isDone?'var(--ac-green)':isCurrent?'var(--ac-blue)':'var(--tx-1)'}},[st.label]),
+          ]),
+        ]);
+      }),
+    ]),
 
     // Bulk actions (editor only)
     isEditor()?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
@@ -969,18 +999,10 @@ function renderBuilding(){
       renderTypeTable(s.tipoCounts),
     ]),
 
-    // Corrective actions summary
+    // Corrective actions summary — clickeable
     h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.85rem'}},['Acciones Correctivas']),
-      ...ACTIONS.map(a=>{
-        const count=countBldgActions(edif,a.id);
-        return h('div',{className:'action-row'},[
-          h('span',{className:'action-icon'},[a.icon]),
-          h('span',{className:'action-label'},[a.label]),
-          h('span',{className:'badge badge-'+a.color},[count.pending+' pend.']),
-          h('span',{className:'badge badge-green',style:{marginLeft:'4px'}},[count.done+' ✓']),
-        ]);
-      }),
+      h('div',{style:{fontWeight:'600',marginBottom:'10px',fontSize:'0.9rem'}},['Acciones Correctivas — Edif. '+edif]),
+      renderActionsPanel(collectActions(edif,edif),'Edif. '+edif,false),
     ]),
 
     // Building comment
@@ -1493,6 +1515,258 @@ function renderBldgDefBreakdown(edif){
       h('span',{className:'badge badge-red'},[counts[d.id].toString()]),
     ]))
   );
+}
+
+// Collect all pending corrective actions with location info
+function collectActions(edifStart,edifEnd){
+  const items=[];
+  for(let e=edifStart;e<=edifEnd;e++){
+    for(let f=1;f<=5;f++){
+      for(let p=0;p<4;p++){
+        const tipo=getDeptType(e,f,p);
+        const dn=deptNum(f,p);
+        getDeptWindows(tipo).forEach(([code,loc])=>{
+          const w=DATA.windows[wKey(e,dn,code)];
+          if(!w)return;
+          ACTIONS.forEach(a=>{
+            const act=w.acciones[a.id];
+            if(act&&act.active){
+              items.push({edif:e,depto:dn,floor:f,code,loc,action:a,done:act.done,key:wKey(e,dn,code)});
+            }
+          });
+        });
+      }
+      getCommonWindows(f).forEach(([code])=>{
+        const w=DATA.windows[wKey(e,`EC${f}`,code)];
+        if(!w)return;
+        const loc=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
+        ACTIONS.forEach(a=>{
+          const act=w.acciones[a.id];
+          if(act&&act.active){
+            items.push({edif:e,depto:`EC${f}`,floor:f,code,loc,action:a,done:act.done,key:wKey(e,`EC${f}`,code)});
+          }
+        });
+      });
+    }
+  }
+  return items;
+}
+
+// Render corrective actions panel (used in dashboard, SA, and building detail)
+function renderActionsPanel(items,title,showEdif=true){
+  if(!items.length)return h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',padding:'8px 0'}},['Sin acciones correctivas registradas']);
+  // Group by action type
+  const grouped={};
+  ACTIONS.forEach(a=>{grouped[a.id]={action:a,pending:[],done:[]};});
+  items.forEach(it=>{
+    if(!grouped[it.action.id])return;
+    if(it.done)grouped[it.action.id].done.push(it);
+    else grouped[it.action.id].pending.push(it);
+  });
+  const totalPending=items.filter(i=>!i.done).length;
+  const totalDone=items.filter(i=>i.done).length;
+
+  return h('div',{},[
+    h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}},[
+      h('span',{className:'badge badge-orange'},[totalPending+' pendientes']),
+      h('span',{className:'badge badge-green'},[totalDone+' completadas']),
+    ]),
+    ...ACTIONS.map(a=>{
+      const g=grouped[a.id];
+      if(!g.pending.length&&!g.done.length)return null;
+      return h('div',{style:{marginBottom:'10px'}},[
+        h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'},
+          onClick:()=>{
+            // Navigate to action detail view
+            const edifScope=showEdif?null:items[0]?.edif;
+            navigate('actionDetail',{actionId:a.id,edifStart:edifScope||1,edifEnd:edifScope||34});
+          }
+        },[
+          h('span',{style:{fontSize:'1.2rem'}},[a.icon]),
+          h('span',{style:{fontWeight:'600',fontSize:'0.88rem',flex:1}},[a.label]),
+          g.pending.length?h('span',{className:'badge badge-orange'},[g.pending.length+' pend.']):null,
+          g.done.length?h('span',{className:'badge badge-green'},[g.done.length+' ✓']):null,
+          h('span',{style:{color:'var(--ac-blue)',fontSize:'0.9rem'}},['▸']),
+        ]),
+        // Show first few pending items as preview
+        ...g.pending.slice(0,3).map(it=>
+          h('div',{style:{fontSize:'0.78rem',color:'var(--tx-1)',padding:'3px 0 3px 32px',display:'flex',gap:'6px'}},[
+            showEdif?h('span',{style:{fontWeight:'600',color:'var(--tx-2)'}},[`E${it.edif}`]):null,
+            h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'600'}},[(it.depto.startsWith('EC')?'EC':'')+it.depto]),
+            h('span',{},[it.code]),
+            h('span',{style:{color:'var(--tx-2)'}},[it.loc]),
+          ].filter(Boolean))
+        ),
+        g.pending.length>3?h('div',{style:{fontSize:'0.73rem',color:'var(--ac-blue)',padding:'2px 0 2px 32px',cursor:'pointer'},
+          onClick:()=>navigate('actionDetail',{actionId:a.id,edifStart:showEdif?1:items[0]?.edif||1,edifEnd:showEdif?34:items[0]?.edif||34})
+        },['... ver todas ('+g.pending.length+')']):null,
+      ]);
+    }).filter(Boolean),
+  ]);
+}
+
+/* ============================================
+   VIEW: ACTION DETAIL — per action type
+   ============================================ */
+function renderActionDetail(){
+  const{actionId,edifStart,edifEnd}=viewParams;
+  const actionDef=ACTIONS.find(a=>a.id===actionId);
+  if(!actionDef){app().innerHTML='<p>Acción no encontrada</p>';return;}
+
+  // Determine back navigation
+  const isSingleEdif=edifStart===edifEnd;
+  const backView=isSingleEdif?'building':'dashboard';
+  const backParams=isSingleEdif?{edif:edifStart}:{};
+  const scopeLabel=isSingleEdif?`Edif. ${edifStart}`:'Proyecto';
+
+  // Collect all items for this action
+  const allItems=[];
+  for(let e=edifStart;e<=edifEnd;e++){
+    for(let f=1;f<=5;f++){
+      for(let p=0;p<4;p++){
+        const tipo=getDeptType(e,f,p);
+        const dn=deptNum(f,p);
+        getDeptWindows(tipo).forEach(([code,loc])=>{
+          const k=wKey(e,dn,code);
+          const w=DATA.windows[k];
+          if(!w)return;
+          const act=w.acciones[actionId];
+          if(act&&act.active){
+            // Count total deficiencies for importance
+            const defCount=Object.values(w.deficiencias).filter(Boolean).length;
+            allItems.push({edif:e,depto:dn,floor:f,code,loc,done:act.done,key:k,defCount,obs:w.observaciones||''});
+          }
+        });
+      }
+      getCommonWindows(f).forEach(([code])=>{
+        const k=wKey(e,`EC${f}`,code);
+        const w=DATA.windows[k];
+        if(!w)return;
+        const loc=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
+        const act=w.acciones[actionId];
+        if(act&&act.active){
+          const defCount=Object.values(w.deficiencias).filter(Boolean).length;
+          allItems.push({edif:e,depto:`EC${f}`,floor:f,code,loc,done:act.done,key:k,defCount,obs:w.observaciones||''});
+        }
+      });
+    }
+  }
+
+  // Sort: pending first, then by importance (defCount desc), then by edif/depto
+  const pending=allItems.filter(i=>!i.done).sort((a,b)=>b.defCount-a.defCount||a.edif-b.edif||a.depto-b.depto);
+  const done=allItems.filter(i=>i.done).sort((a,b)=>a.edif-b.edif);
+
+  function importanceBadge(defCount){
+    if(defCount>=4)return h('span',{className:'badge badge-red',style:{fontSize:'0.65rem'}},['⚠ Alta']);
+    if(defCount>=2)return h('span',{className:'badge badge-orange',style:{fontSize:'0.65rem'}},['Media']);
+    return h('span',{className:'badge badge-blue',style:{fontSize:'0.65rem'}},['Baja']);
+  }
+
+  function renderActionItem(it){
+    const w=DATA.windows[it.key];
+    return h('div',{style:{
+      padding:'10px 12px',borderBottom:'1px solid var(--border)',
+      background:it.done?'var(--ac-green-soft)':'transparent',
+      display:'flex',alignItems:'center',gap:'8px'
+    }},[
+      // Toggle done/pending
+      isEditor()?h('div',{
+        style:{
+          width:'32px',height:'32px',borderRadius:'50%',border:'2px solid '+(it.done?'var(--ac-green)':'var(--border)'),
+          display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,
+          background:it.done?'var(--ac-green)':'transparent',color:it.done?'#fff':'var(--tx-2)',fontSize:'0.85rem'
+        },
+        onClick:()=>{
+          if(!w)return;
+          w.acciones[actionId].done=!w.acciones[actionId].done;
+          w.historial.unshift({t:ts(),cambio:`Acción ${actionDef.label}: ${w.acciones[actionId].done?'Completada':'Reabierta'}`});
+          saveLocal();
+          renderActionDetail();
+        }
+      },[it.done?'✓':'']):h('div',{style:{width:'32px',height:'32px',borderRadius:'50%',border:'2px solid '+(it.done?'var(--ac-green)':'var(--border)'),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,background:it.done?'var(--ac-green)':'transparent',color:it.done?'#fff':'var(--tx-2)',fontSize:'0.85rem'}},[it.done?'✓':'']),
+      // Info
+      h('div',{style:{flex:1,minWidth:0}},[
+        h('div',{style:{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}},[
+          !isSingleEdif?h('span',{style:{fontWeight:'700',fontSize:'0.82rem',color:'var(--ac-blue)'}},[`E${it.edif}`]):null,
+          h('span',{style:{fontWeight:'600',fontFamily:'var(--font-mono)',fontSize:'0.85rem'}},[String(it.depto)]),
+          h('span',{style:{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color:'var(--tx-2)'}},[it.code]),
+          h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[it.loc]),
+        ].filter(Boolean)),
+        h('div',{style:{display:'flex',gap:'6px',marginTop:'3px',alignItems:'center'}},[
+          importanceBadge(it.defCount),
+          it.obs?h('span',{style:{fontSize:'0.72rem',color:'var(--tx-2)'}},[it.obs.slice(0,40)+(it.obs.length>40?'…':'')]):null,
+        ]),
+      ]),
+      // Navigate to window detail
+      h('button',{className:'btn-icon',style:{color:'var(--ac-blue)',fontSize:'1rem',flexShrink:0},
+        onClick:()=>{
+          if(it.depto.toString().startsWith('EC')){
+            const floor=parseInt(it.depto.replace('EC',''));
+            navigate('common',{edif:it.edif,floor,code:it.code});
+          } else {
+            navigate('window',{edif:it.edif,depto:parseInt(it.depto),code:it.code,loc:it.loc});
+          }
+        }
+      },['▸']),
+    ].filter(Boolean));
+  }
+
+  // Bulk complete/reopen for editor
+  function bulkToggle(items,setDone){
+    if(!isEditor())return;
+    items.forEach(it=>{
+      const w=DATA.windows[it.key];
+      if(w&&w.acciones[actionId]){
+        w.acciones[actionId].done=setDone;
+        w.historial.unshift({t:ts(),cambio:`Acción ${actionDef.label}: ${setDone?'Completada':'Reabierta'} (masivo)`});
+      }
+    });
+    saveLocal();
+    renderActionDetail();
+  }
+
+  const el=h('div',{className:'fade-in'},[
+    topbar(`${actionDef.icon} ${actionDef.label}`,backView,backParams),
+    h('div',{style:{fontSize:'0.82rem',color:'var(--tx-2)',marginBottom:'12px'}},[scopeLabel+' — '+allItems.length+' registros']),
+
+    // Stats
+    h('div',{className:'stats-row'},[
+      statBox(pending.length.toString(),'Pendientes'),
+      statBox(done.length.toString(),'Completadas'),
+      statBox(allItems.length.toString(),'Total'),
+    ]),
+
+    // Bulk actions
+    isEditor()&&pending.length?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)'}},[
+      h('button',{className:'btn btn-sm btn-primary',onClick:()=>{
+        if(confirm(`¿Marcar las ${pending.length} acciones pendientes como completadas?`))bulkToggle(pending,true);
+      }},['✓ Completar todas']),
+      done.length?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>{
+        if(confirm(`¿Reabrir las ${done.length} acciones completadas?`))bulkToggle(done,false);
+      }},['↩ Reabrir todas']):null,
+    ].filter(Boolean)):null,
+
+    // Pending list
+    pending.length?h('div',{className:'card',style:{padding:0}},[
+      h('div',{style:{padding:'10px 12px',fontWeight:'600',fontSize:'0.85rem',borderBottom:'1px solid var(--border)',background:'var(--ac-orange-soft)',color:'var(--ac-orange)',borderRadius:'var(--radius) var(--radius) 0 0'}},['Pendientes ('+pending.length+')']),
+      ...pending.map(renderActionItem),
+    ]):null,
+
+    // Done list (collapsed by default)
+    done.length?h('div',{className:'card',style:{padding:0}},[
+      h('div',{style:{padding:'10px 12px',fontWeight:'600',fontSize:'0.85rem',borderBottom:'1px solid var(--border)',background:'var(--ac-green-soft)',color:'var(--ac-green)',borderRadius:'var(--radius) var(--radius) 0 0',cursor:'pointer'},
+        onClick:(e)=>{
+          const list=e.target.nextElementSibling;
+          if(list)list.style.display=list.style.display==='none'?'block':'none';
+        }
+      },['Completadas ('+done.length+') ▾']),
+      h('div',{style:{display:'none'}},done.map(renderActionItem)),
+    ]):null,
+
+    renderSyncBar(),
+  ].filter(Boolean));
+  app().innerHTML='';
+  app().appendChild(el);
 }
 
 function renderBldgIssueMap(edif){
