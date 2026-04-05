@@ -1610,6 +1610,7 @@ function showExportMenu(){
     h('div',{className:'modal'},[
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
+        h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLogPanel();}},['🔍 Log de diagnóstico']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLegend();}},['📖 Leyenda de iconos']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showUrlConfig();}},['⚙️ Configurar URL Sync']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();doFullSync();}},['🔄 Sync completo (todas las ventanas)']),
@@ -1732,20 +1733,16 @@ async function doPullOnly(){
   const btn=$('#pull-btn');
   if(btn)btn.disabled=true;
   try{
+    logMsg('Pull: iniciando descarga...');
     const res=await fetchWithTimeout(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'},60000);
     const data=await res.json();
+    logMsg(`Pull: respuesta status=${data.status}, records=${(data.records||data.rows||[]).length}`);
     if(data.status==='ok'&&(data.records||data.rows)){
       const records=data.records||data.rows;
-      // Debug: mostrar primer registro para diagnosticar formato
-      if(records.length>0){
-        const sample=records.find(r=>r.estado)||records[0];
-        console.log('Muestra dato recibido:',JSON.stringify(sample));
-        console.log('Key generada:',`${sample.edif}-${sample.depto}-${sample.elemento||sample.code}`);
-        console.log('Total registros:',records.length);
-      }
       mergeFromSheets(records);
       DATA.meta.lastSync=ts();
       saveLocal();
+      logMsg('Pull: datos guardados en localStorage');
       showSyncMsg(`✓ ${records.length} registros descargados · ${ts()}`);
       render();
     } else {
@@ -1825,12 +1822,41 @@ function buildSyncPayload(dirtyOnly=false){
   return rows;
 }
 
+// ---- DEBUG LOG SYSTEM ----
+const vcLog=[];
+function logMsg(msg){vcLog.push(`[${ts()}] ${msg}`);console.log('[VC]',msg);}
+
+function showLogPanel(){
+  const text=vcLog.length?vcLog.join('\n'):'Sin registros de log';
+  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+    h('div',{className:'modal',style:{maxHeight:'90vh'}},[
+      h('h3',{},['Log de Diagnóstico']),
+      h('textarea',{
+        id:'log-area',
+        className:'obs-area',
+        style:{minHeight:'300px',fontSize:'0.7rem',fontFamily:'var(--font-mono)'},
+        readOnly:true,
+      },[]),
+      h('div',{style:{display:'flex',gap:'8px',marginTop:'10px'}},[
+        h('button',{className:'btn btn-primary btn-sm',onClick:()=>{
+          const ta=$('#log-area');
+          if(ta){ta.select();navigator.clipboard.writeText(ta.value).then(()=>alert('Log copiado al portapapeles'));}
+        }},['📋 Copiar Log']),
+        h('button',{className:'btn btn-ghost btn-sm',onClick:()=>{vcLog.length=0;const ta=$('#log-area');if(ta)ta.value='Log limpiado';}},['🗑 Limpiar']),
+        h('button',{className:'btn btn-ghost btn-sm',onClick:()=>overlay.remove()},['Cerrar']),
+      ]),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+  setTimeout(()=>{const ta=$('#log-area');if(ta)ta.value=text;},50);
+}
+
 function mergeFromSheets(rows){
-  // Helper: parsear bool desde valor del sheet (puede ser 0/1 o 'Sí'/'No' o undefined)
+  logMsg(`mergeFromSheets: recibidos ${rows.length} registros`);
+  // Helper: parsear bool desde valor del sheet
   function pb(v){ if(v===undefined||v===null||v==='')return undefined; if(typeof v==='string')return v==='Sí'||v==='Si'||v==='1'||v==='true'; return !!parseInt(v); }
-  // Soporte de dos formatos: nuevo (script v2) y viejo (v2 app anterior)
   function pd(r,newKey,oldKey,backcompat){ const v=r[newKey]!==undefined?r[newKey]:(r[oldKey]!==undefined?r[oldKey]:(backcompat!==undefined?r[backcompat]:undefined)); return pb(v); }
-  // Normalizar estado desde cualquier formato de la hoja
+
   function normalizeEstado(val){
     if(!val)return null;
     const s=String(val).toLowerCase().trim();
@@ -1838,51 +1864,83 @@ function mergeFromSheets(rows){
     if(s==='pendiente')return 'pendiente';
     if(s.includes('no instal')||s==='no'||s==='noinstalada')return 'noInstalada';
     if(s==='quitar'||s==='desinstalar'||s==='retirar')return 'quitar';
-    // Si ya viene en formato interno, devolver tal cual
     if(['instalada','pendiente','noInstalada','quitar'].includes(val))return val;
     return null;
   }
 
+  function normalizeVano(val){
+    if(!val)return '';
+    const s=String(val).trim();
+    // Mapear a los valores exactos de VANO_OPTS
+    const sl=s.toLowerCase();
+    if(sl==='ok')return 'OK';
+    if(sl.startsWith('sobre'))return 'Sobredimensionado';
+    if(sl.startsWith('pulir')||sl==='pulir')return 'Pulir';
+    return s;
+  }
+
+  let merged=0,skipped=0,noMatch=0,estadoUpdated=0,vanoUpdated=0;
+  // Log primeros 3 registros como muestra
+  if(rows.length>0){
+    const samples=rows.slice(0,3);
+    samples.forEach((r,i)=>logMsg(`Muestra[${i}]: edif=${r.edif} depto=${r.depto} elem=${r.elemento||r.code} estado="${r.estado}" vano="${r.vano}" obs="${(r.obs||'').slice(0,30)}"`));
+  }
+
   rows.forEach(r=>{
-    // Reconstruir key — normalizar tipos: edif y depto pueden venir como número o string
     const edif=String(r.edif||'').trim();
     let depto=String(r.depto||'').trim();
     const elem=String(r.elemento||r.code||'').trim();
     const piso=String(r.piso||'').trim();
-    if(!edif||!elem)return; // Skip filas vacías
+    if(!edif||!elem){skipped++;return;}
 
-    // Espacios comunes: si depto está vacío y el elemento es V8/V9/PV1/PV2, reconstruir como EC{piso}
+    // Espacios comunes
     if(!depto&&piso&&['V8','V9','PV1','PV2'].includes(elem)){
       depto='EC'+piso;
     }
-    // Si tipo_depto es EC, también reconstruir
     if((!depto||depto==='EC')&&(r.tipo_depto==='EC')&&piso){
       depto='EC'+piso;
     }
-    if(!depto)return; // Skip si aún no tenemos depto
+    if(!depto){skipped++;return;}
 
     const key=r.key||`${edif}-${depto}-${elem}`;
-    if(!DATA.windows[key])DATA.windows[key]=newWindowRecord();
+    const exists=!!DATA.windows[key];
+    if(!exists){
+      DATA.windows[key]=newWindowRecord();
+      noMatch++;
+    }
     const w=DATA.windows[key];
-    // Estado — normalizar desde formato hoja
-    const estado=normalizeEstado(r.estado);
-    if(estado)w.estado=estado;
-    // vano: nuevo=r.vano, viejo=r.estadoVano
-    const vano=r.vano!==undefined?r.vano:r.estadoVano;
-    if(vano!==undefined&&vano!=='')w.estadoVano=vano;
-    // obs: nuevo=r.obs, viejo=r.observaciones
-    const obs=r.obs!==undefined?r.obs:r.observaciones;
-    if(obs!==undefined&&obs!=='')w.observaciones=obs;
 
+    // Estado
+    const rawEstado=r.estado;
+    const estado=normalizeEstado(rawEstado);
+    if(estado){
+      const oldEstado=w.estado;
+      w.estado=estado;
+      if(oldEstado!==estado)estadoUpdated++;
+    }
+
+    // Vano — normalizar para que coincida con VANO_OPTS
+    const rawVano=r.vano!==undefined?r.vano:r.estadoVano;
+    if(rawVano!==undefined&&rawVano!==''){
+      const vano=normalizeVano(rawVano);
+      if(vano){
+        w.estadoVano=vano;
+        vanoUpdated++;
+      }
+    }
+
+    // Observaciones
+    const obs=r.obs!==undefined?r.obs:r.observaciones;
+    if(obs!==undefined&&obs!=='')w.observaciones=String(obs).trim();
+
+    // Deficiencias
     const d=w.deficiencias;
     const dmap={
       separacion:   pd(r,'separacion',   'def_separacion'),
       descuadre:    pd(r,'descuadre',    'def_descuadre'),
       desaplomo:    pd(r,'desaplomo',    'def_desaplomo'),
-      // backward compat: fc11 era el nombre v1 para sinSellador
       sinSellador:  pd(r,'sinSellador',  'def_sinSellador','fc11'),
       sinSelladorFrente: pd(r,'sinSelladorFrente','def_sinSelladorFrente'),
-      // backward compat: eifs era el nombre v1 para retornoMalla
       retornoMalla: pd(r,'retornoMalla', 'def_retornoMalla','eifs'),
       mallaPulida:  pd(r,'mallaPulida',  'def_mallaPulida'),
       vidrioTrizado:pd(r,'vidrioTrizado','def_vidrioTrizado'),
@@ -1897,7 +1955,26 @@ function mergeFromSheets(rows){
       else if(val==='pending'){w.acciones[a].active=true;w.acciones[a].done=false;}
     });
     syncDefToActions(w);
+    merged++;
   });
+
+  logMsg(`Resultado merge: ${merged} procesados, ${estadoUpdated} estados actualizados, ${vanoUpdated} vanos, ${skipped} saltados, ${noMatch} keys nuevas (no existían en app)`);
+
+  // Verificación post-merge: revisar si los datos se aplicaron
+  if(rows.length>0){
+    const sample=rows[0];
+    const sKey=`${String(sample.edif).trim()}-${String(sample.depto||'').trim()}-${String(sample.elemento||sample.code||'').trim()}`;
+    const sWin=DATA.windows[sKey];
+    if(sWin){
+      logMsg(`Verificación key "${sKey}": estado=${sWin.estado}, vano=${sWin.estadoVano}, obs=${(sWin.observaciones||'').slice(0,30)}`);
+    } else {
+      logMsg(`Verificación: key "${sKey}" NO ENCONTRADA en DATA.windows`);
+      // Buscar keys similares
+      const similar=Object.keys(DATA.windows).filter(k=>k.startsWith(String(sample.edif))).slice(0,5);
+      logMsg(`Keys similares para edif ${sample.edif}: ${similar.join(', ')}`);
+    }
+  }
+
   saveLocal();
 }
 
