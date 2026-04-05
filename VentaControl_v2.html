@@ -413,6 +413,8 @@ function pct(n,t){return t?Math.round(n/t*100):0;}
    DATA MODEL
    ============================================ */
 let DATA = {windows:{},buildings:{},meta:{version:'2.0',lastSync:null}};
+// Track which window keys have been modified since last sync
+let dirtyKeys = new Set();
 
 // Generate building key
 function wKey(edif,depto,win){return `${edif}-${depto}-${win}`;}
@@ -508,6 +510,7 @@ function updateWindow(key,field,value,label){
     if(JSON.stringify(getNestedVal(w,field))===JSON.stringify(value))return;
     setNestedVal(w,field,value);
   }
+  dirtyKeys.add(key);
   const desc=label||`${field}: ${old} → ${JSON.stringify(value)}`;
   // Deduplicate: skip if last entry has same description
   if(!w.historial.length||w.historial[0].cambio!==desc){
@@ -1422,6 +1425,7 @@ function applyBulkStatus(scope,params,newEstado){
     DATA.windows[key].estado=newEstado;
     DATA.windows[key].historial.unshift({t:ts(),cambio:label});
     if(DATA.windows[key].historial.length>50)DATA.windows[key].historial=DATA.windows[key].historial.slice(0,50);
+    dirtyKeys.add(key);
   }
   if(scope==='dept'){
     const depto=parseInt(params.depto);
@@ -1445,7 +1449,7 @@ function confirmClearDept(edif,depto){
   if(!confirm(`¿Limpiar TODOS los datos del depto ${depto} (Edif. ${edif})?\n\nSe restablecen todas las ventanas a "No Instalada" y se borran deficiencias, acciones y observaciones.\n\nNo se puede deshacer.`))return;
   const e=parseInt(edif);
   const fl=Math.floor(depto/100),pi=(depto%100)-1;
-  getDeptWindows(getDeptType(e,fl,pi)).forEach(([c])=>{DATA.windows[wKey(e,depto,c)]=newWindowRecord();});
+  getDeptWindows(getDeptType(e,fl,pi)).forEach(([c])=>{const k=wKey(e,depto,c);DATA.windows[k]=newWindowRecord();dirtyKeys.add(k);});
   saveLocal();
   renderDept();
 }
@@ -1455,10 +1459,10 @@ function confirmClearBuilding(edif){
   if(!confirm(`¿Limpiar TODOS los datos del Edificio ${edif}?\n\nSe restablecen todas las ventanas y espacios comunes.\n\nNo se puede deshacer.`))return;
   const e=parseInt(edif);
   for(let f=1;f<=5;f++){
-    for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>{DATA.windows[wKey(e,deptNum(f,p),c)]=newWindowRecord();});}
-    getCommonWindows(f).forEach(([c])=>{DATA.windows[wKey(e,`EC${f}`,c)]=newWindowRecord();});
+    for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>{const k=wKey(e,deptNum(f,p),c);DATA.windows[k]=newWindowRecord();dirtyKeys.add(k);});}
+    getCommonWindows(f).forEach(([c])=>{const k=wKey(e,`EC${f}`,c);DATA.windows[k]=newWindowRecord();dirtyKeys.add(k);});
   }
-  DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{}};
+  DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
   saveLocal();
   renderBuilding();
 }
@@ -1607,6 +1611,7 @@ function showExportMenu(){
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLegend();}},['📖 Leyenda de iconos']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showUrlConfig();}},['⚙️ Configurar URL Sync']),
+        h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();doFullSync();}},['🔄 Sync completo (todas las ventanas)']),
         h('button',{className:'btn btn-ghost',onClick:()=>{exportCSV();overlay.remove();}},['📥 Exportar CSV']),
         h('button',{className:'btn btn-ghost',onClick:()=>{importCSV();overlay.remove();}},['📤 Importar CSV']),
         h('button',{className:'btn btn-ghost',onClick:()=>{migrateV1();overlay.remove();}},['🔄 Migrar desde v1']),
@@ -1656,42 +1661,74 @@ function showUrlConfig(){
    ============================================ */
 let syncing=false;
 
+function fetchWithTimeout(url,opts={},timeoutMs=30000){
+  return Promise.race([
+    fetch(url,opts),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout: el servidor no respondió en '+Math.round(timeoutMs/1000)+'s')),timeoutMs))
+  ]);
+}
+
 async function doSync(){
-  if(syncing||!APPS_SCRIPT_URL)return showSyncMsg(APPS_SCRIPT_URL?'Sincronizando...':'⚠ Configura APPS_SCRIPT_URL');
+  if(syncing)return showSyncMsg('Ya sincronizando, espera...');
+  if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
   syncing=true;
-  showSyncMsg('Sincronizando...');
+  showSyncMsg('⏳ Descargando datos...');
   const btn=$('#sync-btn');
   if(btn)btn.disabled=true;
 
   try{
-    // Pull desde Sheets
-    const pullRes=await fetch(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'});
+    // 1. Pull desde Sheets
+    const pullRes=await fetchWithTimeout(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'},45000);
     const pullData=await pullRes.json();
     if(pullData.status==='ok'&&(pullData.records||pullData.rows)){
       mergeFromSheets(pullData.records||pullData.rows);
+      showSyncMsg('⏳ Datos recibidos. Enviando cambios...');
     }
 
-    // Push local → Sheets
-    const payload=buildSyncPayload();
-    const pushRes=await fetch(APPS_SCRIPT_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      redirect:'follow',
-      body:JSON.stringify({action:'sync',records:payload})
-    });
-    const pushResult=await pushRes.json();
-    if(pushResult.status==='ok'){
+    // 2. Push solo registros modificados (dirty)
+    const payload=buildSyncPayload(true); // true = dirty only
+    if(payload.length===0){
       DATA.meta.lastSync=ts();
       saveLocal();
-      showSyncMsg('✓ '+pushResult.message+' · '+ts());
-    }else{
-      showSyncMsg('⚠ Error: '+(pushResult.message||pushResult.error));
+      showSyncMsg('✓ Sin cambios locales · '+ts());
+    } else {
+      showSyncMsg(`⏳ Enviando ${payload.length} registros...`);
+      // Enviar en lotes de 200 para no exceder timeout de Apps Script
+      const CHUNK=200;
+      let totalUpdates=0,totalInserts=0;
+      for(let i=0;i<payload.length;i+=CHUNK){
+        const chunk=payload.slice(i,i+CHUNK);
+        if(payload.length>CHUNK) showSyncMsg(`⏳ Enviando lote ${Math.floor(i/CHUNK)+1}/${Math.ceil(payload.length/CHUNK)}...`);
+        const pushRes=await fetchWithTimeout(APPS_SCRIPT_URL,{
+          method:'POST',
+          headers:{'Content-Type':'text/plain'},
+          redirect:'follow',
+          body:JSON.stringify({action:'sync',records:chunk})
+        },60000);
+        const result=await pushRes.json();
+        if(result.status!=='ok') throw new Error(result.message||'Error del servidor');
+        totalUpdates+=(result.updates||0);
+        totalInserts+=(result.inserts||0);
+      }
+      dirtyKeys.clear();
+      DATA.meta.lastSync=ts();
+      saveLocal();
+      showSyncMsg(`✓ ${totalUpdates} actualizados, ${totalInserts} nuevos · ${ts()}`);
     }
   }catch(err){
-    showSyncMsg('⚠ Error de red: '+err.message);
+    showSyncMsg('⚠ '+err.message);
   }
   syncing=false;
   if(btn)btn.disabled=false;
+}
+
+// Push all — for first-time full sync
+async function doFullSync(){
+  if(syncing)return;
+  if(!confirm('¿Enviar TODAS las ventanas? Esto puede tardar varios minutos.\n\nUsa esto solo si es la primera sincronización o necesitas resubir todo.'))return;
+  // Mark all keys as dirty
+  Object.keys(DATA.windows).forEach(k=>dirtyKeys.add(k));
+  doSync();
 }
 
 function showSyncMsg(msg){
@@ -1699,9 +1736,10 @@ function showSyncMsg(msg){
   if(el)el.textContent=msg;
 }
 
-function buildSyncPayload(){
+function buildSyncPayload(dirtyOnly=false){
   const rows=[];
   for(const[key,w] of Object.entries(DATA.windows)){
+    if(dirtyOnly&&!dirtyKeys.has(key))continue;
     const parts=key.split('-');
     const edif=parts[0];
     const depto=parts[1];                      // '101', 'EC1', etc.
