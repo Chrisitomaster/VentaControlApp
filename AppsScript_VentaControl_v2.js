@@ -73,9 +73,10 @@ function setup() {
     sheet.setColumnWidth(i + 1, widths[i] || 100);
   }
 
-  Logger.log('Setup OK. Ahora actualiza (o crea) la implementación como App Web.');
-  // Nota: las hojas de resumen se generan automáticamente en cada sync.
-  // Para generarlas manualmente, ejecuta la función "runSummaries".
+  // Generar hojas de resumen si ya hay datos
+  updateAllSummaries(ss);
+
+  Logger.log('Setup OK. Hojas de resumen creadas. Ahora actualiza (o crea) la implementación como App Web.');
 }
 
 // ----------------------------------------------------------------
