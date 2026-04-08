@@ -61,9 +61,12 @@ function setup() {
     .setHorizontalAlignment('center');
   sheet.setFrozenRows(1);
 
+  // El filtro debe cubrir TODAS las filas (no solo la cabecera)
+  // Si solo cubre row 1, las filas nuevas quedan fuera del filtro
   var existingFilter = sheet.getFilter();
   if (existingFilter) existingFilter.remove();
-  sheet.getRange(1, 1, 1, HEADERS.length).createFilter();
+  var lastRow = Math.max(sheet.getLastRow(), 2);
+  sheet.getRange(1, 1, lastRow, HEADERS.length).createFilter();
 
   var widths = [65,45,75,70,80,150,100,110,80,120,130,110,240,140,90,130,130,90,100,90,110,130,120,90,120,120,120,120,130];
   for (var i = 0; i < widths.length; i++) {
@@ -218,13 +221,14 @@ function syncData(records) {
     sheet.getRange(lastRow + 1, 1, newRows.length, HEADERS.length).setValues(newRows);
   }
 
-  // Re-aplicar filtro si se perdió (los setValues masivos pueden romperlo)
+  // Re-crear filtro sobre el rango completo de datos
+  // (los setValues masivos pueden romperlo, y si solo cubre row 1 las nuevas filas no se filtran)
   try {
     var existingFilter = sheet.getFilter();
-    if (!existingFilter) {
-      sheet.getRange(1, 1, 1, HEADERS.length).createFilter();
-    }
-  } catch(fe) { /* ignorar si ya existe */ }
+    if (existingFilter) existingFilter.remove();
+    var totalRows = Math.max(sheet.getLastRow(), 2);
+    sheet.getRange(1, 1, totalRows, HEADERS.length).createFilter();
+  } catch(fe) { Logger.log('Filter error: ' + fe.toString()); }
 
   // Actualizar hoja de resumen
   updateResumen(ss);

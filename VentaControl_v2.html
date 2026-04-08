@@ -772,6 +772,34 @@ function toggleTheme(){
   localStorage.setItem('vc2_theme',next);
 }
 
+function renderGlobalDefBreakdown(){
+  const counts={};
+  DEFICIENCIES.forEach(d=>{counts[d.id]=0;});
+  for(let e=1;e<=34;e++){
+    for(let f=1;f<=5;f++){
+      for(let p=0;p<4;p++){
+        const tipo=getDeptType(e,f,p);
+        getDeptWindows(tipo).forEach(([c])=>{
+          const w=DATA.windows[wKey(e,deptNum(f,p),c)];
+          if(w)DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])counts[d.id]++;});
+        });
+      }
+      getCommonWindows(f).forEach(([c])=>{
+        const w=DATA.windows[wKey(e,`EC${f}`,c)];
+        if(w)DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])counts[d.id]++;});
+      });
+    }
+  }
+  const active=DEFICIENCIES.filter(d=>counts[d.id]>0);
+  if(!active.length)return h('p',{style:{fontSize:'0.82rem',color:'var(--tx-2)',padding:'4px 0'}},['Sin inconformidades registradas']);
+  return h('div',{style:{display:'flex',flexDirection:'column',gap:'2px'}},
+    active.map(d=>h('div',{style:{display:'flex',alignItems:'center',gap:'8px',fontSize:'0.82rem',padding:'5px 0',borderBottom:'1px solid var(--border)'}},[
+      h('span',{style:{flex:1}},[d.label]),
+      h('span',{className:'badge badge-red'},[counts[d.id].toString()]),
+    ]))
+  );
+}
+
 /* ============================================
    VIEW: DASHBOARD
    ============================================ */
@@ -805,6 +833,10 @@ function renderDashboard(){
     ),
     // Deficiency summary
     h('div',{className:'section-hdr'},[h('h2',{},['Resumen Global']),h('span',{className:'badge badge-red'},[g.defCount+' inconformidades'])]),
+    g.defCount>0?h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Inconformidades por tipo']),
+      renderGlobalDefBreakdown(),
+    ]):null,
 
     // Global corrective actions panel (lazy — expands on click to avoid scanning 4740 windows on every render)
     renderLazyActionsCard('Acciones Correctivas — Proyecto',1,34,true),
@@ -1177,9 +1209,9 @@ function renderDept(){
               onClick:(ev)=>{ev.stopPropagation();navigate('window',{edif,depto,code,loc});}
             },['▸']),
           ]),
-          // Deficiency + action icons row
-          (hasD||activeActions.length||w.observaciones)?h('div',{style:{marginTop:'5px',paddingLeft:'4px',display:'flex',gap:'4px',alignItems:'center',flexWrap:'wrap'}},[
-            ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.95rem'}},[d.icon])),
+          // Deficiency + action row
+          (hasD||activeActions.length||w.observaciones)?h('div',{style:{marginTop:'5px',paddingLeft:'4px',display:'flex',gap:'4px',alignItems:'flex-start',flexWrap:'wrap'}},[
+            ...activeDefIcons.map(d=>h('span',{style:{fontSize:'0.7rem',padding:'2px 6px',borderRadius:'8px',background:'var(--ac-red-soft)',color:'var(--ac-red)',fontWeight:'500',whiteSpace:'nowrap'}},[d.label])),
             ...activeActions.map(a=>{
               const act=w.acciones[a.id];
               return h('span',{title:a.label+(act.done?' ✓':' pendiente'),style:{
@@ -1647,7 +1679,7 @@ function renderActionsPanel(items,title,showEdif=true){
         ...g.pending.slice(0,3).map(it=>
           h('div',{style:{fontSize:'0.78rem',color:'var(--tx-1)',padding:'3px 0 3px 32px',display:'flex',gap:'6px'}},[
             showEdif?h('span',{style:{fontWeight:'600',color:'var(--tx-2)'}},[`E${it.edif}`]):null,
-            h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'600'}},[(it.depto.startsWith('EC')?'EC':'')+it.depto]),
+            h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'600'}},[String(it.depto)]),
             h('span',{},[it.code]),
             h('span',{style:{color:'var(--tx-2)'}},[it.loc]),
           ].filter(Boolean))
