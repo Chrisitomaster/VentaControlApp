@@ -482,7 +482,7 @@ function initData(){
       });
     }
   }
-  saveLocal();
+  saveLocalNow();
 }
 
 function newWindowRecord(){
@@ -497,7 +497,14 @@ function newWindowRecord(){
   };
 }
 
+let _saveTimer=null;
 function saveLocal(){
+  // Debounced: agrupa guardados seguidos en un solo write (evita bloquear el hilo en cada toque)
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(saveLocalNow,400);
+}
+function saveLocalNow(){
+  clearTimeout(_saveTimer);
   DATA.meta.lastSave=ts();
   localStorage.setItem('ventacontrol_v2',JSON.stringify(DATA));
   saveDirtyKeys();
@@ -519,7 +526,7 @@ function updateWindow(key,field,value,label){
   // Deduplicate: skip if last entry has same description
   if(!w.historial.length||w.historial[0].cambio!==desc){
     w.historial.unshift({t:ts(),cambio:desc});
-    if(w.historial.length>50)w.historial=w.historial.slice(0,50);
+    if(w.historial.length>5)w.historial=w.historial.slice(0,5);
   }
   saveLocal();
 }
@@ -537,6 +544,7 @@ function setNestedVal(obj,path,val){
 function syncDefToActions(w){
   for(const[defId,actId] of Object.entries(DEF_ACTION_MAP)){
     if(w.deficiencias[defId]){
+      if(!w.acciones[actId])w.acciones[actId]={active:false,done:false};
       w.acciones[actId].active=true;
     }
   }
@@ -1475,7 +1483,7 @@ function applyBulkStatus(scope,params,newEstado){
     if(!DATA.windows[key])return;
     DATA.windows[key].estado=newEstado;
     DATA.windows[key].historial.unshift({t:ts(),cambio:label});
-    if(DATA.windows[key].historial.length>50)DATA.windows[key].historial=DATA.windows[key].historial.slice(0,50);
+    if(DATA.windows[key].historial.length>5)DATA.windows[key].historial=DATA.windows[key].historial.slice(0,5);
     dirtyKeys.add(key);
   }
   if(scope==='dept'){
@@ -1492,7 +1500,7 @@ function applyBulkStatus(scope,params,newEstado){
       getCommonWindows(f).forEach(([c])=>changeWin(wKey(e,`EC${f}`,c)));
     }
   }
-  saveLocal();
+  saveLocalNow();
 }
 
 function confirmClearDept(edif,depto){
@@ -1501,7 +1509,7 @@ function confirmClearDept(edif,depto){
   const e=parseInt(edif);
   const fl=Math.floor(depto/100),pi=(depto%100)-1;
   getDeptWindows(getDeptType(e,fl,pi)).forEach(([c])=>{const k=wKey(e,depto,c);DATA.windows[k]=newWindowRecord();dirtyKeys.add(k);});
-  saveLocal();
+  saveLocalNow();
   renderDept();
 }
 
@@ -1514,7 +1522,7 @@ function confirmClearBuilding(edif){
     getCommonWindows(f).forEach(([c])=>{const k=wKey(e,`EC${f}`,c);DATA.windows[k]=newWindowRecord();dirtyKeys.add(k);});
   }
   DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
-  saveLocal();
+  saveLocalNow();
   renderBuilding();
 }
 
@@ -1725,6 +1733,7 @@ function renderActionDetail(){
         },
         onClick:()=>{
           if(!w)return;
+          if(!w.acciones[actionId])w.acciones[actionId]={active:true,done:false};
           w.acciones[actionId].done=!w.acciones[actionId].done;
           w.historial.unshift({t:ts(),cambio:`Acción ${actionDef.label}: ${w.acciones[actionId].done?'Completada':'Reabierta'}`});
           saveLocal();
@@ -1768,7 +1777,7 @@ function renderActionDetail(){
         w.historial.unshift({t:ts(),cambio:`Acción ${actionDef.label}: ${setDone?'Completada':'Reabierta'} (masivo)`});
       }
     });
-    saveLocal();
+    saveLocalNow();
     renderActionDetail();
   }
 
@@ -2020,7 +2029,7 @@ async function doSync(){
     const payload=buildSyncPayload(true); // true = dirty only
     if(payload.length===0){
       DATA.meta.lastSync=ts();
-      saveLocal();
+      saveLocalNow();
       showSyncMsg('✓ Sin cambios locales · '+ts());
     } else {
       showSyncMsg(`⏳ Enviando ${payload.length} registros...`);
@@ -2044,7 +2053,7 @@ async function doSync(){
       dirtyKeys.clear();
       saveDirtyKeys();
       DATA.meta.lastSync=ts();
-      saveLocal();
+      saveLocalNow();
       showSyncMsg(`✓ ${totalUpdates} actualizados, ${totalInserts} nuevos · ${ts()}`);
     }
   }catch(err){
@@ -2071,7 +2080,7 @@ async function doPullOnly(){
       const records=data.records||data.rows;
       mergeFromSheets(records);
       DATA.meta.lastSync=ts();
-      saveLocal();
+      saveLocalNow();
       logMsg('Pull: datos guardados en localStorage');
       showSyncMsg(`✓ ${records.length} registros descargados · ${ts()}`);
       render();
@@ -2110,7 +2119,7 @@ async function doPullSection(edif,depto){
       }
       mergeFromSheets(records);
       DATA.meta.lastSync=ts();
-      saveLocal();
+      saveLocalNow();
       showSyncMsg(`✓ ${records.length} reg. de ${label} · ${ts()}`);
       render();
     } else {
@@ -2352,7 +2361,7 @@ function mergeFromSheets(rows){
     }
   }
 
-  saveLocal();
+  saveLocalNow();
 }
 
 /* ============================================
@@ -2396,7 +2405,7 @@ function importCSV(){
         }
         // Merge en un solo paso (sin saveLocal por cada fila)
         mergeFromSheets(allRows);
-        saveLocal();
+        saveLocalNow();
         alert('Importación completada: '+allRows.length+' filas');
         render();
       }catch(err){alert('Error importando: '+err.message);}
@@ -2476,7 +2485,7 @@ function migrateV1(){
         }
       }
     }
-    saveLocal();
+    saveLocalNow();
     alert(`Migración completada: ${migrated} registros importados.`);
     render();
   }catch(err){
@@ -2543,7 +2552,7 @@ function migrateV1(){
       });
     }
   }
-  if(added>0){saveLocal();console.log('Agregadas '+added+' ventanas faltantes');}
+  if(added>0){saveLocalNow();console.log('Agregadas '+added+' ventanas faltantes');}
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
