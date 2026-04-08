@@ -285,9 +285,15 @@ function updateAllSummaries(ss) {
   var ts = Utilities.formatDate(new Date(), 'America/Santiago', 'yyyy-MM-dd HH:mm');
   Logger.log('updateAllSummaries: procesando ' + data.length + ' filas');
 
-  try { buildResumen(ss, data, ts); }      catch(e) { Logger.log('buildResumen error: '      + e); }
-  try { buildPendientes(ss, data, ts); }   catch(e) { Logger.log('buildPendientes error: '   + e); }
-  try { buildDeficiencias(ss, data, ts); } catch(e) { Logger.log('buildDeficiencias error: ' + e); }
+  try { buildResumen(ss, data, ts); }
+  catch(e) { Logger.log('ERROR buildResumen: ' + e + ' | stack: ' + (e.stack||'')); }
+
+  try { buildPendientes(ss, data, ts); }
+  catch(e) { Logger.log('ERROR buildPendientes: ' + e + ' | stack: ' + (e.stack||'')); }
+
+  try { buildDeficiencias(ss, data, ts); }
+  catch(e) { Logger.log('ERROR buildDeficiencias: ' + e + ' | stack: ' + (e.stack||'')); }
+
   SpreadsheetApp.flush();
   Logger.log('updateAllSummaries: completado');
 }
@@ -458,11 +464,13 @@ function buildDeficiencias(ss, data, ts) {
 
     // Filas de datos
     for (var i = 0; i < affected.length; i++) {
-      var r = affected[i];
-      var av = String(r[def.accionCol]||'').toLowerCase();
+      var r = affected[i] || [];
+      // sv: extrae valor seguro de la fila (undefined → '')
+      var sv = function(idx) { var v = r[idx]; return (v !== undefined && v !== null) ? v : ''; };
+      var av = String(sv(def.accionCol)).toLowerCase();
       var aLabel = av==='done' ? 'Completada' : av==='pending' ? 'Pendiente' : 'Sin iniciar';
-      output.push([i+1, r[0], r[1], r[2], r[3]||'', r[5]||'', r[4]||'',
-                   r[6]||'', r[11]||'', def.accion, aLabel, r[12]||'']);
+      output.push([i+1, sv(0), sv(1), sv(2), sv(3)||'', sv(5)||'', sv(4)||'',
+                   sv(6)||'', sv(11)||'', def.accion, aLabel, sv(12)||'']);
     }
     output.push(new Array(NCOLS).fill('')); // fila separadora
   }
