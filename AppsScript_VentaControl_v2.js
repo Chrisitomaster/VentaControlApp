@@ -233,8 +233,8 @@ function syncData(records) {
     sheet.getRange(1, 1, totalRows, HEADERS.length).createFilter();
   } catch(fe) { Logger.log('Filter error: ' + fe.toString()); }
 
-  // Actualizar hojas de resumen automáticas
-  updateAllSummaries(ss);
+  // Actualizar hojas de resumen automáticas (errores aquí no deben romper el sync)
+  try { updateAllSummaries(ss); } catch(e) { Logger.log('updateAllSummaries error en sync: ' + e); }
 
   return {
     status: 'ok', updates: updates, inserts: inserts, timestamp: ts,
@@ -285,9 +285,9 @@ function updateAllSummaries(ss) {
   var ts = Utilities.formatDate(new Date(), 'America/Santiago', 'yyyy-MM-dd HH:mm');
   Logger.log('updateAllSummaries: procesando ' + data.length + ' filas');
 
-  buildResumen(ss, data, ts);
-  buildPendientes(ss, data, ts);
-  buildDeficiencias(ss, data, ts);
+  try { buildResumen(ss, data, ts); }      catch(e) { Logger.log('buildResumen error: '      + e); }
+  try { buildPendientes(ss, data, ts); }   catch(e) { Logger.log('buildPendientes error: '   + e); }
+  try { buildDeficiencias(ss, data, ts); } catch(e) { Logger.log('buildDeficiencias error: ' + e); }
   SpreadsheetApp.flush();
   Logger.log('updateAllSummaries: completado');
 }
@@ -428,8 +428,12 @@ function buildDeficiencias(ss, data, ts) {
     var def = DEFS_CONFIG[di];
     var affected = [];
     for (var i = 0; i < data.length; i++) {
-      var v = String(data[i][def.col]||'');
-      if (v === 'Si' || v === 'S\u00ed') affected.push(data[i]);
+      var defVal = String(data[i][def.col]||'');
+      var actVal = String(data[i][def.accionCol]||'').toLowerCase();
+      // Incluir si tiene la deficiencia marcada O si tiene la acción activa/completada
+      var hasDef = (defVal === 'Si' || defVal === 'S\u00ed');
+      var hasAct = (actVal === 'pending' || actVal === 'done');
+      if (hasDef || hasAct) affected.push(data[i]);
     }
     if (!affected.length) continue;
 
