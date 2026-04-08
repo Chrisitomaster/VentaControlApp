@@ -521,8 +521,6 @@ function updateWindow(key,field,value,label){
     w.historial.unshift({t:ts(),cambio:desc});
     if(w.historial.length>50)w.historial=w.historial.slice(0,50);
   }
-  // Auto-generate corrective actions from deficiencies
-  syncDefToActions(w);
   saveLocal();
 }
 
@@ -669,24 +667,46 @@ function navigate(view,params={}){
 const app=()=>$('#app');
 
 function renderLogin(){
+  function tryLogin(){
+    const pin=document.getElementById('pin-input')?.value||'';
+    if(pin==='1999'){
+      userRole='editor';
+      localStorage.setItem('vc2_role','editor');
+    } else {
+      userRole='viewer';
+      localStorage.setItem('vc2_role','viewer');
+    }
+    render();
+  }
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
       h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.3']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
-    h('p',{style:{color:'var(--tx-1)',marginBottom:'20px',fontSize:'0.9rem',fontWeight:'500'}},['Selecciona tu perfil de acceso']),
-    h('div',{style:{display:'flex',flexDirection:'column',gap:'12px',maxWidth:'260px',margin:'0 auto'}},[
-      h('button',{className:'btn btn-primary',style:{padding:'14px',fontSize:'1rem',justifyContent:'center'},
-        onClick:()=>{ userRole='editor'; localStorage.setItem('vc2_role','editor'); render(); }
-      },['✏️  Editor']),
-      h('button',{className:'btn btn-ghost',style:{padding:'14px',fontSize:'1rem',justifyContent:'center'},
-        onClick:()=>{ userRole='viewer'; localStorage.setItem('vc2_role','viewer'); render(); }
-      },['👁  Espectador']),
+    h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
+      h('p',{style:{color:'var(--tx-2)',marginBottom:'16px',fontSize:'0.85rem'}},['PIN de 4 dígitos para Editor, o deja vacío para entrar como Espectador']),
+      h('input',{
+        id:'pin-input',type:'password',inputmode:'numeric',maxlength:'4',
+        placeholder:'····',
+        style:{
+          width:'100%',padding:'14px',fontSize:'1.4rem',textAlign:'center',letterSpacing:'8px',
+          border:'1px solid var(--border)',borderRadius:'var(--radius)',
+          background:'var(--bg-2)',color:'var(--tx-0)',fontFamily:'var(--font-mono)',
+          marginBottom:'12px',outline:'none',
+        },
+        onKeydown:(e)=>{ if(e.key==='Enter') tryLogin(); }
+      },[]),
+      h('button',{
+        className:'btn btn-primary',
+        style:{width:'100%',padding:'14px',fontSize:'1rem',justifyContent:'center'},
+        onClick:tryLogin
+      },['Entrar']),
     ]),
   ]);
   app().innerHTML='';
   app().appendChild(el);
+  setTimeout(()=>document.getElementById('pin-input')?.focus(),100);
 }
 
 function render(){
@@ -718,11 +738,22 @@ function topbar(title,backView=null,backParams={}){
 }
 
 function switchRole(){
-  const msg=isEditor()?'¿Cambiar a modo Espectador?\nNo podrás editar datos.':'¿Cambiar a modo Editor?';
-  if(confirm(msg)){
-    userRole=isEditor()?'viewer':'editor';
-    localStorage.setItem('vc2_role',userRole);
-    render();
+  if(isEditor()){
+    if(confirm('¿Cambiar a modo Espectador?\nNo podrás editar datos.')){
+      userRole='viewer';
+      localStorage.setItem('vc2_role','viewer');
+      render();
+    }
+  } else {
+    const pin=prompt('Ingresa el PIN de Editor:');
+    if(pin===null)return;
+    if(pin==='1999'){
+      userRole='editor';
+      localStorage.setItem('vc2_role','editor');
+      render();
+    } else {
+      alert('PIN incorrecto.');
+    }
   }
 }
 
@@ -1277,11 +1308,11 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       ...ACTIONS.map(a=>{
         if(!w.acciones[a.id])w.acciones[a.id]={active:false,done:false};
         const act=w.acciones[a.id];
-        const isAutoActive=Object.entries(DEF_ACTION_MAP).some(([dk,ak])=>ak===a.id&&w.deficiencias[dk]);
+        const isSuggested=!act.active&&Object.entries(DEF_ACTION_MAP).some(([dk,ak])=>ak===a.id&&w.deficiencias[dk]);
         return h('div',{className:'action-row',style:{
-          background:act.active?`var(--ac-${a.color}-soft)`:'transparent',
-          border:act.active?`1px solid var(--ac-${a.color})`:'1px solid transparent',
-          borderRadius:'var(--radius-sm)',opacity:act.active?1:0.5,
+          background:act.active?`var(--ac-${a.color}-soft)`:isSuggested?`var(--ac-${a.color}-soft)`:'transparent',
+          border:act.active?`1px solid var(--ac-${a.color})`:isSuggested?`1px dashed var(--ac-${a.color})`:'1px solid transparent',
+          borderRadius:'var(--radius-sm)',opacity:act.active?1:isSuggested?0.85:0.5,
           padding:'10px 12px',minHeight:'44px',cursor:'pointer'
         },onClick:(ev)=>{
           if(!isEditor())return;
@@ -1298,7 +1329,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
           h('span',{className:'action-icon',style:{fontSize:'1.2rem'}},[a.icon]),
           h('span',{className:'action-label',style:{fontSize:'0.88rem',flex:1}},[
             a.label,
-            isAutoActive?h('span',{style:{fontSize:'0.65rem',color:'var(--tx-2)',marginLeft:'6px'}},['(auto)']):null,
+            isSuggested?h('span',{style:{fontSize:'0.65rem',color:`var(--ac-${a.color})`,marginLeft:'6px',fontWeight:'600'}},['↑ sugerida']):null,
           ].filter(Boolean)),
           // Status indicator
           act.active?h('div',{

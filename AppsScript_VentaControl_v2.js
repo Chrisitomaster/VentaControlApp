@@ -201,9 +201,15 @@ function syncData(records) {
     }
   }
 
-  // BATCH WRITE: sobreescribir todo el rango de datos existentes de una vez
+  // BATCH WRITE: normalizar filas a exactamente HEADERS.length columnas antes de escribir
+  // (evita error de dimensiones si la hoja tiene columnas extra o filas antiguas con menos columnas)
   if (updates > 0 && existing.length > 1) {
-    sheet.getRange(2, 1, existing.length - 1, HEADERS.length).setValues(existing.slice(1));
+    var dataRows = existing.slice(1).map(function(r) {
+      var normalized = [];
+      for (var c = 0; c < HEADERS.length; c++) normalized.push(r[c] !== undefined ? r[c] : '');
+      return normalized;
+    });
+    sheet.getRange(2, 1, dataRows.length, HEADERS.length).setValues(dataRows);
   }
 
   // BATCH APPEND: agregar todas las filas nuevas de una vez
@@ -212,10 +218,91 @@ function syncData(records) {
     sheet.getRange(lastRow + 1, 1, newRows.length, HEADERS.length).setValues(newRows);
   }
 
+  // Re-aplicar filtro si se perdió (los setValues masivos pueden romperlo)
+  try {
+    var existingFilter = sheet.getFilter();
+    if (!existingFilter) {
+      sheet.getRange(1, 1, 1, HEADERS.length).createFilter();
+    }
+  } catch(fe) { /* ignorar si ya existe */ }
+
+  // Actualizar hoja de resumen
+  updateResumen(ss);
+
   return {
     status: 'ok', updates: updates, inserts: inserts, timestamp: ts,
     message: updates + ' actualizados, ' + inserts + ' nuevos'
   };
+}
+
+// ----------------------------------------------------------------
+// Hoja RESUMEN: totales automáticos por edificio
+function updateResumen(ss) {
+  try {
+    var rSheet = ss.getSheetByName('RESUMEN');
+    if (!rSheet) rSheet = ss.insertSheet('RESUMEN');
+
+    var src = ss.getSheetByName(SHEET_NAME);
+    if (!src) return;
+    var data = src.getDataRange().getValues();
+    if (data.length <= 1) return;
+
+    // Agrupar por edificio
+    var byEdif = {};
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (!row[0]) continue;
+      var edif = String(row[0]).trim();
+      if (!byEdif[edif]) byEdif[edif] = {total:0,instalada:0,pendiente:0,noInstalada:0,quitar:0,defects:0,actPending:0,actDone:0};
+      var b = byEdif[edif];
+      b.total++;
+      var estado = String(row[6]||'').toLowerCase();
+      if (estado==='instalada') b.instalada++;
+      else if (estado==='pendiente') b.pendiente++;
+      else if (estado==='noinstalada') b.noInstalada++;
+      else if (estado==='quitar') b.quitar++;
+      // Deficiencias cols H-T (índices 7-19, excepto 11=vano,12=obs,13=ts)
+      var defCols = [7,8,9,10,14,15,16,17,18,19];
+      for (var d = 0; d < defCols.length; d++) {
+        if (row[defCols[d]]==='Sí') b.defects++;
+      }
+      // Acciones cols U-AB (índices 20-27)
+      for (var a = 20; a <= 27; a++) {
+        var v = String(row[a]||'').toLowerCase();
+        if (v==='pending') b.actPending++;
+        else if (v==='done') b.actDone++;
+      }
+    }
+
+    // Escribir encabezado
+    var resHeaders = ['Edificio','Total Ventanas','Instaladas','Pendientes','No Instaladas','Quitar','% Avance','Deficiencias','Acc. Pendientes','Acc. Completadas','Última actualización'];
+    rSheet.clearContents();
+    rSheet.getRange(1, 1, 1, resHeaders.length).setValues([resHeaders])
+      .setFontWeight('bold').setBackground('#1F4E79').setFontColor('#FFFFFF').setHorizontalAlignment('center');
+    rSheet.setFrozenRows(1);
+
+    // Escribir datos ordenados por edificio
+    var edifKeys = Object.keys(byEdif).sort(function(a,b){ return parseInt(a)-parseInt(b); });
+    var resRows = edifKeys.map(function(edif) {
+      var b = byEdif[edif];
+      var pct = b.total ? Math.round(b.instalada / b.total * 100) + '%' : '0%';
+      var ts = Utilities.formatDate(new Date(), 'America/Santiago', 'yyyy-MM-dd HH:mm');
+      return [parseInt(edif), b.total, b.instalada, b.pendiente, b.noInstalada, b.quitar, pct, b.defects, b.actPending, b.actDone, ts];
+    });
+
+    if (resRows.length > 0) {
+      rSheet.getRange(2, 1, resRows.length, resHeaders.length).setValues(resRows);
+    }
+
+    // Formato % avance
+    rSheet.getRange(2, 7, resRows.length, 1).setHorizontalAlignment('center');
+
+    // Auto-ajustar anchos
+    for (var c = 1; c <= resHeaders.length; c++) rSheet.autoResizeColumn(c);
+
+  } catch(e) {
+    Logger.log('updateResumen error: ' + e.toString());
+  }
 }
 
 // ----------------------------------------------------------------
