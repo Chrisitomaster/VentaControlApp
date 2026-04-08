@@ -409,11 +409,17 @@ function buildDeficiencias(ss, data, ts) {
   var hdrs = ['#','Torre','Piso','N Depto','Tipo Depto','Recinto','Tipo Ventana','Estado','Vano','Accion Requerida','Estado Accion','Observaciones'];
   var NCOLS = hdrs.length;
 
+  // Helper: rellena fila hasta NCOLS con celdas vacías
+  function pad(arr) {
+    while (arr.length < NCOLS) arr.push('');
+    return arr;
+  }
+
   // Construir todo el contenido en memoria
   var output = [];
-  output.push(['INCONFORMIDADES POR TIPO - Condominio Alberto Fuchslocher']);
-  output.push(['Actualizado: ' + ts]);
-  output.push(['']);
+  output.push(pad(['INCONFORMIDADES POR TIPO - Condominio Alberto Fuchslocher']));
+  output.push(pad(['Actualizado: ' + ts]));
+  output.push(new Array(NCOLS).fill(''));
 
   var headerRows = []; // filas que son encabezados de sección o de tabla (para formatear después)
   var subHdrRows = [];
@@ -458,7 +464,7 @@ function buildDeficiencias(ss, data, ts) {
   }
 
   if (output.length <= 3) {
-    output.push(['Sin inconformidades registradas']);
+    output.push(pad(['Sin inconformidades registradas']));
   }
 
   // Escribir todo de una sola vez
