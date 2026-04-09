@@ -45,6 +45,7 @@ var HEADERS = [
   'Acc. Reparar Marco',  // AA 27
   'Acc. Instalar Fijac', // AB 28
   'Etapa Construcción',  // AC 29
+  'Acc. Cargar Mortero', // AD 30
 ];
 
 function setup() {
@@ -194,6 +195,7 @@ function syncData(records) {
       rec.act_repararMarco || '',
       rec.act_instalarFijacion || '',
       rec.etapa !== undefined ? rec.etapa : '',
+      rec.act_cargarMortero || '',
     ];
 
     if (keyMap[key] !== undefined) {
@@ -258,6 +260,7 @@ var DEFS_CONFIG = [
   {label:'Vidrio trizado',              col:17, accion:'Reemplazar vidrio',           accionCol:25},
   {label:'Marco perforado',             col:18, accion:'Reparar/sellar marco',        accionCol:26},
   {label:'Falta fijacion en marco',     col:19, accion:'Instalar fijacion',           accionCol:27},
+  {label:'Cargar mortero en vano',      col:7,  accion:'Cargar mortero en vano',       accionCol:29},
 ];
 
 // Función ejecutable manualmente desde el editor para regenerar hojas
@@ -545,6 +548,7 @@ function readAll(edifFilter) {
       act_repararMarco: row[26] || '',
       act_instalarFijacion: row[27] || '',
       etapa:            row[28] || '',
+      act_cargarMortero:    row[29] || '',
     });
   }
 

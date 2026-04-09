@@ -342,6 +342,7 @@ const ACTIONS = [
   {id:'reemplazarVidrio',label:'Reemplazar vidrio',icon:'🔍',color:'red'},
   {id:'repararMarco',label:'Reparar/sellar marco',icon:'🔧',color:'orange'},
   {id:'instalarFijacion',label:'Instalar fijación',icon:'🔩',color:'purple'},
+  {id:'cargarMortero',label:'Cargar mortero en vano',icon:'🏗',color:'green'},
 ];
 
 // Deficiency → Action mapping
@@ -398,6 +399,7 @@ function h(tag,attrs={},children=[]){
     if(k==='className')el.className=v;
     else if(k.startsWith('on'))el[k.toLowerCase()]=v;
     else if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
+    else if(typeof v==='boolean'){if(v)el.setAttribute(k,'');}  // boolean false = no poner el atributo
     else el.setAttribute(k,v);
   }
   children.forEach(c=>{
@@ -490,7 +492,7 @@ function newWindowRecord(){
     estado:'noInstalada',
     estadoVano:'',
     deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false},
-    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false}},
+    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false}},
     observaciones:'',
     historial:[],
     fotos:[]
@@ -506,7 +508,17 @@ function saveLocal(){
 function saveLocalNow(){
   clearTimeout(_saveTimer);
   DATA.meta.lastSave=ts();
-  localStorage.setItem('ventacontrol_v2',JSON.stringify(DATA));
+  try{
+    localStorage.setItem('ventacontrol_v2',JSON.stringify(DATA));
+  }catch(e){
+    // Quota excedido (probablemente por fotos grandes) — guardar sin fotos
+    try{
+      const safe=JSON.parse(JSON.stringify(DATA));
+      Object.values(safe.windows).forEach(w=>{if(w.fotos)w.fotos=[];});
+      localStorage.setItem('ventacontrol_v2',JSON.stringify(safe));
+      console.warn('[VC] localStorage lleno, fotos no guardadas localmente');
+    }catch(e2){console.error('[VC] No se pudo guardar en localStorage:',e2);}
+  }
   saveDirtyKeys();
 }
 
@@ -1348,7 +1360,10 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       ...ACTIONS.map(a=>{
         if(!w.acciones[a.id])w.acciones[a.id]={active:false,done:false};
         const act=w.acciones[a.id];
-        const isSuggested=!act.active&&Object.entries(DEF_ACTION_MAP).some(([dk,ak])=>ak===a.id&&w.deficiencias[dk]);
+        const isSuggested=!act.active&&(
+          Object.entries(DEF_ACTION_MAP).some(([dk,ak])=>ak===a.id&&w.deficiencias[dk])||
+          (a.id==='cargarMortero'&&(w.deficiencias.separacion||w.estadoVano==='Sobredimensionado'))
+        );
         return h('div',{className:'action-row',style:{
           background:act.active?`var(--ac-${a.color}-soft)`:isSuggested?`var(--ac-${a.color}-soft)`:'transparent',
           border:act.active?`1px solid var(--ac-${a.color})`:isSuggested?`1px dashed var(--ac-${a.color})`:'1px solid transparent',
@@ -1400,13 +1415,12 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         id:'obs-ta',
         placeholder:isEditor()?'Agregar observaciones...':'Sin observaciones',
         readOnly:!isEditor(),
-        onBlur:(e)=>{
+        onInput:(e)=>{
+          // Guardar en tiempo real mientras escribe (debounced)
           if(!isEditor())return;
-          if(e.target.value!==w.observaciones){
-            updateWindow(key,'observaciones',e.target.value,'Observación actualizada');
-          }
+          updateWindow(key,'observaciones',e.target.value,'Observación actualizada');
         }
-      },[]),
+      },[w.observaciones||'']),
     ]),
 
     // Photo capture
@@ -1421,11 +1435,24 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
               if(!file)return;
               const reader=new FileReader();
               reader.onload=(ev)=>{
-                w.fotos.push({data:ev.target.result,ts:ts()});
-                if(w.fotos.length>5)w.fotos=w.fotos.slice(-5);
-                w.historial.unshift({t:ts(),cambio:'Foto agregada'});
-                saveLocal();
-                renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+                // Comprimir imagen antes de guardar (máx 800px, JPEG 0.65)
+                const img=new Image();
+                img.onload=()=>{
+                  const MAX=800;
+                  let W=img.width,H=img.height;
+                  if(W>MAX||H>MAX){const s=Math.min(MAX/W,MAX/H);W=Math.round(W*s);H=Math.round(H*s);}
+                  const canvas=document.createElement('canvas');
+                  canvas.width=W;canvas.height=H;
+                  canvas.getContext('2d').drawImage(img,0,0,W,H);
+                  const compressed=canvas.toDataURL('image/jpeg',0.65);
+                  w.fotos.push({data:compressed,ts:ts()});
+                  if(w.fotos.length>5)w.fotos=w.fotos.slice(-5);
+                  w.historial.unshift({t:ts(),cambio:'Foto agregada'});
+                  dirtyKeys.add(key);
+                  saveLocalNow();
+                  renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+                };
+                img.src=ev.target.result;
               };
               reader.readAsDataURL(file);
             }
@@ -2226,6 +2253,7 @@ function buildSyncPayload(dirtyOnly=false){
       act_reemplazarVidrio:w.acciones.reemplazarVidrio?.active?(w.acciones.reemplazarVidrio.done?'done':'pending'):'',
       act_repararMarco:w.acciones.repararMarco?.active?(w.acciones.repararMarco.done?'done':'pending'):'',
       act_instalarFijacion:w.acciones.instalarFijacion?.active?(w.acciones.instalarFijacion.done?'done':'pending'):'',
+      act_cargarMortero:w.acciones.cargarMortero?.active?(w.acciones.cargarMortero.done?'done':'pending'):'',
       etapa:(DATA.buildings[bKey(parseInt(edif))]||{}).stage||'',
     });
   }
@@ -2366,7 +2394,7 @@ function mergeFromSheets(rows){
       faltaFijacion:pd(r,'faltaFijacion','def_faltaFijacion'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion'].forEach(a=>{
+    ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{
       if(!w.acciones[a])w.acciones[a]={active:false,done:false};
       const val=r['act_'+a];
       if(val==='done'){w.acciones[a].active=true;w.acciones[a].done=true;}
@@ -2553,7 +2581,7 @@ function migrateV1(){
           const w=DATA.windows[key];
           if(!w.acciones)w.acciones={};
           // Ensure all action fields exist
-          ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion'].forEach(a=>{
+          ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{
             if(!w.acciones[a])w.acciones[a]={active:false,done:false};
           });
           if(!w.historial)w.historial=[];
@@ -2572,7 +2600,7 @@ function migrateV1(){
         if(!DATA.windows[key]){DATA.windows[key]=newWindowRecord();added++;}
         const w=DATA.windows[key];
         if(!w.acciones)w.acciones={};
-        ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion'].forEach(a=>{
+        ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{
           if(!w.acciones[a])w.acciones[a]={active:false,done:false};
         });
         if(!w.historial)w.historial=[];
