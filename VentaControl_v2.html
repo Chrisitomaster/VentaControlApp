@@ -616,6 +616,34 @@ function getBldgStats(edif){
   return{total,instaladas,quitar,pendientes,defCount,actionsPending,pctBruto,pctAjustado,tipoCounts};
 }
 
+// Conteo detallado de pendientes por edificio: deficiencias por tipo,
+// acciones pendientes por tipo, y ventanas con observaciones.
+// Solo consulta DATA — no modifica nada.
+function getPendingCountByBuilding(edif){
+  const e=parseInt(edif);
+  const defByType={};
+  const actByType={};
+  const withObs=[];
+  DEFICIENCIES.forEach(d=>{defByType[d.id]=0;});
+  ACTIONS.forEach(a=>{actByType[a.id]=0;});
+  function scan(key,depto,code){
+    const w=DATA.windows[key];
+    if(!w)return;
+    Object.entries(w.deficiencias).forEach(([id,v])=>{if(v&&defByType[id]!==undefined)defByType[id]++;});
+    Object.entries(w.acciones).forEach(([id,a])=>{if(a.active&&!a.done&&actByType[id]!==undefined)actByType[id]++;});
+    if(w.observaciones&&w.observaciones.trim())withObs.push({depto,code,obs:w.observaciones.trim()});
+  }
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      const dn=deptNum(f,p);
+      getDeptWindows(tipo).forEach(([code])=>scan(wKey(e,dn,code),dn,code));
+    }
+    getCommonWindows(f).forEach(([code])=>scan(wKey(e,`EC${f}`,code),`EC${f}`,code));
+  }
+  return{defByType,actByType,withObs};
+}
+
 function getDeptStats(edif,depto){
   const e=parseInt(edif);
   const floor=Math.floor(depto/100);
@@ -939,6 +967,50 @@ function renderBuilding(){
       statBox(s.pctAjustado+'%','Ajustado'),
       statBox(s.defCount.toString(),'Defectos'),
     ]),
+
+    // Resumen de pendientes: deficiencias + acciones + observaciones
+    (()=>{
+      const pd=getPendingCountByBuilding(edif);
+      const hasDefs=Object.values(pd.defByType).some(c=>c>0);
+      const hasActs=Object.values(pd.actByType).some(c=>c>0);
+      if(!hasDefs&&!hasActs&&!pd.withObs.length)return null;
+      return h('div',{className:'card'},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'10px'}},['Resumen de Pendientes']),
+        hasDefs?h('div',{style:{marginBottom:'8px'}},[
+          h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.04em'}},['Deficiencias']),
+          h('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px'}},[
+            ...DEFICIENCIES.filter(d=>pd.defByType[d.id]>0).map(d=>
+              h('span',{style:{fontSize:'0.72rem',padding:'2px 8px',borderRadius:'10px',
+                background:'var(--ac-red-soft)',color:'var(--ac-red)',fontWeight:'500'}},
+                [d.label+' · '+pd.defByType[d.id]])
+            )
+          ])
+        ]):null,
+        hasActs?h('div',{style:{marginBottom:'8px'}},[
+          h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.04em'}},['Acciones pendientes']),
+          h('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px'}},[
+            ...ACTIONS.filter(a=>pd.actByType[a.id]>0).map(a=>
+              h('span',{style:{fontSize:'0.72rem',padding:'2px 8px',borderRadius:'10px',
+                background:`var(--ac-${a.color}-soft)`,color:`var(--ac-${a.color})`,fontWeight:'500'}},
+                [a.icon+' '+a.label+' · '+pd.actByType[a.id]])
+            )
+          ])
+        ]):null,
+        pd.withObs.length?h('div',{},[
+          h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.04em'}},['Comentarios']),
+          ...pd.withObs.slice(0,3).map(o=>
+            h('div',{style:{fontSize:'0.75rem',padding:'5px 8px',borderRadius:'var(--radius-sm)',
+              background:'var(--bg-2)',marginBottom:'4px',cursor:'pointer'},
+              onClick:()=>navigate('dept',{edif,depto:typeof o.depto==='string'?o.depto:parseInt(o.depto)})
+            },[
+              h('span',{style:{fontWeight:'600',color:'var(--ac-blue)',marginRight:'5px'}},[String(o.depto)+' / '+o.code]),
+              h('span',{style:{color:'var(--tx-1)'}},['💬 '+o.obs.slice(0,60)+(o.obs.length>60?'…':'')])
+            ])
+          ),
+          pd.withObs.length>3?h('div',{style:{fontSize:'0.7rem',color:'var(--tx-2)',textAlign:'right',marginTop:'2px'}},['+'+(pd.withObs.length-3)+' más']):null,
+        ].filter(Boolean)):null,
+      ].filter(Boolean));
+    })(),
 
     // Building stage tracker — vertical list with progress
     h('div',{className:'card'},[
@@ -1415,10 +1487,10 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         id:'obs-ta',
         placeholder:isEditor()?'Agregar observaciones...':'Sin observaciones',
         readOnly:!isEditor(),
-        onInput:(e)=>{
-          // Guardar en tiempo real mientras escribe (debounced)
+        onBlur:(e)=>{
           if(!isEditor())return;
-          updateWindow(key,'observaciones',e.target.value,'Observación actualizada');
+          if(e.target.value!==w.observaciones)
+            updateWindow(key,'observaciones',e.target.value,'Observación actualizada');
         }
       },[w.observaciones||'']),
     ]),
