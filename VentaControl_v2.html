@@ -360,6 +360,7 @@ const DEFICIENCIES = [
   {id:'vidrioTrizado',     label:'Vidrio trizado',                     icon:'🔍'},
   {id:'marcoPerforado',    label:'Marco perforado',                    icon:'🔧'},
   {id:'faltaFijacion',     label:'Falta fijación en marco',             icon:'🔩'},
+  {id:'vanoAjustado',      label:'Vano subdimensionado',                icon:'⬛'},
 ];
 
 const ACTIONS = [
@@ -386,6 +387,7 @@ const DEF_ACTION_MAP = {
   vidrioTrizado:'reemplazarVidrio',
   marcoPerforado:'repararMarco',
   faltaFijacion:'instalarFijacion',
+  vanoAjustado:'cargarMortero',
 };
 
 const ESTADOS = [
@@ -463,6 +465,15 @@ function getDeptType(edif,floor,posIdx){
 // Get dept number from floor and position index
 function deptNum(floor,posIdx){return floor*100+(posIdx+1);}
 
+// Sentido de cierre según posición en torre: X01/X04=Derecha, X02/X03=Izquierda
+function getOrientacion(depto){
+  if(typeof depto==='string'&&depto.startsWith('EC'))return null;
+  const pos=parseInt(depto)%100;
+  if(pos===1||pos===4)return'Derecha';
+  if(pos===2||pos===3)return'Izquierda';
+  return null;
+}
+
 // Get all departments for a building
 function getBldgDepts(edif){
   const depts=[];
@@ -520,7 +531,7 @@ function newWindowRecord(){
   return{
     estado:'noInstalada',
     estadoVano:'',
-    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false},
+    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false,vanoAjustado:false},
     acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false}},
     observaciones:'',
     historial:[],
@@ -1469,7 +1480,7 @@ function generateReport(edif){
     add(`PENDIENTES DE INSTALACIÓN  (${byEstado.pendiente.length})`);
     add(sep2);
     byEstado.pendiente.forEach(it=>{
-      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${it.loc}`);
+      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | ${getOrientacion(it.depto)||'—'}`);
       if(it.w.observaciones)add(`    Obs: ${it.w.observaciones}`);
     });
     add('');
@@ -1481,7 +1492,7 @@ function generateReport(edif){
     add(`SIN INSTALAR  (${byEstado.noInstalada.length})`);
     add(sep2);
     byEstado.noInstalada.forEach(it=>{
-      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${it.loc}`);
+      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | ${getOrientacion(it.depto)||'—'}`);
     });
     add('');
   }
@@ -1492,7 +1503,7 @@ function generateReport(edif){
     add(`A QUITAR  (${byEstado.quitar.length})`);
     add(sep2);
     byEstado.quitar.forEach(it=>{
-      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${it.loc}`);
+      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | ${getOrientacion(it.depto)||'—'}`);
       const mainDef=DEFICIENCIES.find(d=>it.w.deficiencias[d.id]);
       if(mainDef)add(`    Deficiencia: ${mainDef.label}`);
       if(it.w.observaciones)add(`    Observación: ${it.w.observaciones}`);
@@ -1757,7 +1768,16 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
 
   const el=h('div',{className:'fade-in'},[
     topbar(`${code} · ${loc}`,backView,backParams),
-    h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',marginBottom:'12px'}},[subtitle]),
+    h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}},[
+      h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',flex:1}},[subtitle]),
+      (()=>{
+        const deptoFromKey=key.split('-')[1];
+        const ori=getOrientacion(deptoFromKey);
+        return ori?h('span',{className:'badge badge-cyan',style:{fontSize:'0.68rem'}},[
+          (ori==='Derecha'?'→':'←')+' '+ori
+        ]):null;
+      })(),
+    ]),
 
     // Estado selector
     h('div',{className:'card'},[
@@ -2711,6 +2731,7 @@ function buildSyncPayload(dirtyOnly=false){
       vidrioTrizado:w.deficiencias.vidrioTrizado?1:0,
       marcoPerforado:w.deficiencias.marcoPerforado?1:0,
       faltaFijacion:w.deficiencias.faltaFijacion?1:0,
+      def_vanoAjustado:w.deficiencias.vanoAjustado?1:0,
       vano:w.estadoVano||'',
       obs:w.observaciones||'',
       act_pulir:w.acciones.pulir?.active?(w.acciones.pulir.done?'done':'pending'):'',
@@ -2860,6 +2881,7 @@ function mergeFromSheets(rows){
       vidrioTrizado:pd(r,'vidrioTrizado','def_vidrioTrizado'),
       marcoPerforado:pd(r,'marcoPerforado','def_marcoPerforado'),
       faltaFijacion:pd(r,'faltaFijacion','def_faltaFijacion'),
+      vanoAjustado: pd(r,'vanoAjustado', 'def_vanoAjustado'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
     ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{

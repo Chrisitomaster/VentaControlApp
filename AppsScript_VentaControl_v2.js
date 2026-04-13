@@ -46,6 +46,7 @@ var HEADERS = [
   'Acc. Instalar Fijac', // AB 28
   'Etapa Construcción',  // AC 29
   'Acc. Cargar Mortero', // AD 30
+  'Def. Vano Subdim.',  // AE 31
 ];
 
 function setup() {
@@ -196,6 +197,7 @@ function syncData(records) {
       rec.act_instalarFijacion || '',
       rec.etapa !== undefined ? rec.etapa : '',
       rec.act_cargarMortero || '',
+      rec.def_vanoAjustado ? yesNo(rec.def_vanoAjustado) : '',
     ];
 
     if (keyMap[key] !== undefined) {
@@ -261,6 +263,7 @@ var DEFS_CONFIG = [
   {label:'Marco perforado',             col:18, accion:'Reparar/sellar marco',        accionCol:26},
   {label:'Falta fijacion en marco',     col:19, accion:'Instalar fijacion',           accionCol:27},
   {label:'Cargar mortero en vano',      col:7,  accion:'Cargar mortero en vano',       accionCol:29},
+  {label:'Vano subdimensionado',        col:30, accion:'Cargar mortero en vano',       accionCol:29},
 ];
 
 // Función ejecutable manualmente desde el editor para regenerar hojas
@@ -549,6 +552,7 @@ function readAll(edifFilter) {
       act_instalarFijacion: row[27] || '',
       etapa:            row[28] || '',
       act_cargarMortero:    row[29] || '',
+      def_vanoAjustado:     sv(row[30] || ''),
     });
   }
 
