@@ -250,6 +250,11 @@ body{
   .grid-4{gap:10px;}
   .dept-cell{padding:12px 6px;}
 }
+/* REPORT VIEW */
+.report-actions{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.report-pre{font-family:var(--font-mono);font-size:0.72rem;line-height:1.6;white-space:pre;overflow-x:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;color:var(--tx-0);-webkit-overflow-scrolling:touch;}
+.report-section-hdr{color:var(--ac-blue);font-weight:700;}
+.report-sub-hdr{color:var(--tx-2);}
 /* GRID MAP */
 .grid-map-section{margin-bottom:16px;}
 .grid-map-floor-hdr{font-size:0.72rem;font-weight:700;color:var(--ac-blue);text-transform:uppercase;letter-spacing:0.07em;padding:5px 8px;background:var(--ac-blue-soft);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--ac-blue);}
@@ -817,6 +822,7 @@ function render(){
     sa:renderSA,
     building:renderBuilding,
     gridmap:renderGridMap,
+    report:renderReport,
     dept:renderDept,
     window:renderWindow,
     common:renderCommon,
@@ -1112,6 +1118,7 @@ function renderBuilding(){
     // Quick nav buttons row (always visible)
     h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('gridmap',{edif})},['🗺 Mapa de ventanas']),
+      h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('report',{edif})},['📄 Informe']),
       isEditor()?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']):null,
       isEditor()?h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>confirmClearBuilding(edif)},['🗑 Limpiar edificio']):null,
     ].filter(Boolean)),
@@ -1381,6 +1388,178 @@ function renderGridMap(){
     ]),
     renderSyncBar(),
   ].filter(Boolean));
+  app().innerHTML='';
+  app().appendChild(el);
+}
+
+/* ============================================
+   REPORT GENERATOR
+   ============================================ */
+function generateReport(edif){
+  const e=parseInt(edif);
+  const b=BUILDINGS[e];
+  const s=getBldgStats(e);
+  const now=new Date().toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const lines=[];
+  const add=(t='')=>lines.push(t);
+  const SEP='='.repeat(48);
+  const sep2='-'.repeat(48);
+  const pad=(s,n)=>String(s).padEnd(n);
+  const padr=(s,n)=>String(s).padStart(n);
+
+  // Collect all windows
+  const byEstado={instalada:[],pendiente:[],noInstalada:[],quitar:[]};
+  const byTipo={};
+  const withDef=[];
+
+  function collect(key,depto,code,loc,isCommon){
+    const w=DATA.windows[key]||newWindowRecord();
+    const estado=w.estado||'noInstalada';
+    const entry={depto,code,loc,estado,w,isCommon};
+    if(byEstado[estado])byEstado[estado].push(entry);
+    if(!byTipo[code])byTipo[code]={total:0,instalada:0,pendiente:0,noInstalada:0,quitar:0};
+    byTipo[code].total++;
+    byTipo[code][estado]=(byTipo[code][estado]||0)+1;
+    const defs=DEFICIENCIES.filter(d=>w.deficiencias[d.id]);
+    if(defs.length)withDef.push({...entry,defs});
+  }
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      const dn=deptNum(f,p);
+      getDeptWindows(tipo).forEach(([code,loc])=>collect(wKey(e,dn,code),dn,code,loc,false));
+    }
+    getCommonWindows(f).forEach(([code,loc])=>collect(wKey(e,`EC${f}`,code),`EC${f}`,code,loc,true));
+  }
+
+  // ── ENCABEZADO ──────────────────────────────
+  add(`INFORME DE INSTALACIÓN — EDIFICIO ${e}  (Tipo ${b.tipo})`);
+  add(`Generado: ${now}`);
+  add(SEP);
+  add('');
+
+  // ── RESUMEN ──────────────────────────────────
+  add('RESUMEN GENERAL');
+  add(sep2);
+  add(`  Total ventanas   : ${s.total}`);
+  add(`  Instaladas       : ${s.instaladas}  (${pct(s.instaladas,s.total)}%)`);
+  add(`  Pendientes       : ${byEstado.pendiente.length}  (${pct(byEstado.pendiente.length,s.total)}%)`);
+  add(`  Sin instalar     : ${byEstado.noInstalada.length}  (${pct(byEstado.noInstalada.length,s.total)}%)`);
+  add(`  A quitar         : ${s.quitar}  (${pct(s.quitar,s.total)}%)`);
+  add(`  Con deficiencias : ${withDef.length}`);
+  add('');
+
+  // ── PENDIENTES ───────────────────────────────
+  if(byEstado.pendiente.length){
+    add(SEP);
+    add(`PENDIENTES DE INSTALACIÓN  (${byEstado.pendiente.length})`);
+    add(sep2);
+    byEstado.pendiente.forEach(it=>{
+      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${it.loc}`);
+      if(it.w.observaciones)add(`    Obs: ${it.w.observaciones}`);
+    });
+    add('');
+  }
+
+  // ── SIN INSTALAR ─────────────────────────────
+  if(byEstado.noInstalada.length){
+    add(SEP);
+    add(`SIN INSTALAR  (${byEstado.noInstalada.length})`);
+    add(sep2);
+    byEstado.noInstalada.forEach(it=>{
+      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${it.loc}`);
+    });
+    add('');
+  }
+
+  // ── A QUITAR ─────────────────────────────────
+  if(byEstado.quitar.length){
+    add(SEP);
+    add(`A QUITAR  (${byEstado.quitar.length})`);
+    add(sep2);
+    byEstado.quitar.forEach(it=>{
+      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${it.loc}`);
+      const mainDef=DEFICIENCIES.find(d=>it.w.deficiencias[d.id]);
+      if(mainDef)add(`    Deficiencia: ${mainDef.label}`);
+      if(it.w.observaciones)add(`    Observación: ${it.w.observaciones}`);
+    });
+    add('');
+  }
+
+  // ── INCONFORMIDADES ──────────────────────────
+  if(withDef.length){
+    add(SEP);
+    add(`INCONFORMIDADES ACTIVAS  (${withDef.length} ventanas)`);
+    add(sep2);
+    withDef.forEach(it=>{
+      add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${it.loc}  [${it.estado}]`);
+      it.defs.forEach(d=>add(`    • ${d.label}`));
+      const acts=ACTIONS.filter(a=>it.w.acciones[a.id]?.active&&!it.w.acciones[a.id]?.done);
+      if(acts.length)add(`    Acciones: ${acts.map(a=>a.label).join(' | ')}`);
+      if(it.w.observaciones)add(`    Obs: ${it.w.observaciones}`);
+    });
+    add('');
+  }
+
+  // ── RESUMEN POR TIPO ─────────────────────────
+  add(SEP);
+  add('RESUMEN POR TIPO  (pedido de materiales)');
+  add(sep2);
+  add(`  ${'Tipo'.padEnd(10)}| Total | Inst. | Pend. | Sin  | Quitar`);
+  add(`  ${'-'.repeat(46)}`);
+  const typeOrder=['V1-Izq','V1-Der','V1_D2','V1_D3','V1a','V2','V3','V4','V5_1','V5_2','V5_3','V5a','V6_1','V6_2','V7','V8','V9','PV1','PV2'];
+  const sorted=Object.entries(byTipo).sort((a,b)=>{const ia=typeOrder.indexOf(a[0]),ib=typeOrder.indexOf(b[0]);return(ia<0?99:ia)-(ib<0?99:ib);});
+  sorted.forEach(([tipo,c])=>{
+    add(`  ${pad(tipo,10)}|  ${padr(c.total,3)}  |  ${padr(c.instalada,3)}  |  ${padr(c.pendiente||0,3)}  |  ${padr(c.noInstalada||0,3)} |    ${c.quitar||0}`);
+  });
+  add('');
+  add(SEP);
+  add('FIN DEL INFORME');
+
+  return lines.join('\n');
+}
+
+function renderReport(){
+  const edif=viewParams.edif;
+  const b=BUILDINGS[edif];
+  const texto=generateReport(edif);
+
+  function copyReport(){
+    navigator.clipboard?.writeText(texto).then(()=>{
+      const btn=document.getElementById('btn-copy-report');
+      if(btn){btn.textContent='✓ Copiado';setTimeout(()=>{btn.textContent='📋 Copiar';},2000);}
+    });
+  }
+  function shareReport(){
+    if(navigator.share){
+      navigator.share({title:`Informe Edif. ${edif}`,text:texto});
+    } else copyReport();
+  }
+  function downloadReport(){
+    const blob=new Blob([texto],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`informe_edif${edif}_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const el=h('div',{className:'fade-in'},[
+    topbar(`Informe — Edif. ${edif}`,'building',{edif}),
+    h('div',{className:'card'},[
+      h('div',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'10px'}},[
+        `Edificio ${edif} · Tipo ${b.tipo} · SA${b.sa}`
+      ]),
+      h('div',{className:'report-actions'},[
+        h('button',{id:'btn-copy-report',className:'btn btn-sm btn-ghost',onClick:copyReport},['📋 Copiar']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:shareReport},['📤 Compartir']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:downloadReport},['⬇ Descargar .txt']),
+      ]),
+      h('pre',{className:'report-pre'},[texto]),
+    ]),
+    renderSyncBar(),
+  ]);
   app().innerHTML='';
   app().appendChild(el);
 }
