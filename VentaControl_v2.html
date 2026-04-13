@@ -250,6 +250,27 @@ body{
   .grid-4{gap:10px;}
   .dept-cell{padding:12px 6px;}
 }
+/* GRID MAP */
+.grid-map-section{margin-bottom:14px;}
+.grid-map-floor-hdr{font-size:0.7rem;font-weight:700;color:var(--tx-2);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0 6px;border-bottom:1px solid var(--border);margin-bottom:6px;}
+.grid-map-cols{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;}
+.grid-map-col{display:flex;flex-direction:column;gap:2px;}
+.grid-map-col-hdr{font-size:0.6rem;font-weight:700;text-align:center;padding:3px 1px;background:var(--bg-2);border-radius:4px;color:var(--tx-1);font-family:var(--font-mono);margin-bottom:2px;}
+.win-tile{min-height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.58rem;font-weight:600;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:1px 2px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;}
+.win-tile:active{opacity:0.6;}
+.win-tile.instalada{background:var(--ac-green-soft);border-color:var(--ac-green);color:var(--ac-green);}
+.win-tile.pendiente{background:var(--ac-orange-soft);border-color:var(--ac-orange);color:var(--ac-orange);}
+.win-tile.noInstalada{background:var(--bg-2);border-color:var(--border);color:var(--tx-2);}
+.win-tile.quitar{background:var(--ac-red-soft);border-color:var(--ac-red);color:var(--ac-red);}
+.grid-map-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--tx-1);}
+.legend-dot{width:10px;height:10px;border-radius:2px;border:1px solid;flex-shrink:0;}
+/* PENDING WINDOW LIST */
+.pending-win-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border);background:var(--bg-2);margin-bottom:4px;transition:opacity 0.1s;}
+.pending-win-item:active{opacity:0.7;}
+.pending-win-item .pw-depto{font-family:var(--font-mono);font-weight:700;font-size:0.78rem;min-width:36px;}
+.pending-win-item .pw-code{font-family:var(--font-mono);font-size:0.82rem;font-weight:600;min-width:56px;}
+.pending-win-item .pw-loc{font-size:0.75rem;color:var(--tx-2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style>
 </head>
 <body data-theme="dark">
@@ -644,6 +665,35 @@ function getPendingCountByBuilding(edif){
   return{defByType,actByType,withObs};
 }
 
+// Collect all windows that are pendiente or noInstalada for a building
+function getPendingWindows(edif){
+  const e=parseInt(edif);
+  const pendiente=[];
+  const noInstalada=[];
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      const dn=deptNum(f,p);
+      getDeptWindows(tipo).forEach(([code,loc])=>{
+        const key=wKey(e,dn,code);
+        const w=DATA.windows[key];
+        const estado=(w&&w.estado)||'noInstalada';
+        if(estado==='pendiente')pendiente.push({key,depto:dn,code,loc,floor:f,estado,isCommon:false});
+        else if(estado==='noInstalada')noInstalada.push({key,depto:dn,code,loc,floor:f,estado,isCommon:false});
+      });
+    }
+    getCommonWindows(f).forEach(([code,loc])=>{
+      const key=wKey(e,`EC${f}`,code);
+      const w=DATA.windows[key];
+      const estado=(w&&w.estado)||'noInstalada';
+      const dLabel=`EC${f}`;
+      if(estado==='pendiente')pendiente.push({key,depto:dLabel,code,loc,floor:f,estado,isCommon:true});
+      else if(estado==='noInstalada')noInstalada.push({key,depto:dLabel,code,loc,floor:f,estado,isCommon:true});
+    });
+  }
+  return{pendiente,noInstalada};
+}
+
 function getDeptStats(edif,depto){
   const e=parseInt(edif);
   const floor=Math.floor(depto/100);
@@ -763,6 +813,7 @@ function render(){
     dashboard:renderDashboard,
     sa:renderSA,
     building:renderBuilding,
+    gridmap:renderGridMap,
     dept:renderDept,
     window:renderWindow,
     common:renderCommon,
@@ -968,47 +1019,47 @@ function renderBuilding(){
       statBox(s.defCount.toString(),'Defectos'),
     ]),
 
-    // Resumen de pendientes: deficiencias + acciones + observaciones
+    // Resumen de pendientes: ventanas pendiente + noInstalada
     (()=>{
-      const pd=getPendingCountByBuilding(edif);
-      const hasDefs=Object.values(pd.defByType).some(c=>c>0);
-      const hasActs=Object.values(pd.actByType).some(c=>c>0);
-      if(!hasDefs&&!hasActs&&!pd.withObs.length)return null;
+      const pw=getPendingWindows(edif);
+      const totalPending=pw.pendiente.length+pw.noInstalada.length;
+      if(totalPending===0)return h('div',{className:'card'},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'4px'}},['Resumen de Pendientes']),
+        h('div',{style:{color:'var(--ac-green)',fontSize:'0.82rem',fontWeight:'600'}},['✓ Todas las ventanas instaladas']),
+      ]);
+      // Helper: render a window row item
+      function pwItem(item){
+        const navView=item.isCommon?'common':'window';
+        const navParams=item.isCommon
+          ?{edif,floor:item.floor,code:item.code}
+          :{edif,depto:item.depto,code:item.code,loc:item.loc};
+        const isP=item.estado==='pendiente';
+        return h('div',{className:'pending-win-item',
+          style:{borderColor:isP?'var(--ac-orange)':'var(--border)'},
+          onClick:()=>navigate(navView,navParams)},[
+          h('div',{className:'pw-depto',style:{color:isP?'var(--ac-orange)':'var(--tx-2)'}},[String(item.depto)]),
+          h('div',{className:'pw-code'},[item.code]),
+          h('div',{className:'pw-loc'},[item.loc]),
+          h('span',{style:{fontSize:'0.7rem',flexShrink:0,color:isP?'var(--ac-orange)':'var(--tx-2)'}},[isP?'◷ Pendiente':'✗ Sin inst.']),
+          h('span',{style:{fontSize:'0.8rem',flexShrink:0,color:'var(--tx-2)'}},[' ▸']),
+        ]);
+      }
+      const showAll=totalPending<=12;
+      const displayed=showAll?[...pw.pendiente,...pw.noInstalada]:[...pw.pendiente,...pw.noInstalada].slice(0,10);
       return h('div',{className:'card'},[
-        h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'10px'}},['Resumen de Pendientes']),
-        hasDefs?h('div',{style:{marginBottom:'8px'}},[
-          h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.04em'}},['Deficiencias']),
-          h('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px'}},[
-            ...DEFICIENCIES.filter(d=>pd.defByType[d.id]>0).map(d=>
-              h('span',{style:{fontSize:'0.72rem',padding:'2px 8px',borderRadius:'10px',
-                background:'var(--ac-red-soft)',color:'var(--ac-red)',fontWeight:'500'}},
-                [d.label+' · '+pd.defByType[d.id]])
-            )
-          ])
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}},[
+          h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['Resumen de Pendientes']),
+          h('div',{style:{display:'flex',gap:'6px'}},[
+            pw.pendiente.length?h('span',{className:'badge badge-orange'},[pw.pendiente.length+' pendiente'+(pw.pendiente.length!==1?'s':'')]):null,
+            pw.noInstalada.length?h('span',{className:'badge'},[pw.noInstalada.length+' sin instalar']):null,
+          ].filter(Boolean)),
+        ]),
+        ...displayed.map(pwItem),
+        !showAll?h('div',{style:{textAlign:'center',marginTop:'6px'}},[
+          h('button',{className:'btn btn-sm btn-ghost',
+            onClick:()=>navigate('gridmap',{edif})},
+            ['Ver todas en mapa (' + (totalPending-10) + ' más) →'])
         ]):null,
-        hasActs?h('div',{style:{marginBottom:'8px'}},[
-          h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.04em'}},['Acciones pendientes']),
-          h('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px'}},[
-            ...ACTIONS.filter(a=>pd.actByType[a.id]>0).map(a=>
-              h('span',{style:{fontSize:'0.72rem',padding:'2px 8px',borderRadius:'10px',
-                background:`var(--ac-${a.color}-soft)`,color:`var(--ac-${a.color})`,fontWeight:'500'}},
-                [a.icon+' '+a.label+' · '+pd.actByType[a.id]])
-            )
-          ])
-        ]):null,
-        pd.withObs.length?h('div',{},[
-          h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.04em'}},['Comentarios']),
-          ...pd.withObs.slice(0,3).map(o=>
-            h('div',{style:{fontSize:'0.75rem',padding:'5px 8px',borderRadius:'var(--radius-sm)',
-              background:'var(--bg-2)',marginBottom:'4px',cursor:'pointer'},
-              onClick:()=>navigate('dept',{edif,depto:typeof o.depto==='string'?o.depto:parseInt(o.depto)})
-            },[
-              h('span',{style:{fontWeight:'600',color:'var(--ac-blue)',marginRight:'5px'}},[String(o.depto)+' / '+o.code]),
-              h('span',{style:{color:'var(--tx-1)'}},['💬 '+o.obs.slice(0,60)+(o.obs.length>60?'…':'')])
-            ])
-          ),
-          pd.withObs.length>3?h('div',{style:{fontSize:'0.7rem',color:'var(--tx-2)',textAlign:'right',marginTop:'2px'}},['+'+(pd.withObs.length-3)+' más']):null,
-        ].filter(Boolean)):null,
       ].filter(Boolean));
     })(),
 
@@ -1056,11 +1107,12 @@ function renderBuilding(){
       }),
     ]),
 
-    // Bulk actions (editor only)
-    isEditor()?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
-      h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']),
-      h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>confirmClearBuilding(edif)},['🗑 Limpiar edificio']),
-    ]):null,
+    // Quick nav buttons row (always visible)
+    h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
+      h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('gridmap',{edif})},['🗺 Mapa de ventanas']),
+      isEditor()?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']):null,
+      isEditor()?h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>confirmClearBuilding(edif)},['🗑 Limpiar edificio']):null,
+    ].filter(Boolean)),
 
     // Floor grid
     h('div',{className:'card'},[
@@ -1181,6 +1233,64 @@ function renderBuilding(){
   app().appendChild(el);
   const ta=$('.obs-area',app());
   if(ta)ta.value=bData.comment||'';
+}
+
+function renderGridMap(){
+  const edif=viewParams.edif;
+  const b=BUILDINGS[edif];
+  const s=getBldgStats(edif);
+
+  function winTile(key,code,navView,navParams){
+    const w=DATA.windows[key];
+    const estado=(w&&w.estado)||'noInstalada';
+    return h('div',{className:'win-tile '+estado,onClick:()=>navigate(navView,navParams)},[code]);
+  }
+
+  const legend=h('div',{className:'grid-map-legend'},[
+    ...ESTADOS.map(est=>{
+      const colors={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)'};
+      const bgs={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)'};
+      return h('div',{className:'legend-item'},[
+        h('div',{className:'legend-dot',style:{background:bgs[est.id],borderColor:colors[est.id]}},[]),
+        est.label
+      ]);
+    })
+  ]);
+
+  const floorSections=[1,2,3,4,5].map(f=>{
+    const deptoCols=[0,1,2,3].map(p=>{
+      const tipo=getDeptType(edif,f,p);
+      const dn=deptNum(f,p);
+      const wins=getDeptWindows(tipo);
+      return h('div',{className:'grid-map-col'},[
+        h('div',{className:'grid-map-col-hdr'},[String(dn)]),
+        ...wins.map(([code,loc])=>winTile(wKey(edif,dn,code),code,'window',{edif,depto:dn,code,loc}))
+      ]);
+    });
+    const cw=getCommonWindows(f);
+    const commonCol=h('div',{className:'grid-map-col'},[
+      h('div',{className:'grid-map-col-hdr'},[`EC${f}`]),
+      ...cw.map(([code,loc])=>winTile(wKey(edif,`EC${f}`,code),code,'common',{edif,floor:f,code}))
+    ]);
+    return h('div',{className:'grid-map-section'},[
+      h('div',{className:'grid-map-floor-hdr'},[`Piso ${f}`]),
+      h('div',{className:'grid-map-cols'},[...deptoCols,commonCol])
+    ]);
+  });
+
+  const el=h('div',{className:'fade-in'},[
+    topbar(`Mapa — Edif. ${edif}`,'building',{edif}),
+    h('div',{className:'card'},[
+      legend,
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'12px'}},[
+        `${s.instaladas}/${s.total} instaladas · ${s.pendientes} pendientes · ${s.quitar} quitar`
+      ]),
+      ...floorSections
+    ]),
+    renderSyncBar(),
+  ].filter(Boolean));
+  app().innerHTML='';
+  app().appendChild(el);
 }
 
 function renderTypeTable(tipoCounts){
