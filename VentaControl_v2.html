@@ -251,20 +251,23 @@ body{
   .dept-cell{padding:12px 6px;}
 }
 /* GRID MAP */
-.grid-map-section{margin-bottom:14px;}
-.grid-map-floor-hdr{font-size:0.7rem;font-weight:700;color:var(--tx-2);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0 6px;border-bottom:1px solid var(--border);margin-bottom:6px;}
-.grid-map-cols{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;}
-.grid-map-col{display:flex;flex-direction:column;gap:2px;}
-.grid-map-col-hdr{font-size:0.6rem;font-weight:700;text-align:center;padding:3px 1px;background:var(--bg-2);border-radius:4px;color:var(--tx-1);font-family:var(--font-mono);margin-bottom:2px;}
-.win-tile{min-height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.58rem;font-weight:600;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:1px 2px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;}
+.grid-map-section{margin-bottom:16px;}
+.grid-map-floor-hdr{font-size:0.72rem;font-weight:700;color:var(--ac-blue);text-transform:uppercase;letter-spacing:0.07em;padding:5px 8px;background:var(--ac-blue-soft);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--ac-blue);}
+.grid-map-cols{display:grid;grid-template-columns:repeat(4,1fr) 2px repeat(1,1fr);gap:3px;align-items:start;}
+.grid-map-col-sep{background:var(--border);border-radius:2px;align-self:stretch;}
+.grid-map-col{display:flex;flex-direction:column;gap:3px;}
+.grid-map-col-hdr{font-size:0.65rem;font-weight:700;text-align:center;padding:4px 2px;background:var(--bg-2);border-radius:4px;color:var(--tx-1);font-family:var(--font-mono);margin-bottom:2px;}
+.grid-map-col.ec-col .grid-map-col-hdr{background:var(--ac-blue-soft);color:var(--ac-blue);border:1px solid var(--ac-blue);}
+.win-tile{min-height:36px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:2px 3px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;}
 .win-tile:active{opacity:0.6;}
-.win-tile.instalada{background:var(--ac-green-soft);border-color:var(--ac-green);color:var(--ac-green);}
-.win-tile.pendiente{background:var(--ac-orange-soft);border-color:var(--ac-orange);color:var(--ac-orange);}
-.win-tile.noInstalada{background:var(--bg-2);border-color:var(--border);color:var(--tx-2);}
-.win-tile.quitar{background:var(--ac-red-soft);border-color:var(--ac-red);color:var(--ac-red);}
 .grid-map-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--tx-1);}
-.legend-dot{width:10px;height:10px;border-radius:2px;border:1px solid;flex-shrink:0;}
+.legend-dot{width:12px;height:12px;border-radius:3px;border:1px solid;flex-shrink:0;}
+.legend-dot-split{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+/* COMMON AREAS FLOOR SEPARATOR */
+.ec-floor-sep{display:flex;align-items:center;gap:8px;margin:12px 0 6px;padding:5px 8px;background:var(--bg-2);border-radius:var(--radius-sm);border-left:3px solid var(--ac-cyan);}
+.ec-floor-sep-label{font-size:0.72rem;font-weight:700;color:var(--ac-cyan);text-transform:uppercase;letter-spacing:0.06em;}
+.ec-floor-sep-line{flex:1;height:1px;background:var(--border);}
 /* PENDING WINDOW LIST */
 .pending-win-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border);background:var(--bg-2);margin-bottom:4px;transition:opacity 0.1s;}
 .pending-win-item:active{opacity:0.7;}
@@ -1044,8 +1047,8 @@ function renderBuilding(){
           h('span',{style:{fontSize:'0.8rem',flexShrink:0,color:'var(--tx-2)'}},[' ▸']),
         ]);
       }
-      const showAll=totalPending<=12;
-      const displayed=showAll?[...pw.pendiente,...pw.noInstalada]:[...pw.pendiente,...pw.noInstalada].slice(0,10);
+      const displayed=[...pw.pendiente,...pw.noInstalada].slice(0,10);
+      const extra=totalPending-displayed.length;
       return h('div',{className:'card'},[
         h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}},[
           h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['Resumen de Pendientes']),
@@ -1055,11 +1058,10 @@ function renderBuilding(){
           ].filter(Boolean)),
         ]),
         ...displayed.map(pwItem),
-        !showAll?h('div',{style:{textAlign:'center',marginTop:'6px'}},[
-          h('button',{className:'btn btn-sm btn-ghost',
-            onClick:()=>navigate('gridmap',{edif})},
-            ['Ver todas en mapa (' + (totalPending-10) + ' más) →'])
-        ]):null,
+        h('div',{style:{textAlign:'center',marginTop:'8px'}},[
+          h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('gridmap',{edif})},
+            [extra>0?`🗺 Ver mapa completo (+${extra} más) →`:'🗺 Ver mapa completo →'])
+        ]),
       ].filter(Boolean));
     })(),
 
@@ -1147,7 +1149,10 @@ function renderBuilding(){
       ...[1,2,3,4,5].flatMap(f=>{
         const cw=getCommonWindows(f);
         return [
-          h('div',{className:'floor-label'},['Piso '+f]),
+          h('div',{className:'ec-floor-sep'},[
+            h('span',{className:'ec-floor-sep-label'},['Piso '+f]),
+            h('div',{className:'ec-floor-sep-line'},[]),
+          ]),
           ...cw.map(([code])=>{
             const wk=wKey(edif,`EC${f}`,code);
             const w=DATA.windows[wk];
@@ -1237,24 +1242,48 @@ function renderBuilding(){
 
 function renderGridMap(){
   const edif=viewParams.edif;
-  const b=BUILDINGS[edif];
   const s=getBldgStats(edif);
+
+  // Color maps
+  const estadoBg={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)'};
+  const estadoBorder={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)'};
+  const estadoText={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)'};
+  const actionColorMap={pulir:'purple',aplomar:'red',impermeabilizar:'cyan',sellarFrente:'blue',repararEIFS:'orange',reemplazarVidrio:'red',repararMarco:'orange',instalarFijacion:'purple',cargarMortero:'green'};
 
   function winTile(key,code,navView,navParams){
     const w=DATA.windows[key];
     const estado=(w&&w.estado)||'noInstalada';
-    return h('div',{className:'win-tile '+estado,onClick:()=>navigate(navView,navParams)},[code]);
+    // Find first active+undone action
+    let primaryAct=null;
+    if(w&&w.acciones){
+      primaryAct=ACTIONS.find(a=>w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)||null;
+    }
+    const style={};
+    if(primaryAct){
+      const ac=actionColorMap[primaryAct.id]||'blue';
+      style.background=`linear-gradient(to right,${estadoBg[estado]} 50%,var(--ac-${ac}-soft) 50%)`;
+      style.borderColor=`var(--ac-${ac})`;
+      style.color=estadoText[estado];
+    } else {
+      style.background=estadoBg[estado];
+      style.borderColor=estadoBorder[estado];
+      style.color=estadoText[estado];
+    }
+    return h('div',{className:'win-tile',style,onClick:()=>navigate(navView,navParams)},[code]);
   }
 
   const legend=h('div',{className:'grid-map-legend'},[
-    ...ESTADOS.map(est=>{
-      const colors={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)'};
-      const bgs={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)'};
-      return h('div',{className:'legend-item'},[
-        h('div',{className:'legend-dot',style:{background:bgs[est.id],borderColor:colors[est.id]}},[]),
-        est.label
-      ]);
-    })
+    ...ESTADOS.map(est=>h('div',{className:'legend-item'},[
+      h('div',{className:'legend-dot',style:{background:estadoBg[est.id],borderColor:estadoBorder[est.id]}},[]),
+      est.label
+    ])),
+    h('div',{className:'legend-item'},[
+      h('div',{className:'legend-dot-split',style:{
+        background:'linear-gradient(to right,var(--ac-green-soft) 50%,var(--ac-purple-soft) 50%)',
+        border:'1px solid var(--ac-purple)'
+      }},[]),
+      'Con acción correctiva'
+    ]),
   ]);
 
   const floorSections=[1,2,3,4,5].map(f=>{
@@ -1268,13 +1297,17 @@ function renderGridMap(){
       ]);
     });
     const cw=getCommonWindows(f);
-    const commonCol=h('div',{className:'grid-map-col'},[
+    const commonCol=h('div',{className:'grid-map-col ec-col'},[
       h('div',{className:'grid-map-col-hdr'},[`EC${f}`]),
       ...cw.map(([code,loc])=>winTile(wKey(edif,`EC${f}`,code),code,'common',{edif,floor:f,code}))
     ]);
     return h('div',{className:'grid-map-section'},[
       h('div',{className:'grid-map-floor-hdr'},[`Piso ${f}`]),
-      h('div',{className:'grid-map-cols'},[...deptoCols,commonCol])
+      h('div',{className:'grid-map-cols'},[
+        ...deptoCols,
+        h('div',{className:'grid-map-col-sep'},[]),
+        commonCol
+      ])
     ]);
   });
 
@@ -1282,7 +1315,7 @@ function renderGridMap(){
     topbar(`Mapa — Edif. ${edif}`,'building',{edif}),
     h('div',{className:'card'},[
       legend,
-      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'12px'}},[
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'14px'}},[
         `${s.instaladas}/${s.total} instaladas · ${s.pendientes} pendientes · ${s.quitar} quitar`
       ]),
       ...floorSections
