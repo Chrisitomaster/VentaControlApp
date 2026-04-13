@@ -1314,25 +1314,39 @@ function renderGridMap(){
 
     let pressTimer=null;
     let longFired=false;
-    el.addEventListener('touchstart',()=>{
+    let touchHandled=false;
+    let startX=0,startY=0;
+
+    el.addEventListener('touchstart',(e)=>{
       longFired=false;
+      touchHandled=false;
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
       pressTimer=setTimeout(()=>{
         longFired=true;
-        navigator.vibrate&&navigator.vibrate(40);
+        touchHandled=true;
+        navigator.vibrate&&navigator.vibrate(50);
         const deptoLabel=navParams.depto!==undefined?String(navParams.depto):`EC${navParams.floor}`;
         showQuickEstado(key,code,deptoLabel,estado,()=>renderGridMap(),navView,navParams);
-      },420);
+      },450);
     },{passive:true});
+
+    el.addEventListener('touchmove',(e)=>{
+      // Only cancel timer on real scroll (>8px), not micro-tremor
+      const dx=Math.abs(e.touches[0].clientX-startX);
+      const dy=Math.abs(e.touches[0].clientY-startY);
+      if(dx>8||dy>8)clearTimeout(pressTimer);
+    },{passive:true});
+
     el.addEventListener('touchend',()=>{
       clearTimeout(pressTimer);
-      if(!longFired)navigate(navView,navParams);
+      if(!longFired){touchHandled=true;navigate(navView,navParams);}
     },{passive:true});
-    el.addEventListener('touchmove',()=>{
-      clearTimeout(pressTimer);
-    },{passive:true});
-    // Desktop fallback — click always navigates (no long-press on desktop)
+
+    // Desktop: click only fires when touch hasn't already handled it
     el.addEventListener('click',()=>{
-      if(!longFired)navigate(navView,navParams);
+      if(!touchHandled)navigate(navView,navParams);
+      touchHandled=false;
       longFired=false;
     });
     return el;
