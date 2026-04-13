@@ -1240,6 +1240,36 @@ function renderBuilding(){
   if(ta)ta.value=bData.comment||'';
 }
 
+// Quick-estado picker triggered by long-press on grid tile
+function showQuickEstado(key,code,deptoLabel,currentEstado,onDone,navView,navParams){
+  const overlay=document.createElement('div');
+  overlay.className='overlay';
+  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+  const modal=h('div',{className:'modal'},[
+    h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}},[
+      h('div',{style:{fontFamily:'var(--font-mono)',fontWeight:'700',fontSize:'0.9rem'}},[code]),
+      h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[deptoLabel]),
+    ]),
+    h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'12px'}},[
+      ...ESTADOS.map(est=>{
+        const isCurrent=currentEstado===est.id;
+        return h('div',{
+          className:'estado-opt'+(isCurrent?' '+est.cls:''),
+          style:{padding:'12px 8px',fontSize:'0.85rem',textAlign:'center',cursor:'pointer',borderRadius:'var(--radius-sm)'},
+          onClick:()=>{
+            updateWindow(key,'estado',est.id,`Estado: ${currentEstado} → ${est.id}`);
+            overlay.remove();
+            onDone();
+          }
+        },[est.sym+' '+est.label]);
+      })
+    ]),
+    navView?h('button',{className:'btn btn-sm btn-ghost',style:{width:'100%'},onClick:()=>{overlay.remove();navigate(navView,navParams);}},['Ver perfil completo →']):null,
+  ]);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
 function renderGridMap(){
   const edif=viewParams.edif;
   const s=getBldgStats(edif);
@@ -1269,7 +1299,36 @@ function renderGridMap(){
       style.borderColor=estadoBorder[estado];
       style.color=estadoText[estado];
     }
-    return h('div',{className:'win-tile',style,onClick:()=>navigate(navView,navParams)},[code]);
+    // Build tile element manually to attach touch events
+    const el=document.createElement('div');
+    el.className='win-tile';
+    Object.assign(el.style,style);
+    el.textContent=code;
+
+    let pressTimer=null;
+    let longFired=false;
+    el.addEventListener('touchstart',()=>{
+      longFired=false;
+      pressTimer=setTimeout(()=>{
+        longFired=true;
+        navigator.vibrate&&navigator.vibrate(40);
+        const deptoLabel=navParams.depto!==undefined?String(navParams.depto):`EC${navParams.floor}`;
+        showQuickEstado(key,code,deptoLabel,estado,()=>renderGridMap(),navView,navParams);
+      },420);
+    },{passive:true});
+    el.addEventListener('touchend',()=>{
+      clearTimeout(pressTimer);
+      if(!longFired)navigate(navView,navParams);
+    },{passive:true});
+    el.addEventListener('touchmove',()=>{
+      clearTimeout(pressTimer);
+    },{passive:true});
+    // Desktop fallback — click always navigates (no long-press on desktop)
+    el.addEventListener('click',()=>{
+      if(!longFired)navigate(navView,navParams);
+      longFired=false;
+    });
+    return el;
   }
 
   const legend=h('div',{className:'grid-map-legend'},[
