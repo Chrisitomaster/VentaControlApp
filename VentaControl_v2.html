@@ -1293,13 +1293,13 @@ function renderGridMap(){
       const wins=getDeptWindows(tipo);
       return h('div',{className:'grid-map-col'},[
         h('div',{className:'grid-map-col-hdr'},[String(dn)]),
-        ...wins.map(([code,loc])=>winTile(wKey(edif,dn,code),code,'window',{edif,depto:dn,code,loc}))
+        ...wins.map(([code,loc])=>winTile(wKey(edif,dn,code),code,'window',{edif,depto:dn,code,loc,backView:'gridmap',backParams:{edif}}))
       ]);
     });
     const cw=getCommonWindows(f);
     const commonCol=h('div',{className:'grid-map-col ec-col'},[
       h('div',{className:'grid-map-col-hdr'},[`EC${f}`]),
-      ...cw.map(([code,loc])=>winTile(wKey(edif,`EC${f}`,code),code,'common',{edif,floor:f,code}))
+      ...cw.map(([code,loc])=>winTile(wKey(edif,`EC${f}`,code),code,'common',{edif,floor:f,code,backView:'gridmap',backParams:{edif}}))
     ]);
     return h('div',{className:'grid-map-section'},[
       h('div',{className:'grid-map-floor-hdr'},[`Piso ${f}`]),
@@ -1480,22 +1480,23 @@ function renderEstadoMini(estado){
    VIEW: COMMON AREA WINDOW
    ============================================ */
 function renderCommon(){
-  const{edif,floor,code}=viewParams;
+  const{edif,floor,code,backView,backParams}=viewParams;
   const key=wKey(edif,`EC${floor}`,code);
   const w=DATA.windows[key];
   if(!w)return;
   const loc=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
-  // Reuse window detail renderer
-  renderWindowDetail(key,code,loc,`EC Piso ${floor} — Edif. ${edif}`,'building',{edif});
+  renderWindowDetail(key,code,loc,`EC Piso ${floor} — Edif. ${edif}`,
+    backView||'building', backParams||(backView?{}:{edif}));
 }
 
 /* ============================================
    VIEW: WINDOW DETAIL
    ============================================ */
 function renderWindow(){
-  const{edif,depto,code,loc}=viewParams;
+  const{edif,depto,code,loc,backView,backParams}=viewParams;
   const key=wKey(edif,depto,code);
-  renderWindowDetail(key,code,loc,`${depto} — Edif. ${edif}`,'dept',{edif,depto});
+  renderWindowDetail(key,code,loc,`${depto} — Edif. ${edif}`,
+    backView||'dept', backParams||(backView?{}:{edif,depto}));
 }
 
 function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
