@@ -400,7 +400,7 @@ const ESTADOS = [
   {id:'sinVentana',label:'Sin Ventana',sym:'▢',cls:'sel-sinventana'}
 ];
 
-const VANO_OPTS = ['OK','Sobredimensionado','Subdimensionado','Pulir'];
+const VANO_OPTS = ['OK','Sobredimensionado','Subdimensionado'];
 
 // Exterior seal states
 const SELLO_ESTADOS = [
@@ -552,6 +552,7 @@ function newWindowRecord(){
     acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false}},
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
+    funcionalidad:0,
     historial:[],
     fotos:[]
   };
@@ -1450,6 +1451,93 @@ function renderGridMap(){
 }
 
 /* ============================================
+   MM PICKER (drum-roll scroll selector 1-50mm)
+   ============================================ */
+function showMmPicker(currentMm,label,onConfirm){
+  // Inject webkit scrollbar-hide style once
+  if(!document.getElementById('mm-drum-css')){
+    const s=document.createElement('style');
+    s.id='mm-drum-css';
+    s.textContent='.mm-drum::-webkit-scrollbar{display:none}';
+    document.head.appendChild(s);
+  }
+  const ITEM_H=48;
+  const overlay=document.createElement('div');
+  overlay.className='overlay';
+
+  const modal=document.createElement('div');
+  modal.className='modal';
+  modal.style.cssText='max-width:260px;padding:24px 20px;text-align:center;';
+
+  const title=document.createElement('div');
+  title.style.cssText='font-weight:700;font-size:1rem;margin-bottom:2px;';
+  title.textContent=label;
+
+  const sub=document.createElement('div');
+  sub.style.cssText='font-size:0.78rem;color:var(--tx-2);margin-bottom:16px;';
+  sub.textContent='Separación en milímetros';
+
+  // Wrapper with fade overlays
+  const wrap=document.createElement('div');
+  wrap.style.cssText=`position:relative;height:${ITEM_H*3}px;margin:0 auto;max-width:160px;overflow:hidden;border-radius:var(--radius-sm);`;
+
+  const fadeTop=document.createElement('div');
+  fadeTop.style.cssText=`position:absolute;top:0;left:0;right:0;height:${ITEM_H}px;background:linear-gradient(to bottom,var(--bg-1),transparent);z-index:3;pointer-events:none;`;
+
+  const fadeBot=document.createElement('div');
+  fadeBot.style.cssText=`position:absolute;bottom:0;left:0;right:0;height:${ITEM_H}px;background:linear-gradient(to top,var(--bg-1),transparent);z-index:3;pointer-events:none;`;
+
+  const selBar=document.createElement('div');
+  selBar.style.cssText=`position:absolute;top:${ITEM_H}px;left:0;right:0;height:${ITEM_H}px;border-top:2px solid var(--ac-blue);border-bottom:2px solid var(--ac-blue);background:var(--ac-blue-soft);z-index:1;pointer-events:none;`;
+
+  // Drum scroll container
+  const drum=document.createElement('div');
+  drum.className='mm-drum';
+  drum.style.cssText=`height:${ITEM_H*3}px;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;z-index:2;`;
+
+  // Top spacer
+  const sp1=document.createElement('div');sp1.style.height=ITEM_H+'px';drum.appendChild(sp1);
+  // 50 items
+  for(let mm=1;mm<=50;mm++){
+    const item=document.createElement('div');
+    item.style.cssText=`height:${ITEM_H}px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:600;scroll-snap-align:center;color:var(--tx-0);`;
+    item.textContent=mm+' mm';
+    drum.appendChild(item);
+  }
+  // Bottom spacer
+  const sp2=document.createElement('div');sp2.style.height=ITEM_H+'px';drum.appendChild(sp2);
+
+  wrap.appendChild(selBar);
+  wrap.appendChild(fadeTop);
+  wrap.appendChild(fadeBot);
+  wrap.appendChild(drum);
+
+  // Init scroll position
+  const initVal=Math.max(1,Math.min(50,parseInt(currentMm)||1));
+  setTimeout(()=>{drum.scrollTop=(initVal-1)*ITEM_H;},60);
+
+  function getVal(){return Math.min(50,Math.max(1,Math.round(drum.scrollTop/ITEM_H)+1));}
+
+  // Buttons
+  const btnRow=document.createElement('div');
+  btnRow.style.cssText='display:flex;gap:8px;margin-top:20px;';
+
+  const btnCancel=document.createElement('button');
+  btnCancel.className='btn btn-ghost';btnCancel.style.flex='1';btnCancel.textContent='Cancelar';
+  btnCancel.onclick=()=>overlay.remove();
+
+  const btnOk=document.createElement('button');
+  btnOk.className='btn btn-primary';btnOk.style.flex='1';btnOk.textContent='✓ Confirmar';
+  btnOk.onclick=()=>{const val=getVal();overlay.remove();onConfirm(String(val));};
+
+  btnRow.appendChild(btnCancel);btnRow.appendChild(btnOk);
+  modal.appendChild(title);modal.appendChild(sub);modal.appendChild(wrap);modal.appendChild(btnRow);
+  overlay.appendChild(modal);
+  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+}
+
+/* ============================================
    SELLO POPUP
    ============================================ */
 function showSelloPopup(key,code,deptoLabel,onDone){
@@ -1833,6 +1921,7 @@ function generateReport(edif){
   const byEstado={instalada:[],pendiente:[],noInstalada:[],quitar:[],noInstalar:[],sinVentana:[]};
   const byTipo={};
   const withDef=[];
+  const withFunc=[];
 
   function collect(key,depto,code,loc,isCommon){
     const w=DATA.windows[key]||newWindowRecord();
@@ -1845,6 +1934,7 @@ function generateReport(edif){
     byTipo[code][estado]=(byTipo[code][estado]||0)+1;
     const defs=DEFICIENCIES.filter(d=>w.deficiencias[d.id]);
     if(defs.length)withDef.push({...entry,defs});
+    if(w.funcionalidad>0)withFunc.push(entry);
   }
   for(let f=1;f<=5;f++){
     for(let p=0;p<4;p++){
@@ -1977,6 +2067,29 @@ function generateReport(edif){
         const se=it.w.selloExterior;
         add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | Grado ${se.grado||'—'}`);
         if(se.comentario)add(`    Comentario: ${se.comentario}`);
+      });
+    }
+    add('');
+  }
+
+  // ── FUNCIONALIDAD ────────────────────────────
+  if(withFunc.length){
+    const FUNC_LABELS=['','Muy Deficiente','Deficiente','Regular','Buena','Excelente'];
+    const funcByCat={1:[],2:[],3:[],4:[],5:[]};
+    withFunc.forEach(it=>{const n=it.w.funcionalidad||0;if(funcByCat[n])funcByCat[n].push(it);});
+    add(SEP);
+    add('CONDICIÓN DE FUNCIONALIDAD');
+    add(sep2);
+    [1,2,3,4,5].forEach(n=>{
+      if(funcByCat[n].length)add(`  ${pad(n+' – '+FUNC_LABELS[n],22)} : ${funcByCat[n].length} ventanas`);
+    });
+    const critical=withFunc.filter(it=>it.w.funcionalidad<=2);
+    if(critical.length){
+      add('');
+      add('  Críticas (1–2):');
+      critical.forEach(it=>{
+        add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | Func. ${it.w.funcionalidad}/5`);
+        if(it.w.observaciones)add(`    Obs: ${it.w.observaciones}`);
       });
     }
     add('');
@@ -2264,7 +2377,6 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
             onClick:()=>{
               if(!isEditor())return;
               if(w.estadoVano===v){
-                // Deselect
                 updateWindow(key,'estadoVano','',`Rasgo: ${v} → —`);
                 w.separacionMm='';
                 saveLocal();
@@ -2272,18 +2384,41 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
                 return;
               }
               if(v==='Sobredimensionado'||v==='Subdimensionado'){
-                const mm=prompt(`Separación en mm para ${v}:`,(w.separacionMm||''));
-                if(mm===null)return;
-                w.separacionMm=mm.trim();
-                saveLocal();
+                showMmPicker(w.separacionMm||'',v,(mm)=>{
+                  w.separacionMm=mm;
+                  saveLocal();
+                  updateWindow(key,'estadoVano',v,`Rasgo: ${w.estadoVano||'—'} → ${v} (${mm}mm)`);
+                  renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+                });
+                return;
               }
-              updateWindow(key,'estadoVano',v,`Rasgo: ${w.estadoVano||'—'} → ${v}${w.separacionMm?' ('+w.separacionMm+'mm)':''}`);
+              updateWindow(key,'estadoVano',v,`Rasgo: ${w.estadoVano||'—'} → ${v}`);
               renderWindowDetail(key,code,loc,subtitle,backView,backParams);
             }
           },[v])
         )
       ),
-    ]),
+      // Separación info row
+      (w.estadoVano==='Sobredimensionado'||w.estadoVano==='Subdimensionado')&&w.separacionMm?
+        h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginTop:'10px',flexWrap:'wrap'}},[
+          h('span',{className:`badge badge-${w.estadoVano==='Sobredimensionado'?'orange':'cyan'}`,style:{fontSize:'0.82rem',fontWeight:'700'}},
+            [(w.estadoVano==='Sobredimensionado'?'+':'−')+w.separacionMm+' mm']),
+          h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},
+            [w.estadoVano==='Sobredimensionado'
+              ?'El rasgo es mayor que la ventana'
+              :'El rasgo es menor que la ventana']),
+          isEditor()?h('button',{className:'btn btn-sm btn-ghost',style:{fontSize:'0.72rem',padding:'2px 8px'},
+            onClick:()=>{
+              showMmPicker(w.separacionMm||'',w.estadoVano,(mm)=>{
+                w.separacionMm=mm;
+                saveLocal();
+                updateWindow(key,'estadoVano',w.estadoVano,`Rasgo: ${w.estadoVano} (${mm}mm)`);
+                renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+              });
+            }
+          },['✏️ '+w.separacionMm+'mm']):null,
+        ].filter(Boolean)):null,
+    ].filter(Boolean)),
 
     // Sello Exterior
     (()=>{
@@ -2318,6 +2453,38 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ].filter(Boolean)),
         se.comentario?h('div',{style:{marginTop:'6px',fontSize:'0.8rem',color:'var(--tx-2)',fontStyle:'italic'}},['💬 '+se.comentario]):null,
       ].filter(Boolean));
+    })(),
+
+    // Condición de Funcionalidad
+    (()=>{
+      if(w.funcionalidad===undefined)w.funcionalidad=0;
+      const FUNC_LABELS=['','Muy Deficiente','Deficiente','Regular','Buena','Excelente'];
+      const FUNC_COLORS=['','var(--ac-red)','var(--ac-orange)','var(--ac-cyan)','var(--ac-blue)','var(--ac-green)'];
+      const FUNC_SOFT=['','var(--ac-red-soft)','var(--ac-orange-soft)','var(--ac-cyan-soft)','var(--ac-blue-soft)','var(--ac-green-soft)'];
+      return h('div',{className:'card'},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'10px'}},['Condición de Funcionalidad']),
+        h('div',{style:{display:'flex',gap:'10px',justifyContent:'center'}},[
+          ...[1,2,3,4,5].map(n=>h('button',{
+            style:{
+              width:'46px',height:'46px',borderRadius:'50%',border:`2px solid ${w.funcionalidad===n?FUNC_COLORS[n]:'var(--border)'}`,
+              background:w.funcionalidad===n?FUNC_SOFT[n]:'var(--bg-2)',
+              color:w.funcionalidad===n?FUNC_COLORS[n]:'var(--tx-2)',
+              fontSize:'1.1rem',fontWeight:'700',cursor:isEditor()?'pointer':'default',
+              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
+            },
+            onClick:()=>{
+              if(!isEditor())return;
+              const newVal=w.funcionalidad===n?0:n;
+              updateWindow(key,'funcionalidad',newVal,
+                `Funcionalidad: ${w.funcionalidad||'—'} → ${newVal||'—'}`);
+              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+            }
+          },[String(n)])),
+        ]),
+        w.funcionalidad>0?h('div',{style:{textAlign:'center',marginTop:'8px',fontSize:'0.82rem',fontWeight:'600',color:FUNC_COLORS[w.funcionalidad]}},
+          [FUNC_LABELS[w.funcionalidad]]):
+          h('div',{style:{textAlign:'center',marginTop:'6px',fontSize:'0.75rem',color:'var(--tx-2)'}},['Sin evaluar — toca un número para calificar']),
+      ]);
     })(),
 
     // Deficiencias — colapsable
@@ -3308,7 +3475,7 @@ function mergeFromSheets(rows){
     if(sl==='ok')return 'OK';
     if(sl.startsWith('sobre'))return 'Sobredimensionado';
     if(sl.startsWith('sub'))return 'Subdimensionado';
-    if(sl.startsWith('pulir')||sl==='pulir')return 'Pulir';
+    if(sl.startsWith('pulir')||sl==='pulir')return '';  // Pulir ya no es estado de rasgo
     return s;
   }
 
@@ -3584,6 +3751,8 @@ function migrateV1(){
             if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
           });
           if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
+          if(w.funcionalidad===undefined)w.funcionalidad=0;
+          if(w.estadoVano==='Pulir'){w.estadoVano='';saveLocal();}
           if(w.estado===undefined)w.estado='noInstalada';
         });
       }
@@ -3602,6 +3771,8 @@ function migrateV1(){
           if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
         });
         if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
+        if(w.funcionalidad===undefined)w.funcionalidad=0;
+        if(w.estadoVano==='Pulir'){w.estadoVano='';saveLocal();}
       });
     }
   }
