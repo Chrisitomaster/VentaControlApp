@@ -402,6 +402,14 @@ const ESTADOS = [
 
 const VANO_OPTS = ['OK','Sobredimensionado','Subdimensionado','Pulir'];
 
+// Exterior seal states
+const SELLO_ESTADOS = [
+  {id:'sellado',   label:'Sellado',          sym:'✓'},
+  {id:'pendiente', label:'Pendiente',         sym:'◷'},
+  {id:'sinSellar', label:'Sin Sellar',        sym:'✗'},
+  {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
+];
+
 // Building construction stages — 3 EIFS phases with sub-items
 const EIFS_PHASES = [
   {id:1,label:'EIFS Fase 1 — Preparación',items:[
@@ -543,6 +551,7 @@ function newWindowRecord(){
     deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false},
     acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false}},
     observaciones:'',
+    selloExterior:{estado:'sinSellar',grado:0,comentario:''},
     historial:[],
     fotos:[]
   };
@@ -1441,196 +1450,362 @@ function renderGridMap(){
 }
 
 /* ============================================
+   SELLO POPUP
+   ============================================ */
+function showSelloPopup(key,code,deptoLabel,onDone){
+  const w=DATA.windows[key];
+  if(!w)return;
+  if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
+
+  const state={
+    estado:w.selloExterior.estado||'sinSellar',
+    grado:w.selloExterior.grado||0,
+    comentario:w.selloExterior.comentario||''
+  };
+
+  const selloColors={
+    sellado:  {bg:'var(--ac-green-soft)',  bdr:'var(--ac-green)',  txt:'var(--ac-green)'},
+    pendiente:{bg:'var(--ac-orange-soft)', bdr:'var(--ac-orange)', txt:'var(--ac-orange)'},
+    sinSellar:{bg:'var(--bg-2)',           bdr:'var(--border)',    txt:'var(--tx-1)'},
+    deficiente:{bg:'var(--ac-red-soft)',   bdr:'var(--ac-red)',    txt:'var(--ac-red)'},
+  };
+
+  const overlay=document.createElement('div');
+  overlay.className='overlay';
+  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+
+  function draw(){
+    // Preserve typed comment before redraw
+    const ta=overlay.querySelector('#sello-ta');
+    if(ta)state.comentario=ta.value;
+    overlay.innerHTML='';
+
+    const modal=h('div',{className:'modal'},[
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}},[
+        h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'700',fontSize:'0.9rem'}},[code]),
+        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[deptoLabel]),
+      ]),
+
+      // Estado
+      h('div',{style:{fontWeight:'600',fontSize:'0.8rem',marginBottom:'8px'}},['Estado del Sello']),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'14px'}},
+        SELLO_ESTADOS.map(st=>{
+          const sel=state.estado===st.id;
+          const c=selloColors[st.id];
+          return h('div',{
+            style:{
+              padding:'10px 8px',textAlign:'center',cursor:'pointer',
+              borderRadius:'var(--radius-sm)',fontSize:'0.85rem',
+              border:'2px solid '+(sel?c.bdr:'var(--border)'),
+              background:sel?c.bg:'var(--bg-2)',
+              color:sel?c.txt:'var(--tx-1)',fontWeight:sel?'700':'400',
+              transition:'all 0.12s',userSelect:'none',
+            },
+            onClick:()=>{state.estado=st.id;if(st.id!=='deficiente')state.grado=0;draw();}
+          },[st.sym+' '+st.label]);
+        })
+      ),
+
+      // Grado (solo deficiente)
+      state.estado==='deficiente'?h('div',{style:{marginBottom:'14px'}},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.8rem',marginBottom:'8px',color:'var(--ac-red)'}},[
+          'Grado de Deficiencia'+(state.grado?' — '+state.grado+'/5':'')
+        ]),
+        h('div',{style:{display:'flex',gap:'6px'}},
+          [1,2,3,4,5].map(g=>h('div',{
+            style:{
+              flex:1,height:'40px',borderRadius:'6px',display:'flex',alignItems:'center',
+              justifyContent:'center',cursor:'pointer',fontWeight:'700',fontSize:'0.95rem',
+              border:'2px solid '+(state.grado===g?'var(--ac-red)':'var(--border)'),
+              background:state.grado===g?'var(--ac-red)':'var(--bg-2)',
+              color:state.grado===g?'#fff':'var(--tx-1)',
+              userSelect:'none',
+            },
+            onClick:()=>{state.grado=g;draw();}
+          },[String(g)])
+          )
+        ),
+      ]):null,
+
+      // Comentario
+      h('div',{style:{marginBottom:'14px'}},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.8rem',marginBottom:'6px'}},['Comentario']),
+        h('textarea',{
+          id:'sello-ta',className:'obs-area',
+          style:{minHeight:'56px'},
+          placeholder:'Observación sobre el sello...',
+        },[state.comentario]),
+      ]),
+
+      // Botones
+      h('div',{style:{display:'flex',gap:'8px'}},[
+        h('button',{className:'btn btn-primary',style:{flex:1},onClick:()=>{
+          const ta2=overlay.querySelector('#sello-ta');
+          if(ta2)state.comentario=ta2.value;
+          w.selloExterior={
+            estado:state.estado,
+            grado:state.estado==='deficiente'?state.grado:0,
+            comentario:state.comentario.trim()
+          };
+          saveLocal();
+          overlay.remove();
+          onDone();
+        }},['Guardar']),
+        h('button',{className:'btn btn-ghost',onClick:()=>overlay.remove()},['Cancelar']),
+      ]),
+    ].filter(Boolean));
+
+    overlay.appendChild(modal);
+    // Restaurar texto del textarea tras redibujado
+    setTimeout(()=>{const ta3=overlay.querySelector('#sello-ta');if(ta3)ta3.value=state.comentario;},0);
+  }
+
+  draw();
+  document.body.appendChild(overlay);
+}
+
+/* ============================================
    VIEW: SEAL MAP — exterior seal status grid
    ============================================ */
 function renderSealMap(){
   const edif=viewParams.edif;
   const e=parseInt(edif);
 
-  // Helper: get seal status for one window key
-  function getSeal(key){
+  const selloColors={
+    sellado:  {bg:'var(--ac-green-soft)',  bdr:'var(--ac-green)',  txt:'var(--ac-green)'},
+    pendiente:{bg:'var(--ac-orange-soft)', bdr:'var(--ac-orange)', txt:'var(--ac-orange)'},
+    sinSellar:{bg:'var(--bg-2)',           bdr:'var(--border)',    txt:'var(--tx-2)'},
+    deficiente:{bg:'var(--ac-red-soft)',   bdr:'var(--ac-red)',    txt:'var(--ac-red)'},
+  };
+
+  // Get selloExterior estado for a window key
+  function getSelloEstado(key){
     const w=DATA.windows[key];
     if(!w)return null;
-    const act=w.acciones.sellarFrente||{active:false,done:false};
-    return{key,done:act.done,active:act.active&&!act.done};
+    if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
+    return w.selloExterior;
   }
 
-  // Helper: toggle seal done on a single window
-  function toggleSeal(key){
-    if(!isEditor())return;
-    const w=DATA.windows[key];
-    if(!w)return;
-    if(!w.acciones.sellarFrente)w.acciones.sellarFrente={active:false,done:false};
-    const cur=w.acciones.sellarFrente;
-    if(cur.done){cur.active=false;cur.done=false;}
-    else{cur.active=true;cur.done=true;}
-    saveLocal();
-    renderSealMap();
-  }
-
-  // Render a single seal cell (1 window)
-  function sealCell(key){
-    if(!key)return h('td',{style:{textAlign:'center',padding:'6px 4px',borderBottom:'1px solid var(--border)',color:'var(--tx-2)',fontSize:'0.75rem'}},['—']);
-    const s=getSeal(key);
-    if(!s)return h('td',{style:{textAlign:'center',padding:'6px 4px',borderBottom:'1px solid var(--border)',color:'var(--tx-2)',fontSize:'0.75rem'}},['?']);
-    const bg=s.done?'var(--ac-green-soft)':s.active?'var(--ac-orange-soft)':'var(--bg-2)';
-    const border=s.done?'var(--ac-green)':s.active?'var(--ac-orange)':'var(--border)';
-    const sym=s.done?'✓':s.active?'◷':'·';
-    const color=s.done?'var(--ac-green)':s.active?'var(--ac-orange)':'var(--tx-2)';
-    return h('td',{
-      style:{textAlign:'center',padding:'2px 4px',borderBottom:'1px solid var(--border)',cursor:isEditor()?'pointer':'default'},
-      onClick:()=>toggleSeal(key)
-    },[
-      h('div',{style:{
-        width:'36px',height:'36px',borderRadius:'6px',display:'flex',alignItems:'center',
-        justifyContent:'center',margin:'0 auto',background:bg,border:'1px solid '+border,
-        fontSize:'1rem',fontWeight:'700',color,userSelect:'none'
-      }},[sym])
-    ]);
-  }
-
-  // Build section per depto position (p=0..3 → X01..X04)
-  // Then EC section for common areas
-  let totalWins=0,totalDone=0,totalActive=0;
-
-  function countAll(){
-    for(let f=1;f<=5;f++){
-      for(let p=0;p<4;p++){
-        const tipo=getDeptType(e,f,p);
-        getDeptWindows(tipo).forEach(([code])=>{
-          const s=getSeal(wKey(e,deptNum(f,p),code));
-          if(s){totalWins++;if(s.done)totalDone++;else if(s.active)totalActive++;}
-        });
-      }
-      getCommonWindows(f).forEach(([code])=>{
-        const s=getSeal(wKey(e,`EC${f}`,code));
-        if(s){totalWins++;if(s.done)totalDone++;else if(s.active)totalActive++;}
+  // Global counts
+  let cSellado=0,cPendiente=0,cSinSellar=0,cDeficiente=0;
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      getDeptWindows(tipo).forEach(([code])=>{
+        const se=getSelloEstado(wKey(e,deptNum(f,p),code));
+        if(se){
+          if(se.estado==='sellado')cSellado++;
+          else if(se.estado==='pendiente')cPendiente++;
+          else if(se.estado==='deficiente')cDeficiente++;
+          else cSinSellar++;
+        }
       });
     }
+    getCommonWindows(f).forEach(([code])=>{
+      const se=getSelloEstado(wKey(e,`EC${f}`,code));
+      if(se){
+        if(se.estado==='sellado')cSellado++;
+        else if(se.estado==='pendiente')cPendiente++;
+        else if(se.estado==='deficiente')cDeficiente++;
+        else cSinSellar++;
+      }
+    });
   }
-  countAll();
 
-  // Build a position section
+  // Build a single cell TD with touch events
+  function sealCell(key,code,deptoLabel){
+    const w=DATA.windows[key];
+    const td=document.createElement('td');
+    td.style.cssText='text-align:center;padding:2px 3px;border-bottom:1px solid var(--border);';
+
+    if(!w){
+      td.textContent='—';
+      td.style.color='var(--tx-2)';
+      return td;
+    }
+    if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
+    const se=w.selloExterior;
+    const c=selloColors[se.estado]||selloColors.sinSellar;
+
+    const inner=document.createElement('div');
+    inner.style.cssText=`
+      width:40px;height:40px;border-radius:6px;display:flex;align-items:center;
+      justify-content:center;margin:0 auto;background:${c.bg};
+      border:2px solid ${c.bdr};font-size:${se.estado==='deficiente'?'0.75rem':'1rem'};
+      font-weight:700;color:${c.txt};user-select:none;-webkit-user-select:none;
+      -webkit-touch-callout:none;cursor:${isEditor()?'pointer':'default'};
+      position:relative;
+    `;
+    let sym=se.estado==='sellado'?'✓':se.estado==='pendiente'?'◷':se.estado==='deficiente'?(se.grado?se.grado+'⚠':'⚠'):'·';
+    inner.textContent=sym;
+    td.appendChild(inner);
+
+    if(!isEditor())return td;
+
+    // Long-press → full popup, short tap → cycle sellado↔sinSellar
+    let pressTimer=null,longFired=false,touchHandled=false,scrolled=false,startX=0,startY=0;
+
+    inner.addEventListener('touchstart',(ev)=>{
+      longFired=false;touchHandled=false;scrolled=false;
+      startX=ev.touches[0].clientX;startY=ev.touches[0].clientY;
+      pressTimer=setTimeout(()=>{
+        if(scrolled)return;
+        longFired=true;touchHandled=true;
+        navigator.vibrate&&navigator.vibrate(50);
+        showSelloPopup(key,code,deptoLabel,()=>renderSealMap());
+      },450);
+    },{passive:true});
+
+    inner.addEventListener('touchmove',(ev)=>{
+      if(Math.abs(ev.touches[0].clientX-startX)>10||Math.abs(ev.touches[0].clientY-startY)>10){
+        scrolled=true;clearTimeout(pressTimer);
+      }
+    },{passive:true});
+
+    inner.addEventListener('touchend',()=>{
+      clearTimeout(pressTimer);
+      if(!longFired&&!scrolled){
+        touchHandled=true;
+        // Quick tap: cycle sellado ↔ sinSellar
+        w.selloExterior.estado=se.estado==='sellado'?'sinSellar':'sellado';
+        if(w.selloExterior.estado!=='deficiente')w.selloExterior.grado=0;
+        saveLocal();renderSealMap();
+      }
+    },{passive:true});
+
+    inner.addEventListener('contextmenu',(ev)=>ev.preventDefault());
+
+    inner.addEventListener('click',()=>{
+      if(!touchHandled&&!scrolled){
+        showSelloPopup(key,code,deptoLabel,()=>renderSealMap());
+      }
+      touchHandled=false;longFired=false;scrolled=false;
+    });
+
+    return td;
+  }
+
+  // Build section counts for a set of (key,code) pairs
+  function secCounts(pairs){
+    let done=0,total=0;
+    pairs.forEach(({key})=>{
+      const se=getSelloEstado(key);
+      if(se){total++;if(se.estado==='sellado')done++;}
+    });
+    return{done,total,pct:total?Math.round(done/total*100):0};
+  }
+
+  // Render a depto position section
   function posSection(posIdx,posLabel){
-    // Get window codes for this position (use floor 1 as template)
     const tipo=getDeptType(e,1,posIdx);
     const codes=getDeptWindows(tipo).map(([c])=>c);
     if(!codes.length)return null;
+    const allPairs=[];
+    codes.forEach(code=>{for(let f=1;f<=5;f++)allPairs.push({key:wKey(e,deptNum(f,posIdx),code),code});});
+    const{done,total,pct}=secCounts(allPairs);
+    const complete=done===total&&total>0;
 
-    // Count done for this section
-    let secDone=0,secTotal=0;
+    const tbody=document.createElement('tbody');
     codes.forEach(code=>{
+      const tr=document.createElement('tr');
+      const tdCode=document.createElement('td');
+      tdCode.style.cssText='padding:4px 8px;font-family:var(--font-mono);font-weight:600;font-size:0.78rem;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg-1);';
+      tdCode.textContent=code;
+      tr.appendChild(tdCode);
       for(let f=1;f<=5;f++){
-        const s=getSeal(wKey(e,deptNum(f,posIdx),code));
-        if(s){secTotal++;if(s.done)secDone++;}
+        const dn=deptNum(f,posIdx);
+        tr.appendChild(sealCell(wKey(e,dn,code),code,`${dn}`));
       }
+      tbody.appendChild(tr);
     });
-    const secPct=secTotal?Math.round(secDone/secTotal*100):0;
+
+    const table=document.createElement('table');
+    table.style.cssText='width:100%;border-collapse:collapse;font-size:0.8rem;';
+    const thead=h('thead',{},[h('tr',{},[
+      h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)',whiteSpace:'nowrap'}},['Ventana']),
+      ...[1,2,3,4,5].map(f=>h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},['P'+f])),
+    ])]);
+    table.appendChild(thead);
+    table.appendChild(tbody);
+
+    const wrap=document.createElement('div');
+    wrap.style.overflowX='auto';
+    wrap.appendChild(table);
 
     return h('div',{style:{marginBottom:'16px'}},[
-      // Section header
       h('div',{style:{
         display:'flex',alignItems:'center',justifyContent:'space-between',
         padding:'6px 10px',borderRadius:'var(--radius-sm)',marginBottom:'6px',
-        background:secDone===secTotal&&secTotal>0?'var(--ac-green-soft)':'var(--ac-blue-soft)',
-        border:'1px solid '+(secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-blue)')
+        background:complete?'var(--ac-green-soft)':'var(--ac-blue-soft)',
+        border:'1px solid '+(complete?'var(--ac-green)':'var(--ac-blue)')
       }},[
-        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-blue)'}},[posLabel]),
-        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${secDone}/${secTotal} (${secPct}%)`]),
+        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:complete?'var(--ac-green)':'var(--ac-blue)'}},[posLabel]),
+        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${done}/${total} (${pct}%)`]),
       ]),
-      // Table
-      h('div',{style:{overflowX:'auto'}},[
-        h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'0.8rem'}},[
-          h('thead',{},[
-            h('tr',{},[
-              h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)',whiteSpace:'nowrap'}},['Ventana']),
-              ...[1,2,3,4,5].map(f=>
-                h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},[`P${f}`])
-              ),
-            ]),
-          ]),
-          h('tbody',{},
-            codes.map(code=>
-              h('tr',{},[
-                h('td',{style:{padding:'4px 8px',fontFamily:'var(--font-mono)',fontWeight:'600',fontSize:'0.78rem',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap',background:'var(--bg-1)'}},[code]),
-                ...[1,2,3,4,5].map(f=>sealCell(wKey(e,deptNum(f,posIdx),code))),
-              ])
-            )
-          ),
-        ]),
-      ]),
+      wrap,
     ]);
   }
 
-  // EC section for common areas
+  // EC section
   function ecSection(){
-    const codes=new Set();
-    for(let f=1;f<=5;f++) getCommonWindows(f).forEach(([c])=>codes.add(c));
-    const codeList=[...codes];
-    if(!codeList.length)return null;
-    let secDone=0,secTotal=0;
-    codeList.forEach(code=>{
-      for(let f=1;f<=5;f++){
-        const s=getSeal(wKey(e,`EC${f}`,code));
-        if(s){secTotal++;if(s.done)secDone++;}
-      }
+    const codes=[...new Set(([1,2,3,4,5].flatMap(f=>getCommonWindows(f).map(([c])=>c))))];
+    if(!codes.length)return null;
+    const allPairs=[];
+    codes.forEach(code=>{for(let f=1;f<=5;f++)allPairs.push({key:wKey(e,`EC${f}`,code),code});});
+    const{done,total}=secCounts(allPairs);
+    const complete=done===total&&total>0;
+
+    const tbody=document.createElement('tbody');
+    codes.forEach(code=>{
+      const tr=document.createElement('tr');
+      const tdCode=document.createElement('td');
+      tdCode.style.cssText='padding:4px 8px;font-family:var(--font-mono);font-weight:600;font-size:0.78rem;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg-1);';
+      tdCode.textContent=code;
+      tr.appendChild(tdCode);
+      for(let f=1;f<=5;f++) tr.appendChild(sealCell(wKey(e,`EC${f}`,code),code,`EC${f}`));
+      tbody.appendChild(tr);
     });
+    const table=document.createElement('table');
+    table.style.cssText='width:100%;border-collapse:collapse;font-size:0.8rem;';
+    const thead=h('thead',{},[h('tr',{},[
+      h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)'}},['Ventana']),
+      ...[1,2,3,4,5].map(f=>h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},['P'+f])),
+    ])]);
+    table.appendChild(thead);table.appendChild(tbody);
+    const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.appendChild(table);
     return h('div',{style:{marginBottom:'16px'}},[
       h('div',{style:{
         display:'flex',alignItems:'center',justifyContent:'space-between',
         padding:'6px 10px',borderRadius:'var(--radius-sm)',marginBottom:'6px',
-        background:secDone===secTotal&&secTotal>0?'var(--ac-green-soft)':'var(--ac-cyan-soft)',
-        border:'1px solid '+(secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-cyan)')
+        background:complete?'var(--ac-green-soft)':'var(--ac-cyan-soft)',
+        border:'1px solid '+(complete?'var(--ac-green)':'var(--ac-cyan)')
       }},[
-        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-cyan)'}},[`Espacios Comunes (EC)`]),
-        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${secDone}/${secTotal}`]),
+        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:complete?'var(--ac-green)':'var(--ac-cyan)'}},['Espacios Comunes (EC)']),
+        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${done}/${total}`]),
       ]),
-      h('div',{style:{overflowX:'auto'}},[
-        h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'0.8rem'}},[
-          h('thead',{},[
-            h('tr',{},[
-              h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)'}},['Ventana']),
-              ...[1,2,3,4,5].map(f=>
-                h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},[`P${f}`])
-              ),
-            ]),
-          ]),
-          h('tbody',{},
-            codeList.map(code=>
-              h('tr',{},[
-                h('td',{style:{padding:'4px 8px',fontFamily:'var(--font-mono)',fontWeight:'600',fontSize:'0.78rem',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap',background:'var(--bg-1)'}},[code]),
-                ...[1,2,3,4,5].map(f=>sealCell(wKey(e,`EC${f}`,code))),
-              ])
-            )
-          ),
-        ]),
-      ]),
+      wrap,
     ]);
   }
 
   const el=h('div',{className:'fade-in'},[
     topbar(`Sello Exterior — Edif. ${edif}`,'building',{edif}),
     h('div',{className:'card'},[
-      // Global summary
+      // Resumen global
       h('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'10px'}},[
-        h('span',{className:'badge badge-green',style:{fontSize:'0.78rem',padding:'5px 8px'}},[`${totalDone} selladas`]),
-        totalActive?h('span',{className:'badge badge-orange',style:{fontSize:'0.78rem',padding:'5px 8px'}},[`${totalActive} pendientes`]):null,
-        (totalWins-totalDone-totalActive)>0?h('span',{className:'badge',style:{fontSize:'0.78rem',padding:'5px 8px'}},[(totalWins-totalDone-totalActive)+' sin marcar']):null,
+        cSellado?h('span',{className:'badge badge-green',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cSellado+' Sellado']):null,
+        cPendiente?h('span',{className:'badge badge-orange',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cPendiente+' Pendiente']):null,
+        cSinSellar?h('span',{className:'badge',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cSinSellar+' Sin Sellar']):null,
+        cDeficiente?h('span',{className:'badge badge-red',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cDeficiente+' Sello Deficiente']):null,
       ].filter(Boolean)),
 
-      // Legend
+      // Leyenda
       h('div',{style:{display:'flex',gap:'12px',flexWrap:'wrap',marginBottom:'16px',fontSize:'0.75rem',color:'var(--tx-2)'}},[
-        h('span',{},[`✓ = Sellada`]),
-        h('span',{},[`◷ = Pendiente`]),
-        h('span',{},[`· = Sin marcar`]),
-        isEditor()?h('span',{style:{color:'var(--ac-blue)'}},[`Toca para alternar`]):null,
+        h('span',{},[`✓ Sellado`]),h('span',{},[`◷ Pendiente`]),
+        h('span',{},[`✗ Sin Sellar`]),h('span',{},[`⚠ Deficiente`]),
+        isEditor()?h('span',{style:{color:'var(--ac-blue)'}},[`Toque corto = sellado/sin sellar · Mantener = popup completo`]):null,
       ].filter(Boolean)),
 
-      // Sections per position
-      posSection(0,'X01'),
-      posSection(1,'X02'),
-      posSection(2,'X03'),
-      posSection(3,'X04'),
+      posSection(0,'X01'),posSection(1,'X02'),posSection(2,'X03'),posSection(3,'X04'),
       ecSection(),
     ]),
     renderSyncBar(),
@@ -1772,6 +1947,38 @@ function generateReport(edif){
     pendingActions.sort((a,b)=>b.count-a.count).forEach(a=>{
       add(`  ${pad(a.label,24)} : ${a.count} ventanas`);
     });
+    add('');
+  }
+
+  // ── SELLO EXTERIOR ───────────────────────────
+  const selloCounts={sellado:0,pendiente:0,sinSellar:0,deficiente:0};
+  const selloDefList=[];
+  Object.keys(byEstado).forEach(est=>{
+    byEstado[est].forEach(it=>{
+      const se=it.w.selloExterior;
+      if(!se){selloCounts.sinSellar++;return;}
+      if(selloCounts[se.estado]!==undefined)selloCounts[se.estado]++;
+      else selloCounts.sinSellar++;
+      if(se.estado==='deficiente')selloDefList.push(it);
+    });
+  });
+  {
+    add(SEP);
+    add('SELLO EXTERIOR');
+    add(sep2);
+    add(`  Sellado          : ${selloCounts.sellado}`);
+    add(`  Pendiente        : ${selloCounts.pendiente}`);
+    add(`  Sin Sellar       : ${selloCounts.sinSellar}`);
+    add(`  Sello Deficiente : ${selloCounts.deficiente}`);
+    if(selloDefList.length){
+      add('');
+      add('  Detalle — Deficiencias de Sello:');
+      selloDefList.forEach(it=>{
+        const se=it.w.selloExterior;
+        add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | Grado ${se.grado||'—'}`);
+        if(se.comentario)add(`    Comentario: ${se.comentario}`);
+      });
+    }
     add('');
   }
 
@@ -2077,6 +2284,41 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         )
       ),
     ]),
+
+    // Sello Exterior
+    (()=>{
+      if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
+      const se=w.selloExterior;
+      const selloColors={
+        sellado:    {bg:'var(--ac-green-soft)', bdr:'var(--ac-green)',  txt:'var(--ac-green)'},
+        pendiente:  {bg:'var(--ac-yellow-soft)',bdr:'var(--ac-yellow)', txt:'var(--ac-yellow)'},
+        sinSellar:  {bg:'var(--bg-2)',          bdr:'var(--border)',    txt:'var(--tx-2)'},
+        deficiente: {bg:'var(--ac-red-soft)',   bdr:'var(--ac-red)',    txt:'var(--ac-red)'},
+      };
+      const sc=selloColors[se.estado]||selloColors.sinSellar;
+      const seEnt=SELLO_ESTADOS.find(s=>s.id===se.estado);
+      const seLabel=seEnt?seEnt.label:se.estado;
+      const seSym=seEnt?seEnt.sym:'';
+      return h('div',{className:'card'},[
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}},[
+          h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['Sello Exterior']),
+          isEditor()?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>{
+            showSelloPopup(key,code,subtitle,()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams));
+          }},['✏️ Editar']):null,
+        ].filter(Boolean)),
+        h('div',{style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}},[
+          h('span',{style:{
+            background:sc.bg,border:`1px solid ${sc.bdr}`,color:sc.txt,
+            borderRadius:'var(--radius-sm)',padding:'4px 10px',fontSize:'0.82rem',fontWeight:'600'
+          }},[seSym+' '+seLabel]),
+          (se.estado==='deficiente'&&se.grado>0)?h('span',{style:{
+            background:'var(--ac-red-soft)',border:'1px solid var(--ac-red)',color:'var(--ac-red)',
+            borderRadius:'var(--radius-sm)',padding:'4px 8px',fontSize:'0.82rem',fontWeight:'600'
+          }},['Grado '+se.grado]):null,
+        ].filter(Boolean)),
+        se.comentario?h('div',{style:{marginTop:'6px',fontSize:'0.8rem',color:'var(--tx-2)',fontStyle:'italic'}},['💬 '+se.comentario]):null,
+      ].filter(Boolean));
+    })(),
 
     // Deficiencias — colapsable
     h('div',{className:'card'},[
@@ -3341,6 +3583,7 @@ function migrateV1(){
           ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion'].forEach(f=>{
             if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
           });
+          if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
           if(w.estado===undefined)w.estado='noInstalada';
         });
       }
@@ -3358,6 +3601,7 @@ function migrateV1(){
         ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion'].forEach(f=>{
           if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
         });
+        if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
       });
     }
   }
