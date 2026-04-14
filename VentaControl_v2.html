@@ -1447,129 +1447,192 @@ function renderSealMap(){
   const edif=viewParams.edif;
   const e=parseInt(edif);
 
-  // Collect all windows with their sellarFrente status, grouped by type and floor
-  const typeFloorMap={}; // {type: {floor: [{key,depto,done,active}]}}
-  const allTypes=new Set();
-
-  for(let f=1;f<=5;f++){
-    for(let p=0;p<4;p++){
-      const tipo=getDeptType(e,f,p);
-      const dn=deptNum(f,p);
-      getDeptWindows(tipo).forEach(([code])=>{
-        const key=wKey(e,dn,code);
-        const w=DATA.windows[key];
-        if(!w)return;
-        const act=w.acciones.sellarFrente||{active:false,done:false};
-        allTypes.add(code);
-        if(!typeFloorMap[code])typeFloorMap[code]={};
-        if(!typeFloorMap[code][f])typeFloorMap[code][f]=[];
-        typeFloorMap[code][f].push({key,depto:dn,done:act.done,active:act.active});
-      });
-    }
-    // Common
-    getCommonWindows(f).forEach(([code])=>{
-      const key=wKey(e,`EC${f}`,code);
-      const w=DATA.windows[key];
-      if(!w)return;
-      const act=w.acciones.sellarFrente||{active:false,done:false};
-      allTypes.add(code);
-      if(!typeFloorMap[code])typeFloorMap[code]={};
-      if(!typeFloorMap[code][f])typeFloorMap[code][f]=[];
-      typeFloorMap[code][f].push({key,depto:`EC${f}`,done:act.done,active:act.active});
-    });
+  // Helper: get seal status for one window key
+  function getSeal(key){
+    const w=DATA.windows[key];
+    if(!w)return null;
+    const act=w.acciones.sellarFrente||{active:false,done:false};
+    return{key,done:act.done,active:act.active&&!act.done};
   }
 
-  const types=[...allTypes];
-  // Count totals
+  // Helper: toggle seal done on a single window
+  function toggleSeal(key){
+    if(!isEditor())return;
+    const w=DATA.windows[key];
+    if(!w)return;
+    if(!w.acciones.sellarFrente)w.acciones.sellarFrente={active:false,done:false};
+    const cur=w.acciones.sellarFrente;
+    if(cur.done){cur.active=false;cur.done=false;}
+    else{cur.active=true;cur.done=true;}
+    saveLocal();
+    renderSealMap();
+  }
+
+  // Render a single seal cell (1 window)
+  function sealCell(key){
+    if(!key)return h('td',{style:{textAlign:'center',padding:'6px 4px',borderBottom:'1px solid var(--border)',color:'var(--tx-2)',fontSize:'0.75rem'}},['—']);
+    const s=getSeal(key);
+    if(!s)return h('td',{style:{textAlign:'center',padding:'6px 4px',borderBottom:'1px solid var(--border)',color:'var(--tx-2)',fontSize:'0.75rem'}},['?']);
+    const bg=s.done?'var(--ac-green-soft)':s.active?'var(--ac-orange-soft)':'var(--bg-2)';
+    const border=s.done?'var(--ac-green)':s.active?'var(--ac-orange)':'var(--border)';
+    const sym=s.done?'✓':s.active?'◷':'·';
+    const color=s.done?'var(--ac-green)':s.active?'var(--ac-orange)':'var(--tx-2)';
+    return h('td',{
+      style:{textAlign:'center',padding:'2px 4px',borderBottom:'1px solid var(--border)',cursor:isEditor()?'pointer':'default'},
+      onClick:()=>toggleSeal(key)
+    },[
+      h('div',{style:{
+        width:'36px',height:'36px',borderRadius:'6px',display:'flex',alignItems:'center',
+        justifyContent:'center',margin:'0 auto',background:bg,border:'1px solid '+border,
+        fontSize:'1rem',fontWeight:'700',color,userSelect:'none'
+      }},[sym])
+    ]);
+  }
+
+  // Build section per depto position (p=0..3 → X01..X04)
+  // Then EC section for common areas
   let totalWins=0,totalDone=0,totalActive=0;
-  types.forEach(t=>{
+
+  function countAll(){
     for(let f=1;f<=5;f++){
-      (typeFloorMap[t]?.[f]||[]).forEach(w=>{
-        totalWins++;
-        if(w.done)totalDone++;
-        else if(w.active)totalActive++;
+      for(let p=0;p<4;p++){
+        const tipo=getDeptType(e,f,p);
+        getDeptWindows(tipo).forEach(([code])=>{
+          const s=getSeal(wKey(e,deptNum(f,p),code));
+          if(s){totalWins++;if(s.done)totalDone++;else if(s.active)totalActive++;}
+        });
+      }
+      getCommonWindows(f).forEach(([code])=>{
+        const s=getSeal(wKey(e,`EC${f}`,code));
+        if(s){totalWins++;if(s.done)totalDone++;else if(s.active)totalActive++;}
       });
     }
-  });
+  }
+  countAll();
+
+  // Build a position section
+  function posSection(posIdx,posLabel){
+    // Get window codes for this position (use floor 1 as template)
+    const tipo=getDeptType(e,1,posIdx);
+    const codes=getDeptWindows(tipo).map(([c])=>c);
+    if(!codes.length)return null;
+
+    // Count done for this section
+    let secDone=0,secTotal=0;
+    codes.forEach(code=>{
+      for(let f=1;f<=5;f++){
+        const s=getSeal(wKey(e,deptNum(f,posIdx),code));
+        if(s){secTotal++;if(s.done)secDone++;}
+      }
+    });
+    const secPct=secTotal?Math.round(secDone/secTotal*100):0;
+
+    return h('div',{style:{marginBottom:'16px'}},[
+      // Section header
+      h('div',{style:{
+        display:'flex',alignItems:'center',justifyContent:'space-between',
+        padding:'6px 10px',borderRadius:'var(--radius-sm)',marginBottom:'6px',
+        background:secDone===secTotal&&secTotal>0?'var(--ac-green-soft)':'var(--ac-blue-soft)',
+        border:'1px solid '+(secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-blue)')
+      }},[
+        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-blue)'}},[posLabel]),
+        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${secDone}/${secTotal} (${secPct}%)`]),
+      ]),
+      // Table
+      h('div',{style:{overflowX:'auto'}},[
+        h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'0.8rem'}},[
+          h('thead',{},[
+            h('tr',{},[
+              h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)',whiteSpace:'nowrap'}},['Ventana']),
+              ...[1,2,3,4,5].map(f=>
+                h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},[`P${f}`])
+              ),
+            ]),
+          ]),
+          h('tbody',{},
+            codes.map(code=>
+              h('tr',{},[
+                h('td',{style:{padding:'4px 8px',fontFamily:'var(--font-mono)',fontWeight:'600',fontSize:'0.78rem',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap',background:'var(--bg-1)'}},[code]),
+                ...[1,2,3,4,5].map(f=>sealCell(wKey(e,deptNum(f,posIdx),code))),
+              ])
+            )
+          ),
+        ]),
+      ]),
+    ]);
+  }
+
+  // EC section for common areas
+  function ecSection(){
+    const codes=new Set();
+    for(let f=1;f<=5;f++) getCommonWindows(f).forEach(([c])=>codes.add(c));
+    const codeList=[...codes];
+    if(!codeList.length)return null;
+    let secDone=0,secTotal=0;
+    codeList.forEach(code=>{
+      for(let f=1;f<=5;f++){
+        const s=getSeal(wKey(e,`EC${f}`,code));
+        if(s){secTotal++;if(s.done)secDone++;}
+      }
+    });
+    return h('div',{style:{marginBottom:'16px'}},[
+      h('div',{style:{
+        display:'flex',alignItems:'center',justifyContent:'space-between',
+        padding:'6px 10px',borderRadius:'var(--radius-sm)',marginBottom:'6px',
+        background:secDone===secTotal&&secTotal>0?'var(--ac-green-soft)':'var(--ac-cyan-soft)',
+        border:'1px solid '+(secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-cyan)')
+      }},[
+        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:secDone===secTotal&&secTotal>0?'var(--ac-green)':'var(--ac-cyan)'}},[`Espacios Comunes (EC)`]),
+        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${secDone}/${secTotal}`]),
+      ]),
+      h('div',{style:{overflowX:'auto'}},[
+        h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'0.8rem'}},[
+          h('thead',{},[
+            h('tr',{},[
+              h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)'}},['Ventana']),
+              ...[1,2,3,4,5].map(f=>
+                h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},[`P${f}`])
+              ),
+            ]),
+          ]),
+          h('tbody',{},
+            codeList.map(code=>
+              h('tr',{},[
+                h('td',{style:{padding:'4px 8px',fontFamily:'var(--font-mono)',fontWeight:'600',fontSize:'0.78rem',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap',background:'var(--bg-1)'}},[code]),
+                ...[1,2,3,4,5].map(f=>sealCell(wKey(e,`EC${f}`,code))),
+              ])
+            )
+          ),
+        ]),
+      ]),
+    ]);
+  }
 
   const el=h('div',{className:'fade-in'},[
     topbar(`Sello Exterior — Edif. ${edif}`,'building',{edif}),
     h('div',{className:'card'},[
-      // Summary badges
-      h('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'12px'}},[
+      // Global summary
+      h('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'10px'}},[
         h('span',{className:'badge badge-green',style:{fontSize:'0.78rem',padding:'5px 8px'}},[`${totalDone} selladas`]),
         totalActive?h('span',{className:'badge badge-orange',style:{fontSize:'0.78rem',padding:'5px 8px'}},[`${totalActive} pendientes`]):null,
-        h('span',{className:'badge',style:{fontSize:'0.78rem',padding:'5px 8px'}},[`${totalWins-totalDone-totalActive} sin marcar`]),
+        (totalWins-totalDone-totalActive)>0?h('span',{className:'badge',style:{fontSize:'0.78rem',padding:'5px 8px'}},[(totalWins-totalDone-totalActive)+' sin marcar']):null,
       ].filter(Boolean)),
 
       // Legend
-      h('div',{style:{display:'flex',gap:'10px',flexWrap:'wrap',marginBottom:'14px',fontSize:'0.75rem'}},[
-        h('div',{style:{display:'flex',alignItems:'center',gap:'4px'}},[
-          h('div',{style:{width:'14px',height:'14px',borderRadius:'3px',background:'var(--ac-green-soft)',border:'1px solid var(--ac-green)'}},[]),
-          'Sellada',
-        ]),
-        h('div',{style:{display:'flex',alignItems:'center',gap:'4px'}},[
-          h('div',{style:{width:'14px',height:'14px',borderRadius:'3px',background:'var(--ac-orange-soft)',border:'1px solid var(--ac-orange)'}},[]),
-          'Pendiente',
-        ]),
-        h('div',{style:{display:'flex',alignItems:'center',gap:'4px'}},[
-          h('div',{style:{width:'14px',height:'14px',borderRadius:'3px',background:'var(--bg-2)',border:'1px solid var(--border)'}},[]),
-          'Sin marcar',
-        ]),
-      ]),
+      h('div',{style:{display:'flex',gap:'12px',flexWrap:'wrap',marginBottom:'16px',fontSize:'0.75rem',color:'var(--tx-2)'}},[
+        h('span',{},[`✓ = Sellada`]),
+        h('span',{},[`◷ = Pendiente`]),
+        h('span',{},[`· = Sin marcar`]),
+        isEditor()?h('span',{style:{color:'var(--ac-blue)'}},[`Toca para alternar`]):null,
+      ].filter(Boolean)),
 
-      // Grid: rows = types, columns = floors
-      h('div',{style:{overflowX:'auto'}},[
-        h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'0.78rem'}},[
-          // Header
-          h('thead',{},[
-            h('tr',{},[
-              h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',position:'sticky',left:0,background:'var(--bg-1)',zIndex:2}},['Tipo']),
-              ...[1,2,3,4,5].map(f=>
-                h('th',{style:{textAlign:'center',padding:'6px 4px',fontWeight:'700',borderBottom:'2px solid var(--border)'}},['P'+f])
-              ),
-              h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)'}},['Total']),
-            ]),
-          ]),
-          // Body
-          h('tbody',{},
-            types.map(tipo=>{
-              let typeDone=0,typeTotal=0;
-              return h('tr',{},[
-                h('td',{style:{padding:'6px 8px',fontWeight:'600',fontFamily:'var(--font-mono)',borderBottom:'1px solid var(--border)',position:'sticky',left:0,background:'var(--bg-1)',zIndex:1}},[tipo]),
-                ...[1,2,3,4,5].map(f=>{
-                  const items=typeFloorMap[tipo]?.[f]||[];
-                  typeTotal+=items.length;
-                  const done=items.filter(i=>i.done).length;
-                  typeDone+=done;
-                  const active=items.filter(i=>i.active&&!i.done).length;
-                  if(!items.length)return h('td',{style:{textAlign:'center',padding:'4px',borderBottom:'1px solid var(--border)',color:'var(--tx-2)'}},['—']);
-                  const bg=done===items.length?'var(--ac-green-soft)':active?'var(--ac-orange-soft)':'transparent';
-                  const color=done===items.length?'var(--ac-green)':active?'var(--ac-orange)':'var(--tx-2)';
-                  return h('td',{style:{textAlign:'center',padding:'4px',borderBottom:'1px solid var(--border)',background:bg,color,fontWeight:'600',cursor:'pointer'},
-                    onClick:()=>{
-                      // Toggle all items in this cell
-                      if(!isEditor())return;
-                      const allDone=items.every(i=>i.done);
-                      items.forEach(i=>{
-                        const w=DATA.windows[i.key];
-                        if(!w.acciones.sellarFrente)w.acciones.sellarFrente={active:false,done:false};
-                        if(allDone){w.acciones.sellarFrente.active=false;w.acciones.sellarFrente.done=false;}
-                        else{w.acciones.sellarFrente.active=true;w.acciones.sellarFrente.done=true;}
-                      });
-                      saveLocal();
-                      renderSealMap();
-                    }
-                  },[`${done}/${items.length}`]);
-                }),
-                h('td',{style:{textAlign:'center',padding:'4px 8px',borderBottom:'1px solid var(--border)',fontWeight:'700',color:typeDone===typeTotal&&typeTotal>0?'var(--ac-green)':'var(--tx-1)'}},[`${typeDone}/${typeTotal}`]),
-              ]);
-            })
-          ),
-        ]),
-      ]),
+      // Sections per position
+      posSection(0,'X01'),
+      posSection(1,'X02'),
+      posSection(2,'X03'),
+      posSection(3,'X04'),
+      ecSection(),
     ]),
-
     renderSyncBar(),
   ]);
   app().innerHTML='';
