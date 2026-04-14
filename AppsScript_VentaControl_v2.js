@@ -46,7 +46,6 @@ var HEADERS = [
   'Acc. Instalar Fijac', // AB 28
   'Etapa Construcción',  // AC 29
   'Acc. Cargar Mortero', // AD 30
-  'Def. Vano Subdim.',  // AE 31
 ];
 
 function setup() {

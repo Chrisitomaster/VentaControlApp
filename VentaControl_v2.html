@@ -360,7 +360,6 @@ const DEFICIENCIES = [
   {id:'vidrioTrizado',     label:'Vidrio trizado',                     icon:'🔍'},
   {id:'marcoPerforado',    label:'Marco perforado',                    icon:'🔧'},
   {id:'faltaFijacion',     label:'Falta fijación en marco',             icon:'🔩'},
-  {id:'vanoAjustado',      label:'Vano subdimensionado',                icon:'⬛'},
 ];
 
 const ACTIONS = [
@@ -387,7 +386,6 @@ const DEF_ACTION_MAP = {
   vidrioTrizado:'reemplazarVidrio',
   marcoPerforado:'repararMarco',
   faltaFijacion:'instalarFijacion',
-  vanoAjustado:'cargarMortero',
 };
 
 const ESTADOS = [
@@ -531,7 +529,7 @@ function newWindowRecord(){
   return{
     estado:'noInstalada',
     estadoVano:'',
-    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false,vanoAjustado:false},
+    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false},
     acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false}},
     observaciones:'',
     historial:[],
@@ -2731,7 +2729,6 @@ function buildSyncPayload(dirtyOnly=false){
       vidrioTrizado:w.deficiencias.vidrioTrizado?1:0,
       marcoPerforado:w.deficiencias.marcoPerforado?1:0,
       faltaFijacion:w.deficiencias.faltaFijacion?1:0,
-      def_vanoAjustado:w.deficiencias.vanoAjustado?1:0,
       vano:w.estadoVano||'',
       obs:w.observaciones||'',
       act_pulir:w.acciones.pulir?.active?(w.acciones.pulir.done?'done':'pending'):'',
@@ -2881,7 +2878,6 @@ function mergeFromSheets(rows){
       vidrioTrizado:pd(r,'vidrioTrizado','def_vidrioTrizado'),
       marcoPerforado:pd(r,'marcoPerforado','def_marcoPerforado'),
       faltaFijacion:pd(r,'faltaFijacion','def_faltaFijacion'),
-      vanoAjustado: pd(r,'vanoAjustado', 'def_vanoAjustado'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
     ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{
