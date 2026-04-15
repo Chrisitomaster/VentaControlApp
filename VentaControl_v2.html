@@ -354,7 +354,7 @@ const COMMON_WIN = {
 // ---- DEFICIENCY & ACTION DEFINITIONS ----
 const DEFICIENCIES = [
   {id:'separacion',        label:'Separación >5mm',                    icon:'↔'},
-  {id:'descuadre',         label:'Descuadre',                          icon:'◇'},
+  {id:'descuadre',         label:'Descuadre de Rasgo',                 icon:'◇'},
   {id:'desaplomo',         label:'Ventana desaplomada',                 icon:'📐'},
   {id:'sinSellador',       label:'Sin sellador FC11 bajo marco',        icon:'💧'},
   {id:'sinSelladorFrente', label:'Sin sellador FC11 frente ventana',    icon:'💦'},
@@ -380,7 +380,6 @@ const ACTIONS = [
 // Deficiency → Action mapping
 const DEF_ACTION_MAP = {
   separacion:'pulir',
-  descuadre:'aplomar',
   desaplomo:'aplomar',
   sinSellador:'impermeabilizar',
   sinSelladorFrente:'sellarFrente',
@@ -1783,26 +1782,70 @@ function renderSealMap(){
     return{done,total,pct:total?Math.round(done/total*100):0};
   }
 
-  // Render a depto position section
+  // Render a depto position section (handles mixed types — MR piso 1, A/B pisos 2-5)
   function posSection(posIdx,posLabel){
-    const tipo=getDeptType(e,1,posIdx);
-    const codes=getDeptWindows(tipo).map(([c])=>c);
-    if(!codes.length)return null;
+    // Collect codes per floor (type may differ between floor 1 and floors 2-5)
+    const floorCodes={};
+    for(let f=1;f<=5;f++){
+      floorCodes[f]=getDeptWindows(getDeptType(e,f,posIdx)).map(([c])=>c);
+    }
+    // All unique codes in appearance order (floor 1 first, then new ones from upper floors)
+    const allCodes=[],seen=new Set();
+    for(let f=1;f<=5;f++) floorCodes[f].forEach(c=>{if(!seen.has(c)){seen.add(c);allCodes.push(c);}});
+    if(!allCodes.length)return null;
+
+    // Detect mixed-type position (e.g. MR on floor 1, A/B on floors 2-5)
+    const tipo1=getDeptType(e,1,posIdx);
+    const tipo25=getDeptType(e,2,posIdx);
+    const isMixed=tipo1!==tipo25;
+
+    // Collect pairs for counts — only floors where that code actually exists
     const allPairs=[];
-    codes.forEach(code=>{for(let f=1;f<=5;f++)allPairs.push({key:wKey(e,deptNum(f,posIdx),code),code});});
+    allCodes.forEach(code=>{
+      for(let f=1;f<=5;f++){
+        if(floorCodes[f].includes(code))allPairs.push({key:wKey(e,deptNum(f,posIdx),code),code});
+      }
+    });
     const{done,total,pct}=secCounts(allPairs);
     const complete=done===total&&total>0;
 
+    const CELL_STYLE='padding:4px 8px;font-family:var(--font-mono);font-weight:600;font-size:0.78rem;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg-1);';
+    const EMPTY_STYLE='text-align:center;padding:2px 3px;border-bottom:1px solid var(--border);background:var(--bg-0);';
+
     const tbody=document.createElement('tbody');
-    codes.forEach(code=>{
+
+    // Optional separator row between floor-1-only codes and upper-floor codes
+    let addedSep=false;
+    allCodes.forEach(code=>{
+      const onlyFloor1=floorCodes[1].includes(code)&&![2,3,4,5].some(f=>floorCodes[f].includes(code));
+      const onlyUpper=!floorCodes[1].includes(code);
+      // Insert separator row when transitioning from floor-1-only to upper-only (mixed type)
+      if(isMixed&&!addedSep&&onlyUpper){
+        addedSep=true;
+        const sepTr=document.createElement('tr');
+        const sepTd=document.createElement('td');
+        sepTd.colSpan=6;
+        sepTd.style.cssText='padding:3px 8px;font-size:0.7rem;color:var(--tx-2);background:var(--bg-2);border-bottom:1px solid var(--border);font-style:italic;';
+        sepTd.textContent=`↓ Pisos 2-5 (Tipo ${tipo25})`;
+        sepTr.appendChild(sepTd);
+        tbody.appendChild(sepTr);
+      }
+
       const tr=document.createElement('tr');
       const tdCode=document.createElement('td');
-      tdCode.style.cssText='padding:4px 8px;font-family:var(--font-mono);font-weight:600;font-size:0.78rem;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg-1);';
+      tdCode.style.cssText=CELL_STYLE;
       tdCode.textContent=code;
       tr.appendChild(tdCode);
+
       for(let f=1;f<=5;f++){
-        const dn=deptNum(f,posIdx);
-        tr.appendChild(sealCell(wKey(e,dn,code),code,`${dn}`));
+        if(floorCodes[f].includes(code)){
+          tr.appendChild(sealCell(wKey(e,deptNum(f,posIdx),code),code,`${deptNum(f,posIdx)}`));
+        } else {
+          const td=document.createElement('td');
+          td.style.cssText=EMPTY_STYLE;
+          td.innerHTML='<span style="color:var(--tx-2);font-size:0.7rem;">—</span>';
+          tr.appendChild(td);
+        }
       }
       tbody.appendChild(tr);
     });
@@ -1813,12 +1856,8 @@ function renderSealMap(){
       h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)',whiteSpace:'nowrap'}},['Ventana']),
       ...[1,2,3,4,5].map(f=>h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},['P'+f])),
     ])]);
-    table.appendChild(thead);
-    table.appendChild(tbody);
-
-    const wrap=document.createElement('div');
-    wrap.style.overflowX='auto';
-    wrap.appendChild(table);
+    table.appendChild(thead);table.appendChild(tbody);
+    const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.appendChild(table);
 
     return h('div',{style:{marginBottom:'16px'}},[
       h('div',{style:{
@@ -1827,7 +1866,9 @@ function renderSealMap(){
         background:complete?'var(--ac-green-soft)':'var(--ac-blue-soft)',
         border:'1px solid '+(complete?'var(--ac-green)':'var(--ac-blue)')
       }},[
-        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:complete?'var(--ac-green)':'var(--ac-blue)'}},[posLabel]),
+        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:complete?'var(--ac-green)':'var(--ac-blue)'}},[
+          posLabel+(isMixed?` (P1:${tipo1} · P2-5:${tipo25})`:''),
+        ]),
         h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${done}/${total} (${pct}%)`]),
       ]),
       wrap,
@@ -2335,6 +2376,25 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
   const w=DATA.windows[key];
   if(!w){app().innerHTML='<p>Ventana no encontrada</p>';return;}
 
+  // Build sibling window list for prev/next nav
+  const _parts=key.split('-');
+  const _edifN=parseInt(_parts[0]);
+  const _deptoStr=_parts[1];
+  const _sibWins=(()=>{
+    if(_deptoStr.startsWith('EC')){
+      const f=parseInt(_deptoStr.replace('EC',''));
+      return getCommonWindows(f).map(([c,l])=>({code:c,loc:l}));
+    }
+    const dn=parseInt(_deptoStr);
+    const f=Math.floor(dn/100);
+    const pi=(dn%100)-1;
+    const tipo=getDeptType(_edifN,f,pi);
+    return getDeptWindows(tipo).map(([c,l])=>({code:c,loc:l}));
+  })();
+  const _curIdx=_sibWins.findIndex(w=>w.code===code);
+  const _prevWin=_curIdx>0?_sibWins[_curIdx-1]:null;
+  const _nextWin=_curIdx<_sibWins.length-1?_sibWins[_curIdx+1]:null;
+
   const el=h('div',{className:'fade-in'},[
     topbar(`${code} · ${loc}`,backView,backParams),
     h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}},[
@@ -2347,6 +2407,27 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ]):null;
       })(),
     ]),
+    // Prev / Next navigation row
+    (_prevWin||_nextWin)?h('div',{style:{display:'flex',alignItems:'center',gap:'6px',marginBottom:'10px'}},[
+      _prevWin?h('button',{
+        className:'btn btn-sm btn-ghost',
+        style:{flex:1,minHeight:'38px',fontSize:'0.8rem'},
+        onClick:()=>{
+          const prevKey=wKey(_edifN,_deptoStr,_prevWin.code);
+          renderWindowDetail(prevKey,_prevWin.code,_prevWin.loc,subtitle,backView,backParams);
+        }
+      },['◀ '+_prevWin.code]):h('div',{style:{flex:1}},[]),
+      h('span',{style:{fontSize:'0.72rem',color:'var(--tx-2)',whiteSpace:'nowrap'}},
+        [(_curIdx+1)+'/'+_sibWins.length]),
+      _nextWin?h('button',{
+        className:'btn btn-sm btn-ghost',
+        style:{flex:1,minHeight:'38px',fontSize:'0.8rem'},
+        onClick:()=>{
+          const nextKey=wKey(_edifN,_deptoStr,_nextWin.code);
+          renderWindowDetail(nextKey,_nextWin.code,_nextWin.loc,subtitle,backView,backParams);
+        }
+      },[_nextWin.code+' ▶']):h('div',{style:{flex:1}},[]),
+    ]):null,
 
     // Estado selector
     h('div',{className:'card'},[
@@ -3782,11 +3863,20 @@ function migrateV1(){
   const totalWins=Object.keys(DATA.windows).length;
   console.log('VentaControl v2.3 — '+totalWins+' ventanas cargadas');
 
-  // Prevent accidental exit (swipe-back gesture)
-  window.addEventListener('beforeunload',(e)=>{
-    e.preventDefault();
-    e.returnValue='';
+  // Prevent accidental exit — Android back-button / swipe gesture
+  const _vcBase=location.href.split('#')[0];
+  if(!history.state?.vc){
+    history.pushState({vc:'app'},'',_vcBase+'#vc');
+  }
+  window.addEventListener('popstate',()=>{
+    // Re-push sentinel so app stays "inside" history
+    history.pushState({vc:'app'},'',_vcBase+'#vc');
+    if(confirm('¿Salir de VentaControl?\n\nTus datos están guardados en el dispositivo.')){
+      history.go(-2); // Jump past sentinel → exit / previous page
+    }
   });
+  // Desktop fallback
+  window.addEventListener('beforeunload',(e)=>{e.preventDefault();e.returnValue='';});
 
   // Render
   render();
