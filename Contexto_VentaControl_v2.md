@@ -1,285 +1,491 @@
-# Documento de Traspaso de Contexto — VentaControl v2.4
+# Documento de Traspaso de Contexto — VentaControl v2.5
+
+> **PARA LA IA QUE LEA ESTO:** Este archivo es el punto de entrada para cualquier sesión nueva. Léelo completo antes de tocar código. Contiene el estado real del proyecto, decisiones técnicas críticas, y patrones que DEBES respetar para no romper cosas. El archivo principal es `VentaControl_v2.html` (~3890 líneas), single-file, sin bundler, sin framework.
 
 ---
 
-## 1. Vision General del Proyecto
+## 1. Visión General del Proyecto
 
-App HTML single-file (PWA) para el control de instalacion de ventanas en el Condominio Alberto Fuchslocher (Osorno, Chile): 34 edificios, 5 pisos cada uno, 4 departamentos por piso + espacios comunes = 4,740 ventanas totales. El objetivo es registrar en campo (desde celular) el estado de cada ventana, inconformidades, sello exterior, funcionalidad, acciones correctivas, y sincronizar con Google Sheets como base de datos compartida.
+App HTML single-file (PWA) para el control de instalación de ventanas en el Condominio Alberto Fuchslocher (Osorno, Chile): **34 edificios, 5 pisos cada uno, 4 departamentos por piso + espacios comunes = 4,740 ventanas totales**. Se usa desde celular en obra. Registra estado de cada ventana, inconformidades, sello exterior, condición de funcionalidad, acciones correctivas. Sincroniza con Google Sheets como base de datos compartida.
+
+**Usuario:** Trabaja en iOS/Android Chrome en obra. Touch es el input principal. Prefer: rápido, sin prompts nativos, gestos intuitivos.
 
 ---
 
-## 2. Stack Tecnologico
+## 2. Stack Tecnológico
 
 | Componente | Detalle |
 |---|---|
-| Frontend | HTML5 + CSS3 + JavaScript vanilla — todo en un solo archivo (`VentaControl_v2.html`, ~3800 lineas) |
-| Framework | Ninguno. Rendering imperativo via helper `h()` (createElement wrapper) |
-| Persistencia local | `localStorage` — clave `ventacontrol_v2` (JSON con todos los datos) |
-| Dirty tracking | `localStorage` — clave `vc2_dirty` (Set serializado de keys modificadas) |
-| Perfil usuario | `localStorage` — clave `vc2_role` (`editor` / `viewer`) |
-| URL backend | Hardcodeada en `DEFAULT_APPS_URL` (ya NO usa localStorage) |
-| Backend | Google Apps Script (`AppsScript_VentaControl_v2.js`) desplegado como Web App |
-| Base de datos | Google Sheets — Sheet ID: `1Ivnk1kXB1PVMqCAjKLRZzJnC72OdkL0zrIG_KB6WQz8`, hoja `REGISTRO`, 29 columnas (A-AC) |
-| PWA | `manifest.json` + `sw.js` (cache-first strategy) |
+| Frontend | HTML5 + CSS3 + JS vanilla — **todo en un solo archivo** (`VentaControl_v2.html`, ~3890 líneas) |
+| Rendering | Imperativo via helper `h(tag, props, children)` (createElement wrapper). NO React, NO Vue. |
+| Persistencia local | `localStorage` clave `ventacontrol_v2` (JSON completo) |
+| Dirty tracking | `localStorage` clave `vc2_dirty` (Set serializado de keys modificadas) |
+| Perfil usuario | `localStorage` clave `vc2_role` (`editor` / `viewer`) |
+| URL backend | Hardcodeada en `DEFAULT_APPS_URL` — NO usar localStorage |
+| Backend | Google Apps Script desplegado como Web App |
+| Base de datos | Google Sheets — Sheet ID `1Ivnk1kXB1PVMqCAjKLRZzJnC72OdkL0zrIG_KB6WQz8`, hoja `REGISTRO` |
+| PWA | `manifest.json` + `sw.js` (cache-first) |
 | Hosting | GitHub Pages — repo `Chrisitomaster/VentaControlApp`, branch `main` |
+| Deploy | `git push origin <worktree-branch>:main` |
 | Apps Script URL | `https://script.google.com/macros/s/AKfycbzpN-uPtdFawJ9wdxJ8Kc6pes0KWgeb1_Y0MXqOEG_athPggeItLegVVvKwx11egatn/exec` |
 
 ---
 
-## 3. Arquitectura y Estructura
+## 3. Arquitectura del Archivo Principal
 
 ```
 C:\Proyectos\VentaControl\
-|-- VentaControl_v2.html        # App completa (HTML + CSS + JS) ~3800 lineas
-|-- sw.js                       # Service Worker — cache-first offline
-|-- manifest.json               # PWA manifest
-|-- AppsScript_VentaControl_v2.js  # Google Apps Script backend (copiar a Google)
-|-- CLAUDE.md                   # Guia para Claude Code
-|-- Contexto_VentaControl_v2.md # Este archivo
+├── VentaControl_v2.html        ← ÚNICO ARCHIVO A MODIFICAR (~3890 líneas)
+├── sw.js                       ← Service Worker (cache-first)
+├── manifest.json               ← PWA manifest
+├── AppsScript_VentaControl_v2.js ← Google Apps Script (se copia a Google)
+└── Contexto_VentaControl_v2.md ← Este archivo
 ```
 
-### Estructura interna de `VentaControl_v2.html`:
+### Mapa de secciones internas (`VentaControl_v2.html`):
 
-| Seccion | Lineas aprox. | Contenido |
+| Sección | Líneas aprox. | Qué hay |
 |---|---|---|
-| CSS (`<style>`) | 1-255 | Variables CSS, temas claro/oscuro, componentes UI |
-| Configuracion JS | 260-415 | `BLDG_RAW`, `BUILDINGS`, `WIN_DEF`, `COMMON_WIN`, `DEFICIENCIES`, `ACTIONS`, `DEF_ACTION_MAP`, `ESTADOS`, `VANO_OPTS`, `SELLO_ESTADOS`, `EIFS_PHASES` |
-| Helpers DOM | 415-430 | `$()`, `$$()`, `h()`, `ts()`, `pct()` |
-| Data Model | 430-570 | `DATA`, `dirtyKeys`, `newWindowRecord()`, `saveLocal()`, `updateWindow()` |
-| Stats | 575-680 | `getBldgStats()`, `getDeptStats()`, etc. |
-| Router | 680-720 | `currentView`, `viewParams`, `navigate()`, `navigateBack()`, `render()` |
-| Views | 720-1450 | `renderLogin`, `renderDashboard`, `renderSA`, `renderBuilding`, `renderDept`, `renderGridMap`, `renderCommon` |
-| MM Picker | 1453-1570 | `showMmPicker()` — drum-roll 1-50mm |
-| Sello Popup | 1572-1700 | `showSelloPopup()` — modal estado sello + grado + comentario |
-| Seal Map | 1700-1910 | `renderSealMap()` — grilla sello exterior por posicion/tipo/piso |
-| Report | 1910-2110 | `generateReport()`, `renderReport()` |
-| Window Detail | 2110-2600 | `renderWindowDetail()`, `renderWindowEC()`, `renderWindowDepto()` |
-| Bulk/Modals | 2600-2700 | `showBulkModal()`, `showLegend()`, topbar |
-| Sync engine | 2700-2900 | `doSync()`, `buildSyncPayload()`, `mergeFromSheets()` |
-| CSV/Import | 2900-3100 | `exportCSV()`, `importCSV()`, migracion v1 |
-| Init | 3700-3801 | `initData()`, integrity checks + migration, PWA registration |
+| CSS `<style>` | 1–260 | Variables CSS (claro/oscuro), todos los componentes UI |
+| Constantes JS | 260–415 | `BLDG_RAW`, `BUILDINGS`, `WIN_DEF`, `COMMON_WIN`, `DEFICIENCIES`, `ACTIONS`, `DEF_ACTION_MAP`, `ESTADOS`, `VANO_OPTS`, `SELLO_ESTADOS`, `EIFS_PHASES` |
+| Helpers DOM | 415–435 | `$()`, `$$()`, `h()`, `ts()`, `pct()` |
+| Data model | 435–575 | `DATA`, `dirtyKeys`, `newWindowRecord()`, `saveLocal()`, `updateWindow()` |
+| Stats | 575–685 | `getBldgStats()`, `getDeptStats()`, `getCommonStats()`, `getSAStats()` |
+| Router | 685–725 | `currentView`, `viewParams`, `navigate()`, `navigateBack()`, `render()` |
+| Vistas | 725–1455 | `renderLogin`, `renderDashboard`, `renderSA`, `renderBuilding`, `renderDept`, `renderGridMap`, `renderCommon` |
+| MM Picker | 1455–1575 | `showMmPicker()` — drum-roll scroll 1–50 mm |
+| Sello Popup | 1575–1705 | `showSelloPopup()` — modal sello con estado/grado/comentario |
+| Seal Map | 1705–1915 | `renderSealMap()` — grilla sello exterior |
+| Report | 1915–2115 | `generateReport()`, `renderReport()` |
+| Window Detail | 2115–2650 | `renderWindowDetail()`, `renderWindowEC()`, `renderWindowDepto()` |
+| Bulk/Modals | 2650–2720 | `showBulkModal()`, `showLegend()`, `topbar()` |
+| Sync engine | 2720–2920 | `doSync()`, `buildSyncPayload()`, `mergeFromSheets()` |
+| CSV/Import | 2920–3120 | `exportCSV()`, `importCSV()`, migración v1 |
+| Init | 3720–3892 | `initData()` — integrity checks, migración de campos, PWA registration, back-button guard |
 
-### Flujo de datos (Sync):
+### Flujo de datos — Sync:
 
 ```
-[Usuario cambia estado] → updateWindow() → dirtyKeys.add(key) → saveLocal() + saveDirtyKeys()
-                                                                        ↓
-[Sync button] → doSync():
-  1. Pull: fetchWithTimeout(action=read) → mergeFromSheets()  ← SALTA dirty keys (local gana)
-  2. Push: buildSyncPayload(dirtyOnly=true) → POST chunks de 100 → Apps Script syncData()
-  3. Exito: dirtyKeys.clear() + saveDirtyKeys()
+[Usuario cambia estado]
+  → updateWindow(key, field, value, logMsg)
+  → dirtyKeys.add(key)
+  → saveLocal() + saveDirtyKeys()
+
+[Botón Sync]
+  → doSync():
+    1. Pull: GET ?action=read → mergeFromSheets()  ← SALTA dirty keys (local wins)
+    2. Push: buildSyncPayload(dirtyOnly=true) → POST chunks de 100 → Apps Script
+    3. Éxito: dirtyKeys.clear() + saveDirtyKeys()
+```
+
+### Flujo de navegación:
+
+```
+navigate(view, params)    → cambia currentView + viewParams → render() → scrollTo(0,0)
+navigateBack(view, params) → idem (alias semántico para el botón ←)
+topbar(title, backView, backParams) → genera topbar con botón ← que llama navigateBack()
 ```
 
 ---
 
-## 4. Progreso Consolidado (funcionalidades 100% implementadas)
+## 4. Modelo de Datos
 
-### Core
-- [x] 34 edificios con tipos correctos (A, Aa, B, C, Ca, D) y MR en pisos 1 de edif 7, 16, 24, 31
-- [x] 4,740 ventanas con keys unicas formato `{edif}-{depto}-{code}` (ej: `16-201-V1-Izq`)
-- [x] Espacios comunes con depto `EC{piso}` (ej: `EC1`, `EC5`)
-- [x] 6 estados de ventana: `instalada / pendiente / noInstalada / quitar / noInstalar / sinVentana`
-- [x] 3 estados de rasgo: `OK / Sobredimensionado / Subdimensionado` (Pulir eliminado)
-- [x] Separacion mm: drum-roll picker 1-50mm (reemplaza prompt nativo)
-- [x] Badge separacion en perfil: `+Nmm` (naranja) o `−Nmm` (cyan) + descripcion
-- [x] Sistema de perfiles: Editor (modifica) / Espectador (solo lectura)
-- [x] Tema claro/oscuro con toggle persistente
-- [x] Prevencion salida accidental (`beforeunload`)
-- [x] Anti-seleccion de texto en long-press (`.win-tile` CSS + contextmenu prevention)
+### `newWindowRecord()` — estructura actual completa:
 
-### Deficiencias (10 tipos)
-- [x] Separacion >5mm, Descuadre, Desaplomo, Sin FC11 bajo marco, Sin FC11 frente, Malla retorno EIFS, Malla pulida, Vidrio trizado, Marco perforado, Falta fijacion
-
-### Acciones correctivas (9 tipos)
-- [x] Pulir Rasgo, Aplomar, Aplicar sello bajo marco, Sellar frente, Reparar EIFS, Reemplazar vidrio, Aplicar sello (era "Reparar marco"), Instalar fijacion, Cargar vano con mortero
-- [x] Ciclo completo: activar → completar → reabrir → quitar
-- [x] Sugerencia automatica por deficiencia activa (via `DEF_ACTION_MAP`)
-- [x] `syncDefToActions()` ELIMINADO — acciones son independientes de deficiencias
-
-### Sello Exterior (nuevo)
-- [x] Campo `selloExterior: {estado, grado, comentario}` en cada ventana
-- [x] 4 estados: `sellado / pendiente / sinSellar / deficiente` (constante `SELLO_ESTADOS`)
-- [x] Grado de deficiencia 1-5 (solo visible cuando estado = 'deficiente')
-- [x] Long-press en celda del mapa abre `showSelloPopup` (modal con estado + grado + comentario)
-- [x] Tap corto en mapa: cicla `sellado ↔ sinSellar`
-- [x] Card "Sello Exterior" en perfil de ventana: badge color + grado + comentario + boton editar
-- [x] Informe incluye seccion SELLO EXTERIOR con conteo y lista de deficientes
-
-### Condicion de Funcionalidad (nuevo)
-- [x] Campo `funcionalidad: 0-5` en cada ventana (0 = sin evaluar)
-- [x] Card en perfil: 5 circulos numerados con colores (rojo→naranja→cyan→azul→verde)
-- [x] Etiquetas: Muy Deficiente / Deficiente / Regular / Buena / Excelente
-- [x] Toque en mismo numero = deseleccionar (vuelve a 0)
-- [x] Informe incluye seccion CONDICION DE FUNCIONALIDAD con conteo por nivel + lista criticos (1-2)
-
-### Mapa de Sello Exterior (nueva vista)
-- [x] Vista `renderSealMap()` accesible desde vista edificio
-- [x] Grilla por posicion de depto (X01/X02/X03/X04/EC), tipo de ventana, pisos 1-5
-- [x] Cada celda = 1 ventana fisica exacta
-- [x] Colores por estado: verde/naranja/gris/rojo con simbolos ✓/◷/✗/⚠
-- [x] Deficiente muestra `N⚠` con el grado
-- [x] Badges resumen al tope: cSellado / cPendiente / cSinSellar / cDeficiente
-
-### Informe de texto
-- [x] `generateReport(edif)` genera texto plano con secciones:
-  - RESUMEN GENERAL
-  - PENDIENTES DE INSTALACION
-  - SIN INSTALAR
-  - A QUITAR
-  - INCONFORMIDADES ACTIVAS
-  - ACCIONES CORRECTIVAS PENDIENTES
-  - SELLO EXTERIOR (con detalle deficientes)
-  - CONDICION DE FUNCIONALIDAD (con lista criticos)
-  - RESUMEN POR TIPO (pedido materiales)
-
-### Vistas
-- [x] Dashboard global con % bruto y ajustado, 5 SA cards
-- [x] Vista SA con listado edificios, badges defectos/acciones, etapa construccion
-- [x] Vista edificio: grilla deptos, espacios comunes, resumen, boton mapa sello
-- [x] Vista departamento: tiles ventana con long-press picker rapido
-- [x] `renderGridMap`: grilla completa del edificio con totales al tope
-- [x] Vista detalle ventana: estado / estado rasgo (con mm info) / sello exterior / funcionalidad / deficiencias / acciones / observaciones / fotos / historial
-- [x] Mapa de sello exterior por edificio
-
-### Tracker de construccion
-- [x] `EIFS_PHASES`: 3 fases (Montaje EPS, Terminaciones, Sellados) con sub-items
-- [x] Reemplaza el antiguo `BLDG_STAGES` (6 etapas planas)
-- [x] Visible en vista SA por edificio
-
-### Sync
-- [x] Sync bidireccional: pull + push dirty keys en chunks de 100
-- [x] Proteccion dirty keys: merge remoto NO sobreescribe cambios locales pendientes
-- [x] dirtyKeys persistido en localStorage (`vc2_dirty`) — sobrevive reload
-- [x] URL hardcodeada en `DEFAULT_APPS_URL` (no mas config manual)
-- [x] Pull por seccion: `?edif=N` para descargar solo un edificio
-
-### Otras
-- [x] Cambio masivo de estado (por edificio/piso/depto)
-- [x] CSV export/import
-- [x] Migracion desde v1
-- [x] Historial de cambios por ventana (max 50 entradas, deduplicado)
-- [x] PWA offline con Service Worker cache-first
-- [x] Orientacion de departamentos (Izquierda/Derecha) visible en perfil
-
----
-
-## 5. Descubrimientos y Decisiones Tecnicas
-
-### Reglas de negocio
-- **Key de ventana**: `{edif}-{depto}-{code}` — PK en app y Sheets
-- **Building key**: `bld-{edif}`
-- **Tipo MR solo en piso 1**: Edif 7 (pos 2,4), 16 (pos 1,3), 24 (pos 1,3), 31 (pos 2,4)
-- **Edif 31 correccion**: Piso 2-5 es `['B','A','B','A']`
-- **% Ajustado**: `(instaladas - quitar) / total × 100`
-- **DEF_ACTION_MAP**: Deficiencia activa sugiere accion; desactivar deficiencia NO quita accion
-
-### Decisiones tecnicas criticas
-- **textarea `onBlur` no `onInput`**: En movil, `onInput` re-renderiza y cierra teclado
-- **Long-press touch**: `touchstart/touchmove/touchend` con flags `scrolled` (threshold 10px), `longFired`, `touchHandled` + timer 450ms + vibration
-- **sealCell DOM imperativo**: Celdas del mapa de sello usan `document.createElement` (no `h()`) para adjuntar eventos touch correctamente dentro de tabla scrollable
-- **showMmPicker scroll-snap**: `scroll-snap-type:y mandatory` en drum div, cada item `scroll-snap-align:center`, `scrollbar-width:none` + clase `.mm-drum` para webkit
-- **showSelloPopup self-redraw**: `draw()` interna limpia overlay y reconstruye modal; textarea restaura valor via `setTimeout` despues de cada redraw
-- **Sync pull-then-push**: Pull primero para obtener datos remotos; dirty keys protegidas de overwrite
-- **Lazy actions panel**: `collectActions()` escanea 4740×8 iteraciones — solo ejecuta al tocar panel
-- **Content-Type `text/plain`**: Apps Script requiere esto (no `application/json`) para evitar CORS preflight en POST
-- **Chunks de 100**: Apps Script timeout 30s — lotes >200 daban timeout
-
-### Migracion de campos (init loop)
-Cada vez que se agrega un campo nuevo a `newWindowRecord()`, se agrega en AMBOS loops del `initData()`:
-```js
-// Loop deptos
-if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
-if(w.funcionalidad===undefined)w.funcionalidad=0;
-if(w.estadoVano==='Pulir'){w.estadoVano='';saveLocal();}
-// Loop EC (espacios comunes) — identico
-```
-
-### Bugs resueltos (historico)
-1. Sync enviaba 4740 ventanas → dirty tracking con Set
-2. Apps Script escribia fila x fila → batch `setValues()`
-3. Estado "Instalada" de Sheets no matcheaba → `normalizeEstado()`
-4. Espacios comunes depto vacio en Sheet → reconstruccion `EC{piso}`
-5. Historial repetido → deduplicacion
-6. Dashboard crash con panel acciones → lazy loading
-7. Sync timeout en cambios masivos → timeout 120s + chunks 100
-8. Sync sobreescribia cambios locales → dirty keys protegidas en `mergeFromSheets()`
-9. dirtyKeys se perdia al recargar → persistido en `localStorage('vc2_dirty')`
-10. Long-press disparaba navegacion + popup simultaneos → flag `touchHandled` + `contextmenu` prevention
-
----
-
-## 6. Estado Actual Exacto
-
-### Ultima sesion (2026-04-14) — commits realizados
-
-```
-70470be Rasgo: quitar Pulir, picker mm carrete, funcionalidad 1-5
-c4bc779 Sello exterior: estados ricos con popup, perfil de ventana e informe
-9508b07 Mapa de sello: redisenar grilla por posicion de depto x piso
-304159a Hardcodear URL de Apps Script para sync automatico
-1cb7573 UX overhaul: 19 mejoras de interfaz, nuevos estados y vistas
-```
-
-### Estado del repo
-- Branch local: `claude/interesting-raman` → pushea a `main` en GitHub
-- GitHub Pages: activo, sirve desde `main`
-- Todo pusheado, sin cambios pendientes
-
----
-
-## 7. Proximos Pasos (To-Do)
-
-### Alta prioridad
-1. **Sync selloExterior y funcionalidad a Sheets**: Los campos nuevos no se sincronizan aun. Agregar columnas AD (selloEstado), AE (selloGrado), AF (selloComentario), AG (funcionalidad) en Apps Script `HEADERS[]`, `syncData()`, `readAll()`. Actualizar `buildSyncPayload()` y `mergeFromSheets()`.
-
-2. **Filtro rapido por edificio en panel de acciones correctivas**: `renderLazyActionsCard` carga rango 1-34. Agregar dropdown de edificio para filtrar.
-
-### Media prioridad
-3. **Preservar scroll position al navegar atras**: `navigate()` hace `scrollTo(0,0)` siempre. Guardar `scrollY` en navStack y restaurar al volver.
-
-4. **Picker mm editable desde mapa de sello**: Cuando se edita separacionMm en mapa, abrir picker en lugar del prompt.
-
----
-
-## 8. Variables y Constantes Clave (no renombrar)
-
-| Variable | Uso |
-|---|---|
-| `DATA` | Objeto raiz con `.windows`, `.buildings`, `.meta` |
-| `DATA.windows[key]` | Record de ventana. Key: `{edif}-{depto}-{code}` |
-| `DATA.buildings[bKey(edif)]` | `{comment, accionesPendientes, stageItems}` |
-| `dirtyKeys` | `Set<string>` — keys modificadas sin sync |
-| `DEFICIENCIES` | Array `{id, label, icon}` — 10 deficiencias |
-| `ACTIONS` | Array `{id, label, icon, color}` — 9 acciones correctivas |
-| `DEF_ACTION_MAP` | `{defId: actionId}` — mapeo deficiencia → accion |
-| `ESTADOS` | 6 estados: instalada/pendiente/noInstalada/quitar/noInstalar/sinVentana |
-| `VANO_OPTS` | `['OK','Sobredimensionado','Subdimensionado']` |
-| `SELLO_ESTADOS` | `[{id,label,sym}]` — 4 estados de sello exterior |
-| `EIFS_PHASES` | 3 fases construccion con sub-items (reemplaza BLDG_STAGES) |
-| `DEFAULT_APPS_URL` | URL hardcodeada del Web App de Apps Script |
-| `currentView` | Vista activa |
-| `viewParams` | Parametros de vista activa |
-| `syncing` | Boolean — previene sync concurrente |
-
-### Estructura `newWindowRecord()` actual:
 ```js
 {
-  estado: 'noInstalada',
-  estadoVano: '',
-  separacionMm: '',
-  deficiencias: { separacion, descuadre, desaplomo, sinSellador, sinSelladorFrente,
-                  retornoMalla, mallaPulida, vidrioTrizado, marcoPerforado, faltaFijacion },
-  acciones: { pulir, impermeabilizar, repararEIFS, aplomar, sellarFrente,
-              reemplazarVidrio, repararMarco, instalarFijacion, cargarMortero },
+  estado: 'noInstalada',          // ver ESTADOS
+  estadoVano: '',                  // ver VANO_OPTS
+  separacionMm: '',                // string '1'-'50', solo si estadoVano es Sobre/Sub
+  deficiencias: {
+    separacion: false,             // Separación >5mm
+    descuadre: false,              // Descuadre de Rasgo (renombrado, sin sugerencia de acción)
+    desaplomo: false,              // Ventana desaplomada
+    sinSellador: false,            // Sin FC11 bajo marco
+    sinSelladorFrente: false,      // Sin FC11 frente
+    retornoMalla: false,           // Malla retorno EIFS
+    mallaPulida: false,            // Malla pulida
+    vidrioTrizado: false,
+    marcoPerforado: false,
+    faltaFijacion: false,
+  },
+  acciones: {
+    pulir:            {active:false, done:false},
+    impermeabilizar:  {active:false, done:false},
+    repararEIFS:      {active:false, done:false},
+    aplomar:          {active:false, done:false},
+    sellarFrente:     {active:false, done:false},
+    reemplazarVidrio: {active:false, done:false},
+    repararMarco:     {active:false, done:false},
+    instalarFijacion: {active:false, done:false},
+    cargarMortero:    {active:false, done:false},
+  },
   observaciones: '',
-  selloExterior: { estado: 'sinSellar', grado: 0, comentario: '' },
-  funcionalidad: 0,   // 0=sin evaluar, 1-5 rating
-  historial: [],
-  fotos: []
+  selloExterior: {
+    estado: 'sinSellar',           // sellado | pendiente | sinSellar | deficiente
+    grado: 0,                      // 0=sin grado, 1-5 solo si estado=deficiente
+    comentario: '',
+  },
+  funcionalidad: 0,                // 0=sin evaluar, 1=MuyDef, 2=Def, 3=Regular, 4=Buena, 5=Excelente
+  historial: [],                   // [{t: timestamp, cambio: string}]
+  fotos: [],                       // [{data: base64jpeg, ts: timestamp}]
 }
 ```
 
-## 9. Google Sheets — Columnas actuales (29) + pendientes
+### Migración de campos en `initData()`:
+
+**REGLA CRÍTICA:** Cada vez que se agrega un campo nuevo a `newWindowRecord()`, hay que agregar su migración en **DOS lugares** del loop de `initData()` (loop deptos + loop EC):
+
+```js
+// Ejemplo — patrón a seguir:
+if(!w.selloExterior) w.selloExterior = {estado:'sinSellar', grado:0, comentario:''};
+if(w.funcionalidad === undefined) w.funcionalidad = 0;
+if(w.estadoVano === 'Pulir') { w.estadoVano = ''; saveLocal(); }  // migración de valor obsoleto
+```
+
+---
+
+## 5. Constantes Clave (NO renombrar)
+
+### ESTADOS (6 estados de ventana)
+
+```js
+const ESTADOS = [
+  {id:'instalada',   label:'Instalada',   sym:'✓', cls:'sel-instalada'},   // verde
+  {id:'pendiente',   label:'Pendiente',   sym:'◷', cls:'sel-pendiente'},   // naranja
+  {id:'noInstalada', label:'No Instalada',sym:'✗', cls:'sel-noinstalada'}, // neutro sin color
+  {id:'quitar',      label:'Quitar',      sym:'↩', cls:'sel-quitar'},      // rojo
+  {id:'noInstalar',  label:'No Instalar', sym:'⊘', cls:'sel-noinstalar'},  // morado
+  {id:'sinVentana',  label:'Sin Ventana', sym:'▢', cls:'sel-sinventana'},  // blanco/gris claro
+];
+```
+
+### VANO_OPTS (estado de rasgo)
+
+```js
+const VANO_OPTS = ['OK', 'Sobredimensionado', 'Subdimensionado'];
+// 'Pulir' fue eliminado. Registros viejos con estadoVano='Pulir' se limpian en init.
+```
+
+### SELLO_ESTADOS (estado de sello exterior)
+
+```js
+const SELLO_ESTADOS = [
+  {id:'sellado',    label:'Sellado',         sym:'✓'},
+  {id:'pendiente',  label:'Pendiente',       sym:'◷'},
+  {id:'sinSellar',  label:'Sin Sellar',      sym:'✗'},
+  {id:'deficiente', label:'Sello Deficiente',sym:'⚠'},
+];
+```
+
+### DEFICIENCIAS (10 tipos)
+
+| id | label | DEF_ACTION_MAP |
+|---|---|---|
+| separacion | Separación >5mm | pulir |
+| descuadre | Descuadre de Rasgo | (ninguna — removido) |
+| desaplomo | Ventana desaplomada | aplomar |
+| sinSellador | Sin FC11 bajo marco | impermeabilizar |
+| sinSelladorFrente | Sin FC11 frente | sellarFrente |
+| retornoMalla | Malla retorno EIFS | repararEIFS |
+| mallaPulida | Malla pulida | repararEIFS |
+| vidrioTrizado | Vidrio trizado | reemplazarVidrio |
+| marcoPerforado | Marco perforado | repararMarco |
+| faltaFijacion | Falta fijación | instalarFijacion |
+
+### ACTIONS (9 acciones correctivas)
+
+| id | label | color CSS |
+|---|---|---|
+| pulir | Pulir Rasgo | purple |
+| aplomar | Aplomar ventana | **blue** |
+| impermeabilizar | Aplicar sello bajo marco | cyan |
+| sellarFrente | Aplicar sello frente ventana | **blue** |
+| repararEIFS | Reparar retorno EIFS | **blue** |
+| reemplazarVidrio | Reemplazar vidrio | **cyan** |
+| repararMarco | Aplicar sello | **cyan** |
+| instalarFijacion | Instalar fijación | purple |
+| cargarMortero | Cargar mortero en rasgo | **cyan** |
+
+> **REGLA:** colores de acciones = solo `blue`, `cyan`, `purple`. NUNCA `red`, `orange`, `green` (reservados para estados de ventana).
+
+---
+
+## 6. Paleta de Colores — Referencia Completa
+
+### Estados de ventana (únicos, sin mezcla):
+
+| Estado | Color | CSS class |
+|---|---|---|
+| Instalada | `--ac-green` | `.sel-instalada` |
+| Pendiente | `--ac-orange` | `.sel-pendiente` |
+| No Instalada | Neutro (sin bg) | `.sel-noinstalada` |
+| Quitar | `--ac-red` | `.sel-quitar` |
+| No Instalar | `--ac-purple` | `.sel-noinstalar` |
+| Sin Ventana | `#f0f4f8` / `#cbd5e1` (dark) con texto `#1e293b` | `.sel-sinventana` |
+
+### Deficiencias e inconformidades:
+- Chip activo: `--ac-cyan` (era red — cambiado para no confundir con "Quitar")
+
+### Acciones correctivas:
+- Check "completado": `--ac-blue` (era green — cambiado para no confundir con "Instalada")
+- Colores por acción: blue / cyan / purple (ver tabla ACTIONS arriba)
+
+### Variables CSS disponibles:
+```css
+--ac-blue, --ac-blue-soft
+--ac-green, --ac-green-soft
+--ac-orange, --ac-orange-soft
+--ac-red, --ac-red-soft
+--ac-purple, --ac-purple-soft
+--ac-cyan, --ac-cyan-soft
+--bg-0, --bg-1, --bg-2, --bg-3
+--tx-0, --tx-1, --tx-2
+--border, --radius, --radius-sm
+```
+Tema oscuro via `[data-theme="dark"]`. Overrides específicos por tema: `[data-theme="dark"] .clase-especifica { ... }`.
+
+---
+
+## 7. Estructura de Edificios
+
+### BLDG_RAW — formato: `[edif, tipo, sa, [tipos_p1], [tipos_p2-5] o null=igual]`
+
+- `null` en el 5to campo significa pisos 2-5 = mismos tipos que piso 1
+- Posiciones: 0=X01, 1=X02, 2=X03, 3=X04
+
+### Edificios con MR (tipo especial) en piso 1:
+
+| Edif | p1 | p2-5 |
+|---|---|---|
+| 7 | `['B','MR','B','MR']` | `['B','B','B','B']` |
+| 16 | `['MR','B','MR','B']` | `['A','B','A','B']` |
+| 24 | `['MR','B','MR','B']` | `['A','B','A','B']` |
+| 31 | `['B','MR','B','MR']` | `['B','A','B','A']` |
+
+### Tipos de departamento y sus ventanas:
+
+```js
+WIN_DEF = {
+  A:  [V1-Izq, V1-Der, V1_D2, V1_D3, V3, V4, V1a],      // 7 ventanas
+  B:  [V2, V1_D2, V1_D3, V3, V4, V1a],                    // 6 ventanas
+  MR: [V5_1, V5_2, V5_3, V5a, V6_1, V6_2, V7],            // 7 ventanas
+  // (Aa, C, Ca, D son variantes — ver código)
+}
+```
+
+### Espacios comunes por piso:
+- `EC{piso}` como depto (ej: EC1, EC3)
+- Ventanas: PV1 (Mampara Acceso), PV2 (Mampara Trasera), V8 (Ventanal Escalera), V9 (Ventana Escalera)
+
+### Key única de ventana:
+```
+{edif}-{depto}-{code}   →   ej: "16-201-V1-Izq",  "7-EC3-PV1"
+```
+`deptNum(floor, posIdx) = floor*100 + (posIdx+1)` → piso 2, pos 0 = depto 201
+
+---
+
+## 8. Patrones de Código Críticos
+
+### Renderizado con `h()`:
+```js
+h('div', {className:'card', style:{padding:'10px'}, onClick:()=>{}}, [
+  h('span', {}, ['texto']),
+  condicion ? h('div', {}, ['...']) : null,
+].filter(Boolean))
+```
+
+### Long-press en mobile (patrón estándar):
+```js
+let pressTimer=null, longFired=false, touchHandled=false, scrolled=false, startX=0, startY=0;
+el.addEventListener('touchstart',(ev)=>{
+  longFired=false; touchHandled=false; scrolled=false;
+  startX=ev.touches[0].clientX; startY=ev.touches[0].clientY;
+  pressTimer=setTimeout(()=>{
+    if(scrolled)return;
+    longFired=true; touchHandled=true;
+    navigator.vibrate&&navigator.vibrate(50);
+    // acción long-press
+  },450);
+},{passive:true});
+el.addEventListener('touchmove',(ev)=>{
+  if(Math.abs(ev.touches[0].clientX-startX)>10||Math.abs(ev.touches[0].clientY-startY)>10){
+    scrolled=true; clearTimeout(pressTimer);
+  }
+},{passive:true});
+el.addEventListener('touchend',()=>{
+  clearTimeout(pressTimer);
+  if(!longFired&&!scrolled){ touchHandled=true; /* acción tap corto */ }
+},{passive:true});
+el.addEventListener('click',()=>{
+  if(!touchHandled&&!scrolled){ /* acción click desktop */ }
+  touchHandled=false; longFired=false; scrolled=false;
+});
+el.addEventListener('contextmenu',(ev)=>ev.preventDefault());
+```
+
+### Elementos touch dentro de tablas scrollables (sealCell):
+Usar **`document.createElement` imperativo**, NO `h()`, para poder adjuntar eventos touch correctamente. Ver `sealCell()` como referencia.
+
+### Overlay/Modal pattern:
+```js
+const overlay = h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}}, [
+  h('div',{className:'modal'},[...contenido...])
+]);
+document.body.appendChild(overlay);
+```
+
+### Guardar y navegar desde modal:
+```js
+// Siempre: actualizar data → saveLocal() → cerrar overlay → re-render vista
+w.campo = valor;
+saveLocal();
+overlay.remove();
+renderVistaActual();
+```
+
+### updateWindow — dos firmas:
+```js
+updateWindow(key, 'campo', valor, 'descripcion historial');  // campo simple
+updateWindow(key, (w)=>{ w.acciones.pulir.done=true; }, null, 'descripcion'); // mutación compleja
+```
+
+### showMmPicker — drum-roll para separacionMm:
+```js
+showMmPicker(currentMm, label, (mm)=>{
+  w.separacionMm = mm;
+  saveLocal();
+  updateWindow(key, 'estadoVano', v, `Rasgo: ... → ${v} (${mm}mm)`);
+  renderWindowDetail(...);
+});
+```
+
+### showSelloPopup — modal completo sello exterior:
+```js
+showSelloPopup(key, code, deptoLabel, ()=>renderSealMap());
+// onDone callback se llama al guardar
+```
+
+### Navegación next/prev en perfil de ventana:
+```js
+// Calcular siblings desde key
+const [edifPart, deptoStr] = key.split('-');
+// deptoStr puede ser '201' (depto normal) o 'EC3' (espacio común)
+// Si es EC: getCommonWindows(floor)
+// Si no: getDeptWindows(getDeptType(edif, floor, posIdx))
+// Mostrar ◀ prev · N/Total · next ▶
+```
+
+---
+
+## 9. Decisiones Técnicas Críticas
+
+| Problema | Solución adoptada |
+|---|---|
+| textarea en móvil cierra teclado | `onBlur` en vez de `onInput` |
+| Long-press vs scroll en tabla | flags `scrolled/longFired/touchHandled` + threshold 10px |
+| sealCell touch events en `<table>` | `document.createElement` imperativo (no `h()`) |
+| MmPicker sin barra scroll webkit | `.mm-drum::-webkit-scrollbar{display:none}` inyectado una vez |
+| showSelloPopup redraw + textarea | `draw()` interna; textarea value restaurado via `setTimeout` |
+| Sync sobreescribe cambios locales | `mergeFromSheets()` salta dirty keys |
+| Apps Script CORS preflight | `Content-Type: text/plain` (no application/json) |
+| Apps Script timeout | Chunks de 100 ventanas, timeout 120s |
+| Back button / swipe exit Android | `history.pushState` + `popstate` listener + `confirm()` |
+| posSection edificios MR mixtos | `floorCodes[f]` por piso; separador visual P1 vs P2-5; `—` donde no existe tipo |
+| Lazy actions panel | `collectActions()` solo ejecuta al tocar el panel (evita scan 4740×9) |
+
+### Back-button guard (init):
+```js
+const _vcBase = location.href.split('#')[0];
+if(!history.state?.vc) history.pushState({vc:'app'},'', _vcBase+'#vc');
+window.addEventListener('popstate', ()=>{
+  history.pushState({vc:'app'},'', _vcBase+'#vc');  // re-push sentinel
+  if(confirm('¿Salir de VentaControl?\n\nTus datos están guardados en el dispositivo.'))
+    history.go(-2);
+});
+window.addEventListener('beforeunload', (e)=>{ e.preventDefault(); e.returnValue=''; }); // desktop fallback
+```
+
+### posSection — lógica edificios MR:
+```js
+// Para cada posición, obtener códigos de ventanas POR PISO (no solo piso 1)
+const floorCodes = {};
+for(let f=1;f<=5;f++) floorCodes[f] = getDeptWindows(getDeptType(e,f,posIdx)).map(([c])=>c);
+// Códigos únicos en orden de aparición (piso 1 primero)
+const allCodes = [], seen = new Set();
+for(let f=1;f<=5;f++) floorCodes[f].forEach(c=>{ if(!seen.has(c)){ seen.add(c); allCodes.push(c); }});
+// Celda ausente cuando tipo del piso no tiene esa ventana → td con '—'
+```
+
+---
+
+## 10. Funcionalidades Implementadas (estado actual)
+
+### Core
+- [x] 34 edificios, tipos A/Aa/B/C/Ca/D/MR, 4740 ventanas
+- [x] 6 estados ventana con paleta de colores única
+- [x] 3 estados de rasgo: OK / Sobredimensionado / Subdimensionado
+- [x] Drum-roll picker 1–50 mm (sin prompt nativo)
+- [x] Badge separación `+Nmm`/`−Nmm` en perfil con botón editar
+- [x] Navegación prev/next entre ventanas del mismo depto
+- [x] Back-button / swipe-exit protection (Android PWA)
+- [x] Tema claro/oscuro, persistente
+
+### Deficiencias (10) — color cyan cuando activa
+- [x] Descuadre renombrado a "Descuadre de Rasgo", sin sugerencia automática de acción
+- [x] Resto: separación, desaplomo, FC11 bajo/frente, malla retorno/pulida, vidrio, marco, fijación
+
+### Acciones Correctivas (9) — colores blue/cyan/purple
+- [x] Ciclo: activar → completar → reabrir → quitar
+- [x] Sugerencia automática por deficiencia (DEF_ACTION_MAP), excepto descuadre
+- [x] Check "completado" en azul (no verde)
+
+### Sello Exterior
+- [x] 4 estados: sellado / pendiente / sinSellar / deficiente
+- [x] Grado 1–5 (solo para deficiente)
+- [x] showSelloPopup: modal con estado + grado + comentario
+- [x] Card en perfil de ventana
+- [x] Vista renderSealMap: grilla por posición (X01–X04, EC) × tipo ventana × piso 1–5
+- [x] Edificios MR: sección muestra P1 (MR) + P2-5 (A/B) separadas con divisor visual
+- [x] Tap corto = cicla sellado↔sinSellar; long-press = popup completo
+- [x] Informe incluye sección SELLO EXTERIOR
+
+### Condición de Funcionalidad
+- [x] Rating 0–5 por ventana (0 = sin evaluar)
+- [x] 5 círculos numerados en perfil, colores rojo→naranja→cyan→azul→verde
+- [x] Etiquetas: Muy Deficiente / Deficiente / Regular / Buena / Excelente
+- [x] Informe incluye sección CONDICIÓN DE FUNCIONALIDAD con lista críticos (1–2)
+
+### Informe de texto — secciones:
+1. RESUMEN GENERAL
+2. PENDIENTES DE INSTALACIÓN
+3. SIN INSTALAR
+4. A QUITAR
+5. INCONFORMIDADES ACTIVAS
+6. ACCIONES CORRECTIVAS PENDIENTES
+7. SELLO EXTERIOR
+8. CONDICIÓN DE FUNCIONALIDAD
+9. RESUMEN POR TIPO (pedido materiales)
+
+### Vistas disponibles:
+- `dashboard` → `sa` → `building` → `dept` → `window` (detalle ventana)
+- `building` → `sealmap` (mapa sello exterior)
+- `building` → `gridmap` (grilla completa)
+- `building` / `dept` → `report`
+
+### Tracker de construcción:
+- `EIFS_PHASES`: 3 fases (Montaje EPS, Terminaciones, Sellados) con sub-items
+- Visible en vista SA por edificio
+
+### Sync:
+- Bidireccional pull+push, dirty keys protegidas, chunks de 100
+- URL hardcodeada (no configurable por usuario)
+- Pull parcial por edificio: `?edif=N`
+
+---
+
+## 11. Google Sheets — Columnas
 
 ```
 A:Edificio  B:Piso  C:N°Depto  D:TipoDepto  E:Elemento  F:TipoElemento  G:Estado
@@ -289,10 +495,67 @@ Q:MallaRetornoPulida  R:VidrioTrizado  S:MarcoPerforado  T:FaltaFijacion
 U:Acc.PulirVano  V:Acc.Impermeabilizar  W:Acc.RepararEIFS  X:Acc.Aplomar
 Y:Acc.SellarFrente  Z:Acc.Reempl.Vidrio  AA:Acc.RepararMarco  AB:Acc.InstalarFijac
 AC:EtapaConstruccion
---- PENDIENTE AGREGAR ---
-AD:SelloEstado  AE:SelloGrado  AF:SelloComentario  AG:Funcionalidad
+──── PENDIENTE AGREGAR ────
+AD:SelloEstado  AE:SelloGrado  AF:SelloComentario  AG:Funcionalidad  AH:SeparacionMm
 ```
 
 ---
 
-*Documento actualizado: 2026-04-14 — Version app: v2.4 — ~3800 lineas*
+## 12. Estado del Repositorio
+
+### Commits recientes (sesión 2026-04-16):
+
+```
+db27f40 Paleta de colores: estados únicos, inconformidades y acciones distintos
+5daf995 4 mejoras: mapa sello MR, nav ventana, salida segura, descuadre
+73388c1 docs: actualizar contexto v2.4
+70470be Rasgo: quitar Pulir, picker mm carrete, funcionalidad 1-5
+c4bc779 Sello exterior: estados ricos con popup, perfil de ventana e informe
+9508b07 Mapa de sello: rediseñar grilla por posición de depto × piso
+304159a Hardcodear URL de Apps Script para sync automático
+1cb7573 UX overhaul: 19 mejoras de interfaz, nuevos estados y vistas
+```
+
+### Estado:
+- Worktree: `C:\Proyectos\VentaControl\.claude\worktrees\interesting-raman\`
+- Branch local: `claude/interesting-raman`
+- Deploy: `git push origin claude/interesting-raman:main`
+- Todo pusheado ✓
+
+---
+
+## 13. Próximos Pasos (To-Do)
+
+### Alta prioridad
+1. **Sync nuevos campos a Sheets** — `selloExterior` y `funcionalidad` NO se sincronizan aún:
+   - Agregar columnas AD–AH en `HEADERS[]` del Apps Script
+   - Actualizar `syncData()` y `readAll()` en AppsScript
+   - Actualizar `buildSyncPayload()` (agregar campos al objeto de cada ventana)
+   - Actualizar `mergeFromSheets()` (leer y aplicar campos nuevos)
+
+2. **Filtro por edificio en panel de acciones correctivas** — `renderLazyActionsCard` carga rango 1–34. Agregar selector de edificio para acotar.
+
+### Media prioridad
+3. **Preservar scroll al navegar atrás** — `navigate()` siempre hace `scrollTo(0,0)`. Guardar `scrollY` en navStack y restaurar al `navigateBack()`.
+
+4. **Scroll position en gridmap** — Al volver de detalle ventana a gridmap, restaurar posición.
+
+---
+
+## 14. Bugs Resueltos (histórico completo)
+
+1. Sync enviaba 4740 ventanas → dirty tracking con Set
+2. Apps Script escribía fila por fila → batch `setValues()`
+3. Estado "Instalada" de Sheets no matcheaba → `normalizeEstado()`
+4. Espacios comunes depto vacío en Sheet → reconstrucción `EC{piso}`
+5. Historial repetido → deduplicación (skip si último entry = mismo)
+6. Dashboard crash con panel acciones → lazy loading (`renderLazyActionsCard`)
+7. Sync timeout en cambios masivos → timeout 120s + chunks 100
+8. Sync sobreescribía cambios locales → dirty keys protegidas en `mergeFromSheets()`
+9. dirtyKeys se perdía al recargar → persistido en `localStorage('vc2_dirty')`
+10. Long-press disparaba nav + popup simultáneos → flag `touchHandled` + `contextmenu` prevention
+11. posSection MR solo mostraba P1 → `floorCodes[f]` por piso, separador visual, `—` donde no aplica
+
+---
+
+*Actualizado: 2026-04-16 — Versión: v2.5 — Líneas: ~3890*
