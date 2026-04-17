@@ -147,7 +147,7 @@ body{
   border:1px solid var(--border);border-radius:20px;font-size:0.88rem;
   cursor:pointer;transition:all var(--transition);user-select:none;min-height:42px;
 }
-.def-chip.active{border-color:var(--ac-red);background:var(--ac-red-soft);color:var(--ac-red);font-weight:600;}
+.def-chip.active{border-color:var(--ac-cyan);background:var(--ac-cyan-soft);color:var(--ac-cyan);font-weight:600;}
 /* CORRECTIVE ACTIONS */
 .action-row{
   display:flex;align-items:center;gap:10px;padding:10px 12px;
@@ -160,7 +160,7 @@ body{
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   font-size:0.9rem;transition:all var(--transition);
 }
-.action-row .action-check.done{background:var(--ac-green);border-color:var(--ac-green);color:#fff;}
+.action-row .action-check.done{background:var(--ac-blue);border-color:var(--ac-blue);color:#fff;}
 /* VANO STATUS */
 .vano-group{display:flex;gap:6px;margin:6px 0;}
 .vano-opt{
@@ -179,7 +179,8 @@ body{
 .estado-opt.sel-noinstalada{background:var(--bg-2);border-color:var(--tx-2);color:var(--tx-2);font-weight:600;}
 .estado-opt.sel-quitar{background:var(--ac-red-soft);border-color:var(--ac-red);color:var(--ac-red);font-weight:600;}
 .estado-opt.sel-noinstalar{background:var(--ac-purple-soft);border-color:var(--ac-purple);color:var(--ac-purple);font-weight:600;}
-.estado-opt.sel-sinventana{background:var(--bg-2);border-color:var(--tx-2);color:var(--tx-2);font-weight:600;}
+.estado-opt.sel-sinventana{background:#f0f4f8;border-color:#94a3b8;color:#1e293b;font-weight:600;}
+[data-theme="dark"] .estado-opt.sel-sinventana{background:#cbd5e1;border-color:#64748b;color:#0f172a;font-weight:600;}
 /* TEXTAREA */
 .obs-area{
   width:100%;min-height:60px;padding:8px 10px;border:1px solid var(--border);
@@ -366,15 +367,15 @@ const DEFICIENCIES = [
 ];
 
 const ACTIONS = [
-  {id:'pulir',label:'Pulir Rasgo',icon:'🟣',color:'purple'},
-  {id:'aplomar',label:'Aplomar ventana',icon:'🔴',color:'red'},
-  {id:'impermeabilizar',label:'Aplicar sello bajo marco',icon:'💧',color:'cyan'},
-  {id:'sellarFrente',label:'Aplicar sello frente ventana',icon:'💦',color:'blue'},
-  {id:'repararEIFS',label:'Reparar retorno EIFS',icon:'🟠',color:'orange'},
-  {id:'reemplazarVidrio',label:'Reemplazar vidrio',icon:'🔍',color:'red'},
-  {id:'repararMarco',label:'Aplicar sello',icon:'🔧',color:'orange'},
-  {id:'instalarFijacion',label:'Instalar fijación',icon:'🔩',color:'purple'},
-  {id:'cargarMortero',label:'Cargar mortero en rasgo',icon:'🏗',color:'green'},
+  {id:'pulir',          label:'Pulir Rasgo',                  icon:'🟣',color:'purple'},
+  {id:'aplomar',        label:'Aplomar ventana',               icon:'📐',color:'blue'},
+  {id:'impermeabilizar',label:'Aplicar sello bajo marco',      icon:'💧',color:'cyan'},
+  {id:'sellarFrente',   label:'Aplicar sello frente ventana',  icon:'💦',color:'blue'},
+  {id:'repararEIFS',    label:'Reparar retorno EIFS',          icon:'🔧',color:'blue'},
+  {id:'reemplazarVidrio',label:'Reemplazar vidrio',            icon:'🔍',color:'cyan'},
+  {id:'repararMarco',   label:'Aplicar sello',                 icon:'🪣',color:'cyan'},
+  {id:'instalarFijacion',label:'Instalar fijación',            icon:'🔩',color:'purple'},
+  {id:'cargarMortero',  label:'Cargar mortero en rasgo',       icon:'🏗',color:'cyan'},
 ];
 
 // Deficiency → Action mapping
@@ -1313,10 +1314,10 @@ function renderGridMap(){
   const s=getBldgStats(edif);
 
   // Color maps
-  const estadoBg={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)',noInstalar:'var(--ac-purple-soft)',sinVentana:'var(--bg-2)'};
-  const estadoBorder={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'var(--tx-2)'};
-  const estadoText={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'var(--tx-2)'};
-  const actionColorMap={pulir:'purple',aplomar:'red',impermeabilizar:'cyan',sellarFrente:'blue',repararEIFS:'orange',reemplazarVidrio:'red',repararMarco:'orange',instalarFijacion:'purple',cargarMortero:'green'};
+  const estadoBg={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)',noInstalar:'var(--ac-purple-soft)',sinVentana:'#f0f4f8'};
+  const estadoBorder={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'#94a3b8'};
+  const estadoText={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'#1e293b'};
+  const actionColorMap={pulir:'purple',aplomar:'blue',impermeabilizar:'cyan',sellarFrente:'blue',repararEIFS:'blue',reemplazarVidrio:'cyan',repararMarco:'cyan',instalarFijacion:'purple',cargarMortero:'cyan'};
 
   function winTile(key,code,navView,navParams){
     const w=DATA.windows[key];
@@ -2345,7 +2346,7 @@ function renderDept(){
 
 function renderEstadoMini(estado){
   const cfg=ESTADOS.find(e=>e.id===estado)||ESTADOS[2];
-  const colors={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'var(--tx-2)'};
+  const colors={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'#64748b'};
   return h('span',{style:{fontSize:'1.2rem',color:colors[estado]||'var(--tx-2)'}},[cfg.sym]);
 }
 
