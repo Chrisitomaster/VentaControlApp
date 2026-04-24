@@ -1060,6 +1060,23 @@ function renderBuilding(){
   const el=h('div',{className:'fade-in'},[
     topbar(`Edif. ${edif} — Tipo ${b.tipo}`,'sa',{sa:b.sa}),
 
+    // ── Comentario del edificio — ARRIBA ──────────
+    (bData.comment||isEditor())?h('div',{className:'card comment-box',style:{marginBottom:'var(--gap)',borderLeft:'3px solid var(--ac-orange)',background: bData.comment?'var(--ac-orange-soft)':'var(--bg-2)'}},[
+      h('label',{style:{display:'flex',alignItems:'center',gap:'6px',fontWeight:'600',color:'var(--ac-orange)',marginBottom:'6px'}},[
+        '💬 Comentarios del Edificio'
+      ]),
+      isEditor()?h('textarea',{
+        className:'obs-area',id:'bld-comment-ta',
+        placeholder:'Notas generales del edificio...',
+        onBlur:(e)=>{
+          if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{}};
+          DATA.buildings[bKey(edif)].comment=e.target.value;
+          saveLocal();
+        }
+      },[bData.comment||'']):
+      bData.comment?h('div',{style:{fontSize:'0.85rem',color:'var(--tx-1)',whiteSpace:'pre-wrap',lineHeight:'1.5'}},[bData.comment]):null,
+    ].filter(Boolean)):null,
+
     // Botón principal — Mapa completo (prominente, al inicio)
     h('button',{
       className:'btn btn-primary',
@@ -1233,10 +1250,17 @@ function renderBuilding(){
                   }
                 },[e.sym+' '+e.label]))
               ):null,
-              (hasD||w?.observaciones)?h('div',{style:{marginTop:'4px',paddingLeft:'60px',display:'flex',gap:'3px',flexWrap:'wrap',alignItems:'center'}},[
-                ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.9rem'}},[d.icon])),
-                w?.observaciones?h('span',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,50)+(w.observaciones.length>50?'…':'')]):null,
-              ].filter(Boolean)):null,
+              w?.observaciones?h('div',{style:{
+                marginTop:'5px',padding:'3px 8px',borderRadius:'var(--radius-sm)',
+                background:'var(--ac-orange-soft)',borderLeft:'3px solid var(--ac-orange)',
+                fontSize:'0.76rem',color:'var(--tx-1)',
+              }},[
+                h('span',{style:{fontWeight:'600',color:'var(--ac-orange)',marginRight:'4px'}},['💬']),
+                w.observaciones.slice(0,70)+(w.observaciones.length>70?'…':''),
+              ]):null,
+              hasD?h('div',{style:{marginTop:'3px',paddingLeft:'4px',display:'flex',gap:'3px',flexWrap:'wrap'}},[
+                ...activeDefIcons.map(d=>h('span',{title:d.label,style:{fontSize:'0.85rem'}},[d.icon])),
+              ]):null,
             ].filter(Boolean));
           }),
         ];
@@ -1255,28 +1279,39 @@ function renderBuilding(){
       renderActionsPanel(collectActions(edif,edif),'Edif. '+edif,false,'building',{edif}),
     ]),
 
-    // Building comment
-    h('div',{className:'card comment-box'},[
-      h('label',{},['Comentarios del Edificio']),
-      h('textarea',{
-        className:'obs-area',
-        value:bData.comment||'',
-        placeholder:'Notas generales del edificio...',
-        readOnly:!isEditor(),
-        onBlur:(e)=>{
-          if(!isEditor())return;
-          if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{}};
-          DATA.buildings[bKey(edif)].comment=e.target.value;
-          saveLocal();
+    // Informes rápidos por acción correctiva
+    (()=>{
+      const actionItems=ACTIONS.map(a=>{
+        let cnt=0;
+        for(let f=1;f<=5;f++){
+          for(let p=0;p<4;p++){const dn=deptNum(f,p);getDeptWindows(getDeptType(edif,f,p)).forEach(([c])=>{const w=DATA.windows[wKey(edif,dn,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});}
+          getCommonWindows(f).forEach(([c])=>{const w=DATA.windows[wKey(edif,`EC${f}`,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});
         }
-      },[bData.comment||'']),
-    ]),
+        return cnt>0?{a,cnt}:null;
+      }).filter(Boolean);
+      if(!actionItems.length)return null;
+      return h('div',{className:'card'},[
+        h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.9rem'}},['📋 Informes por Acción Correctiva']),
+        h('div',{style:{display:'flex',flexDirection:'column',gap:'6px'}},
+          actionItems.map(({a,cnt})=>h('button',{
+            className:'btn btn-ghost',
+            style:{justifyContent:'flex-start',gap:'10px',fontSize:'0.85rem'},
+            onClick:()=>navigate('actionReport',{edif,actionId:a.id,backView:'building',backParams:{edif}})
+          },[
+            h('span',{},[a.icon]),
+            h('span',{style:{flex:1}},[a.label]),
+            h('span',{className:'badge badge-orange',style:{fontSize:'0.75rem'}},[cnt+' pend.']),
+            h('span',{style:{color:'var(--tx-2)',fontSize:'0.8rem'}},['ver informe →']),
+          ]))
+        ),
+      ]);
+    })(),
 
     renderSyncBar(),
   ].filter(Boolean));
   app().innerHTML='';
   app().appendChild(el);
-  const ta=$('.obs-area',app());
+  const ta=$('#bld-comment-ta',app());
   if(ta)ta.value=bData.comment||'';
 }
 
@@ -2576,8 +2611,17 @@ function renderDept(){
               onClick:(ev)=>{ev.stopPropagation();navigate('window',{edif,depto,code,loc});}
             },['▸']),
           ]),
+          // Observación — destacada arriba si existe
+          w.observaciones?h('div',{style:{
+            marginTop:'5px',padding:'4px 8px',borderRadius:'var(--radius-sm)',
+            background:'var(--ac-orange-soft)',borderLeft:'3px solid var(--ac-orange)',
+            fontSize:'0.78rem',color:'var(--tx-1)',lineHeight:'1.4',
+          }},[
+            h('span',{style:{fontWeight:'600',color:'var(--ac-orange)',marginRight:'4px'}},['💬']),
+            w.observaciones.slice(0,80)+(w.observaciones.length>80?'…':''),
+          ]):null,
           // Deficiency + action row
-          (hasD||activeActions.length||w.observaciones)?h('div',{style:{marginTop:'5px',paddingLeft:'4px',display:'flex',gap:'4px',alignItems:'flex-start',flexWrap:'wrap'}},[
+          (hasD||activeActions.length)?h('div',{style:{marginTop:'5px',paddingLeft:'4px',display:'flex',gap:'4px',alignItems:'flex-start',flexWrap:'wrap'}},[
             ...activeDefIcons.map(d=>h('span',{style:{fontSize:'0.7rem',padding:'2px 6px',borderRadius:'8px',background:'var(--ac-red-soft)',color:'var(--ac-red)',fontWeight:'500',whiteSpace:'nowrap'}},[d.label])),
             ...activeActions.map(a=>{
               const act=w.acciones[a.id];
@@ -2587,7 +2631,6 @@ function renderDept(){
                 color:act.done?'var(--ac-green)':'var(--ac-orange)',fontWeight:'600'
               }},[a.icon+(act.done?'✓':'')]);
             }),
-            w.observaciones?h('span',{style:{fontSize:'0.73rem',color:'var(--tx-2)',marginLeft:'4px'}},[w.observaciones.slice(0,40)+(w.observaciones.length>40?'…':'')]):null,
           ].filter(Boolean)):null,
           // Quick status buttons (editor only) — clearly separated area
           isEditor()?h('div',{style:{display:'flex',gap:'5px',marginTop:'8px',flexWrap:'wrap',paddingTop:'6px',borderTop:'1px dashed var(--border)'}},
@@ -2674,6 +2717,24 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ]):null;
       })(),
     ]),
+    // ── Observaciones — ARRIBA ────────────────────
+    (w.observaciones||isEditor())?h('div',{className:'card',style:{borderLeft:'3px solid var(--ac-orange)',background:w.observaciones?'var(--ac-orange-soft)':'var(--bg-2)',marginBottom:'var(--gap)'}},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.82rem',color:'var(--ac-orange)',marginBottom:'6px'}},[
+        '💬 Observaciones'+(w.observaciones?'':' (sin comentarios)'),
+      ]),
+      isEditor()?h('textarea',{
+        className:'obs-area',
+        id:'obs-ta',
+        placeholder:'Agregar observaciones...',
+        style:{minHeight:'56px'},
+        onBlur:(e)=>{
+          if(e.target.value!==w.observaciones)
+            updateWindow(key,'observaciones',e.target.value,'Observación actualizada');
+        }
+      },[w.observaciones||'']):
+      h('div',{style:{fontSize:'0.85rem',color:'var(--tx-1)',whiteSpace:'pre-wrap',lineHeight:'1.5'}},[w.observaciones]),
+    ].filter(Boolean)):null,
+
     // Prev / Next navigation row
     (_prevWin||_nextWin)?h('div',{style:{display:'flex',alignItems:'center',gap:'6px',marginBottom:'10px'}},[
       _prevWin?h('button',{
@@ -2912,22 +2973,6 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
           },['✗']):null,
         ].filter(Boolean));
       }),
-    ]),
-
-    // Observations
-    h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Observaciones']),
-      h('textarea',{
-        className:'obs-area',
-        id:'obs-ta',
-        placeholder:isEditor()?'Agregar observaciones...':'Sin observaciones',
-        readOnly:!isEditor(),
-        onBlur:(e)=>{
-          if(!isEditor())return;
-          if(e.target.value!==w.observaciones)
-            updateWindow(key,'observaciones',e.target.value,'Observación actualizada');
-        }
-      },[w.observaciones||'']),
     ]),
 
     // Photo capture
