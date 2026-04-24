@@ -2241,17 +2241,36 @@ function generateReport(edif){
     add('');
   }
 
-  // ── RESUMEN POR TIPO ─────────────────────────
+  // ── PEDIDO DE VENTANAS (sinVentana) ──────────
+  const sinVentanaList=byEstado.sinVentana||[];
   add(SEP);
-  add('RESUMEN POR TIPO  (pedido de materiales)');
+  add(`PEDIDO DE VENTANAS  (${sinVentanaList.length} unidades)`);
   add(sep2);
-  add(`  ${'Tipo'.padEnd(10)}| Total | Inst. | Pend. | Sin  | Quitar`);
-  add(`  ${'-'.repeat(46)}`);
-  const typeOrder=['V1-Izq','V1-Der','V1_D2','V1_D3','V1a','V2','V3','V4','V5_1','V5_2','V5_3','V5a','V6_1','V6_2','V7','V8','V9','PV1','PV2'];
-  const sortedByTipo=Object.entries(byTipo).sort((a,b)=>{const ia=typeOrder.indexOf(a[0]),ib=typeOrder.indexOf(b[0]);return(ia<0?99:ia)-(ib<0?99:ib);});
-  sortedByTipo.forEach(([tipo,c])=>{
-    add(`  ${pad(tipo,10)}|  ${padr(c.total,3)}  |  ${padr(c.instalada,3)}  |  ${padr(c.pendiente||0,3)}  |  ${padr(c.noInstalada||0,3)} |    ${c.quitar||0}`);
-  });
+  if(sinVentanaList.length){
+    add(`  ${'Tipo'.padEnd(10)} ${'Dpto'.padEnd(8)} ${'Orientación'.padEnd(14)} Recinto`);
+    add('  '+'-'.repeat(52));
+    // Ordenar: por depto numérico, luego EC al final
+    const sorted=[...sinVentanaList].sort((a,b)=>{
+      const an=typeof a.depto==='number'?a.depto:9999;
+      const bn=typeof b.depto==='number'?b.depto:9999;
+      return an-bn||a.code.localeCompare(b.code);
+    });
+    sorted.forEach(it=>{
+      const ori=getOrientacion(it.depto)||'—';
+      add(`  ${pad(it.code,10)} ${pad(it.depto,8)} ${pad(ori,14)} ${it.loc}`);
+      if(it.w.observaciones)add(`    ↳ ${it.w.observaciones.slice(0,60)}`);
+    });
+    add('');
+    // Resumen agrupado por tipo
+    add('  Resumen por tipo:');
+    const porTipo={};
+    sinVentanaList.forEach(it=>{porTipo[it.code]=(porTipo[it.code]||0)+1;});
+    Object.entries(porTipo).sort((a,b)=>b[1]-a[1]).forEach(([tipo,cnt])=>{
+      add(`    ${pad(tipo,10)} × ${cnt}`);
+    });
+  } else {
+    add('  — Sin ventanas marcadas como "Sin Ventana" —');
+  }
   add('');
   add(SEP);
   add('FIN DEL INFORME');
