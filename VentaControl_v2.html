@@ -873,6 +873,7 @@ function render(){
     window:renderWindow,
     common:renderCommon,
     actionDetail:renderActionDetail,
+    actionReport:renderActionReport,
     sealmap:renderSealMap
   };
   (views[currentView]||renderDashboard)();
@@ -1472,7 +1473,7 @@ function renderGridMap(){
       // Contar cuántas ventanas tienen esta acción pendiente en este edificio
       let cnt=0;
       for(let f=1;f<=5;f++){
-        for(let p=0;p<4;p++){const dn=deptNum(edif,f,p);getDeptWindows(getDeptType(edif,f,p)).forEach(([c])=>{const w=DATA.windows[wKey(edif,dn,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});}
+        for(let p=0;p<4;p++){const dn=deptNum(f,p);getDeptWindows(getDeptType(edif,f,p)).forEach(([c])=>{const w=DATA.windows[wKey(edif,dn,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});}
         getCommonWindows(f).forEach(([c])=>{const w=DATA.windows[wKey(edif,`EC${f}`,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});
       }
       if(!cnt&&!isActive)return null;
@@ -1480,7 +1481,7 @@ function renderGridMap(){
         className:'btn btn-sm '+(isActive?'btn-primary':'btn-ghost'),
         style:{fontSize:'0.72rem',padding:'5px 9px'},
         onClick:()=>{gridMapActionFilter=isActive?null:a.id;renderGridMap();}
-      },[a.icon+' '+a.label.slice(0,10)+(cnt?' ('+cnt+')':'')]);
+      },[a.icon+' '+a.label.slice(0,12)+(cnt?' ('+cnt+')':'')]);
     }).filter(Boolean),
   ]);
 
@@ -2221,6 +2222,173 @@ function generateReport(edif){
   add('FIN DEL INFORME');
 
   return lines.join('\n');
+}
+
+/* ============================================
+   INFORME RÁPIDO POR ACCIÓN CORRECTIVA
+   ============================================ */
+function generateActionReport(edif,actionId){
+  const e=parseInt(edif);
+  const b=BUILDINGS[e];
+  const actionDef=ACTIONS.find(a=>a.id===actionId);
+  if(!actionDef)return 'Acción no encontrada';
+  const now=new Date().toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const lines=[];
+  const add=(t='')=>lines.push(t);
+  const SEP='='.repeat(56);
+  const sep2='-'.repeat(56);
+  const pad=(s,n)=>String(s).padEnd(n);
+  const padr=(s,n)=>String(s).padStart(n);
+
+  // Collect windows with this action
+  const items=[];
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++){
+      const tipo=getDeptType(e,f,p);
+      const dn=deptNum(f,p);
+      getDeptWindows(tipo).forEach(([code,loc])=>{
+        const k=wKey(e,dn,code);
+        const w=DATA.windows[k];
+        if(!w)return;
+        const act=w.acciones[actionId];
+        if(act&&act.active){
+          items.push({depto:dn,code,loc,done:act.done,obs:w.observaciones||''});
+        }
+      });
+    }
+    getCommonWindows(f).forEach(([code,loc])=>{
+      const k=wKey(e,`EC${f}`,code);
+      const w=DATA.windows[k];
+      if(!w)return;
+      const act=w.acciones[actionId];
+      if(act&&act.active){
+        items.push({depto:`EC${f}`,code,loc,done:act.done,obs:w.observaciones||''});
+      }
+    });
+  }
+
+  const pending=items.filter(i=>!i.done);
+  const done=items.filter(i=>i.done);
+
+  // ── ENCABEZADO ──────────────────────────────
+  add(SEP);
+  add(`ACCIÓN CORRECTIVA: ${actionDef.icon} ${actionDef.label.toUpperCase()}`);
+  add(`Edificio ${e}  (Tipo ${b.tipo} · SA${b.sa})`);
+  add(`Generado: ${now}`);
+  add(SEP);
+  add(`Total registros  : ${items.length}  (${pending.length} pendientes, ${done.length} completadas)`);
+  add('');
+
+  // ── TABLA 1: DETALLE ─────────────────────────
+  if(items.length){
+    add(sep2);
+    add('TABLA 1 — DETALLE DE VENTANAS');
+    add(sep2);
+    add(`  ${pad('Dpto',8)} ${pad('Recinto',26)} ${pad('Tipo',10)} Estado   Observación`);
+    add('  '+'-'.repeat(54));
+    // Pendientes primero, luego completadas
+    const sorted=[...pending,...done].sort((a,b)=>{
+      // Ordenar por depto (numérico), luego EC al final
+      const an=typeof a.depto==='number'?a.depto:9999;
+      const bn=typeof b.depto==='number'?b.depto:9999;
+      return an-bn||a.code.localeCompare(b.code);
+    });
+    sorted.forEach(it=>{
+      const estado=it.done?'[CUMPLIDA]':'[PENDIENTE]';
+      const obsShort=it.obs?(it.obs.length>30?it.obs.slice(0,29)+'…':it.obs):'—';
+      add(`  ${pad(it.depto,8)} ${pad(it.loc,26)} ${pad(it.code,10)} ${estado}`);
+      if(it.obs)add(`    ↳ ${obsShort}`);
+    });
+    add('');
+
+    // ── TABLA 2: RESUMEN POR DEPTO ──────────────
+    add(sep2);
+    add('TABLA 2 — RESUMEN POR DEPARTAMENTO');
+    add(sep2);
+    // Agrupar por depto
+    const byDepto={};
+    pending.forEach(it=>{
+      const k=String(it.depto);
+      if(!byDepto[k])byDepto[k]={depto:it.depto,items:[]};
+      byDepto[k].items.push(it);
+    });
+    const deptoList=Object.values(byDepto).sort((a,b)=>{
+      const an=typeof a.depto==='number'?a.depto:9999;
+      const bn=typeof b.depto==='number'?b.depto:9999;
+      return an-bn;
+    });
+    if(deptoList.length){
+      add(`  ${pad('Dpto',8)} ${padr('Ventanas',9)}  Recintos`);
+      add('  '+'-'.repeat(54));
+      deptoList.forEach(({depto,items:its})=>{
+        const recintos=[...new Set(its.map(i=>i.loc))].join(', ');
+        const recShort=recintos.length>32?recintos.slice(0,31)+'…':recintos;
+        add(`  ${pad(depto,8)} ${padr(its.length,9)}  ${recShort}`);
+      });
+      add('');
+      add(`  Total departamentos afectados (pendiente): ${deptoList.length}`);
+      add(`  Total ventanas pendientes                : ${pending.length}`);
+    } else {
+      add('  — Sin ventanas pendientes —');
+    }
+    add('');
+  } else {
+    add('  — Sin registros para esta acción en este edificio —');
+    add('');
+  }
+
+  add(SEP);
+  add('FIN DEL INFORME DE ACCIÓN');
+  return lines.join('\n');
+}
+
+function renderActionReport(){
+  const{edif,actionId,backView,backParams}=viewParams;
+  const actionDef=ACTIONS.find(a=>a.id===actionId);
+  if(!actionDef){app().innerHTML='<p>Acción no encontrada</p>';return;}
+  const texto=generateActionReport(edif,actionId);
+
+  function copyR(){
+    navigator.clipboard?.writeText(texto).then(()=>{
+      const btn=document.getElementById('btn-copy-ar');
+      if(btn){btn.textContent='✓ Copiado';setTimeout(()=>{btn.textContent='📋 Copiar';},2000);}
+    });
+  }
+  function shareR(){
+    if(navigator.share){navigator.share({title:`Acción ${actionDef.label} — Edif. ${edif}`,text:texto});}
+    else copyR();
+  }
+  function downloadR(){
+    const blob=new Blob([texto],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`accion_${actionId}_edif${edif}_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const bv=backView||'actionDetail';
+  const bp=backParams||{actionId,edifStart:edif,edifEnd:edif};
+  const b=BUILDINGS[parseInt(edif)];
+
+  const el=h('div',{className:'fade-in'},[
+    topbar(`${actionDef.icon} Informe — Edif. ${edif}`,bv,bp),
+    h('div',{className:'card'},[
+      h('div',{style:{fontSize:'0.82rem',color:'var(--tx-2)',marginBottom:'6px',fontWeight:'600'}},[
+        `${actionDef.icon} ${actionDef.label} · Edificio ${edif} (Tipo ${b.tipo} · SA${b.sa})`
+      ]),
+      h('div',{className:'report-actions',style:{marginBottom:'10px'}},[
+        h('button',{id:'btn-copy-ar',className:'btn btn-sm btn-ghost',onClick:copyR},['📋 Copiar']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:shareR},['📤 Compartir']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:downloadR},['⬇ Descargar .txt']),
+      ]),
+      h('pre',{className:'report-pre'},[texto]),
+    ]),
+    renderSyncBar(),
+  ]);
+  app().innerHTML='';
+  app().appendChild(el);
 }
 
 function renderReport(){
@@ -3263,6 +3431,13 @@ function renderActionDetail(){
     topbar(`${actionDef.icon} ${actionDef.label}`,backView,backParams),
     h('div',{style:{fontSize:'0.82rem',color:'var(--tx-2)',marginBottom:'12px'}},[scopeLabel+' — '+allItems.length+' registros']),
     statsRow,
+
+    // Botón informe (solo cuando scope = edificio único)
+    isSingleEdif&&allItems.length?h('button',{
+      className:'btn btn-ghost',
+      style:{width:'100%',justifyContent:'center',marginBottom:'var(--gap)',fontSize:'0.85rem'},
+      onClick:()=>navigate('actionReport',{edif:edifStart,actionId,backView:'actionDetail',backParams:viewParams})
+    },['📋 Ver informe detallado — Edif. '+edifStart]):null,
 
     // Bulk actions
     isEditor()&&allItems.length?h('div',{style:{display:'flex',gap:'8px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
