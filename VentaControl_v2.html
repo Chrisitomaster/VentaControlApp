@@ -60,27 +60,34 @@ body{
 }
 .topbar h1{font-size:1.1rem;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .topbar .back-btn{
-  background:none;border:none;color:var(--tx-1);font-size:1.3rem;cursor:pointer;
-  padding:4px 8px;border-radius:var(--radius-sm);
+  background:none;border:none;color:var(--tx-0);font-size:1.6rem;cursor:pointer;
+  padding:6px 12px;border-radius:var(--radius-sm);font-weight:700;min-width:44px;min-height:44px;
+  display:flex;align-items:center;justify-content:center;
 }
 .topbar .back-btn:hover{background:var(--bg-2);}
+.topbar .back-btn:active{background:var(--bg-3);}
 .topbar .logo{font-family:var(--font-mono);font-size:0.75rem;color:var(--ac-blue);font-weight:600;letter-spacing:1px;}
 /* BUTTONS */
 .btn{
-  display:inline-flex;align-items:center;gap:6px;padding:10px 16px;
+  display:inline-flex;align-items:center;gap:6px;padding:12px 18px;
   border:none;border-radius:var(--radius-sm);font-family:var(--font-main);
-  font-size:0.9rem;font-weight:500;cursor:pointer;transition:all var(--transition);
+  font-size:0.95rem;font-weight:500;cursor:pointer;transition:all var(--transition);
+  min-height:46px;
 }
 .btn-primary{background:var(--ac-blue);color:#fff;}
 .btn-primary:hover{filter:brightness(1.1);}
-.btn-sm{padding:7px 12px;font-size:0.82rem;}
+.btn-primary:active{filter:brightness(0.93);}
+.btn-sm{padding:9px 14px;font-size:0.85rem;min-height:40px;}
 .btn-ghost{background:transparent;color:var(--tx-1);border:1px solid var(--border);}
 .btn-ghost:hover{background:var(--bg-2);}
+.btn-ghost:active{background:var(--bg-3);}
 .btn-icon{
-  background:none;border:none;color:var(--tx-2);font-size:1.1rem;
-  cursor:pointer;padding:6px;border-radius:var(--radius-sm);line-height:1;
+  background:none;border:none;color:var(--tx-1);font-size:1.3rem;
+  cursor:pointer;padding:8px;border-radius:var(--radius-sm);line-height:1;
+  min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;
 }
 .btn-icon:hover{background:var(--bg-2);color:var(--tx-0);}
+.btn-icon:active{background:var(--bg-3);}
 /* CARDS */
 .card{
   background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);
@@ -106,7 +113,8 @@ body{
 .floor-label{font-size:0.75rem;color:var(--tx-2);margin:8px 0 4px;font-weight:500;}
 .dept-cell{
   background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
-  text-align:center;padding:14px 6px;cursor:pointer;transition:all var(--transition);
+  text-align:center;padding:16px 6px;cursor:pointer;transition:all var(--transition);
+  min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;
 }
 .dept-cell:hover{border-color:var(--ac-blue);background:var(--card-hover);}
 .dept-cell .dept-num{font-weight:700;font-size:1.1rem;}
@@ -141,11 +149,11 @@ body{
 .stat-val{font-size:1.5rem;font-weight:700;font-family:var(--font-mono);}
 .stat-label{font-size:0.72rem;color:var(--tx-2);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
 /* DEFICIENCY CHIPS */
-.def-group{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.def-group{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
 .def-chip{
-  display:inline-flex;align-items:center;gap:6px;padding:9px 14px;
-  border:1px solid var(--border);border-radius:20px;font-size:0.88rem;
-  cursor:pointer;transition:all var(--transition);user-select:none;min-height:42px;
+  display:inline-flex;align-items:center;gap:7px;padding:11px 16px;
+  border:1px solid var(--border);border-radius:20px;font-size:0.9rem;
+  cursor:pointer;transition:all var(--transition);user-select:none;min-height:46px;
 }
 .def-chip.active{border-color:var(--ac-cyan);background:var(--ac-cyan-soft);color:var(--ac-cyan);font-weight:600;}
 /* CORRECTIVE ACTIONS */
@@ -156,9 +164,9 @@ body{
 .action-row .action-icon{font-size:1.1rem;}
 .action-row .action-label{flex:1;}
 .action-row .action-check{
-  width:36px;height:36px;border-radius:50%;border:2px solid var(--border);
+  width:42px;height:42px;border-radius:50%;border:2px solid var(--border);
   cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:0.9rem;transition:all var(--transition);
+  font-size:1rem;transition:all var(--transition);flex-shrink:0;
 }
 .action-row .action-check.done{background:var(--ac-blue);border-color:var(--ac-blue);color:#fff;}
 /* VANO STATUS */
@@ -169,10 +177,11 @@ body{
 }
 .vano-opt.sel{background:var(--ac-blue);color:#fff;border-color:var(--ac-blue);font-weight:600;}
 /* ESTADO SELECTOR */
-.estado-group{display:flex;gap:6px;flex-wrap:wrap;}
+.estado-group{display:flex;gap:8px;flex-wrap:wrap;}
 .estado-opt{
-  padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);
-  font-size:0.88rem;cursor:pointer;transition:all var(--transition);display:flex;align-items:center;gap:6px;
+  padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:0.9rem;cursor:pointer;transition:all var(--transition);display:flex;align-items:center;gap:7px;
+  min-height:46px;
 }
 .estado-opt.sel-instalada{background:var(--ac-green-soft);border-color:var(--ac-green);color:var(--ac-green);font-weight:600;}
 .estado-opt.sel-pendiente{background:var(--ac-orange-soft);border-color:var(--ac-orange);color:var(--ac-orange);font-weight:600;}
@@ -266,7 +275,7 @@ body{
 .grid-map-col{display:flex;flex-direction:column;gap:3px;}
 .grid-map-col-hdr{font-size:0.65rem;font-weight:700;text-align:center;padding:4px 2px;background:var(--bg-2);border-radius:4px;color:var(--tx-1);font-family:var(--font-mono);margin-bottom:2px;}
 .grid-map-col.ec-col .grid-map-col-hdr{background:var(--ac-blue-soft);color:var(--ac-blue);border:1px solid var(--ac-blue);}
-.win-tile{min-height:42px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:3px 4px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+.win-tile{min-height:50px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:4px 5px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
 .win-tile:active{opacity:0.6;}
 .grid-map-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--tx-1);}
@@ -392,12 +401,12 @@ const DEF_ACTION_MAP = {
 };
 
 const ESTADOS = [
-  {id:'instalada',label:'Instalada',sym:'✓',cls:'sel-instalada'},
-  {id:'pendiente',label:'Pendiente',sym:'◷',cls:'sel-pendiente'},
-  {id:'noInstalada',label:'No Instalada',sym:'✗',cls:'sel-noinstalada'},
-  {id:'quitar',label:'Quitar',sym:'↩',cls:'sel-quitar'},
-  {id:'noInstalar',label:'No Instalar',sym:'⊘',cls:'sel-noinstalar'},
-  {id:'sinVentana',label:'Sin Ventana',sym:'▢',cls:'sel-sinventana'}
+  {id:'instalada',   label:'Instalada',    sym:'✓', cls:'sel-instalada'},
+  {id:'pendiente',   label:'Pendiente',    sym:'◷', cls:'sel-pendiente'},
+  {id:'noInstalada', label:'No Instalada', sym:'✗', cls:'sel-noinstalada'},
+  {id:'quitar',      label:'Quitar',       sym:'↩', cls:'sel-quitar'},
+  {id:'sinVentana',  label:'Sin Ventana',  sym:'▢', cls:'sel-sinventana'},
+  // 'noInstalar' eliminado — usar "Con Acción Correctiva" + estado pendiente/quitar
 ];
 
 const VANO_OPTS = ['OK','Sobredimensionado','Subdimensionado'];
@@ -618,7 +627,7 @@ function setNestedVal(obj,path,val){
    ============================================ */
 function getBldgStats(edif){
   const e=parseInt(edif);
-  let total=0,instaladas=0,quitar=0,pendientes=0,defCount=0,actionsPending=0;
+  let total=0,instaladas=0,quitar=0,pendientes=0,noInstalada=0,sinVentana=0,defCount=0,actionsPending=0;
   const tipoCounts={};
   // Dept windows
   for(let f=1;f<=5;f++){
@@ -631,17 +640,14 @@ function getBldgStats(edif){
         const w=DATA.windows[key];
         if(!w)return;
         total++;
-        // Determine window type group for counts
-        const typeGroup=code.replace(/-[A-Za-z]+$/,'').replace(/_D\d/,'');
-        const baseType=code.startsWith('V1-')||code==='V1_D2'||code==='V1_D3'?'V1':
-                       code.startsWith('V5')?'V5':code.startsWith('V6')?'V6':code;
-        // Simplified: use first part
         const tKey=code.replace(/_\d$/,'').replace(/-[A-Za-z]+$/,'');
         tipoCounts[tKey]=(tipoCounts[tKey]||{t:0,i:0});
         tipoCounts[tKey].t++;
         if(w.estado==='instalada'){instaladas++;tipoCounts[tKey].i++;}
         if(w.estado==='quitar')quitar++;
         if(w.estado==='pendiente')pendientes++;
+        if(w.estado==='noInstalada')noInstalada++;
+        if(w.estado==='sinVentana')sinVentana++;
         Object.values(w.deficiencias).forEach(v=>{if(v)defCount++;});
         Object.values(w.acciones).forEach(a=>{if(a.active&&!a.done)actionsPending++;});
       });
@@ -658,13 +664,16 @@ function getBldgStats(edif){
       if(w.estado==='instalada'){instaladas++;tipoCounts[code].i++;}
       if(w.estado==='quitar')quitar++;
       if(w.estado==='pendiente')pendientes++;
+      if(w.estado==='noInstalada')noInstalada++;
+      if(w.estado==='sinVentana')sinVentana++;
       Object.values(w.deficiencias).forEach(v=>{if(v)defCount++;});
       Object.values(w.acciones).forEach(a=>{if(a.active&&!a.done)actionsPending++;});
     });
   }
-  const pctBruto=pct(instaladas,total);
-  const pctAjustado=pct(instaladas-quitar,total);
-  return{total,instaladas,quitar,pendientes,defCount,actionsPending,pctBruto,pctAjustado,tipoCounts};
+  // pctReal: avance neto = instaladas válidas (descuenta las que hay que quitar) / total
+  const instaladasNeto=instaladas-quitar;
+  const pctReal=pct(instaladasNeto,total);
+  return{total,instaladas,instaladasNeto,quitar,pendientes,noInstalada,sinVentana,defCount,actionsPending,pctReal,tipoCounts};
 }
 
 // Conteo detallado de pendientes por edificio: deficiencias por tipo,
@@ -759,21 +768,23 @@ function getCommonStats(edif,floor){
 
 function getSAStats(sa){
   const[start,end]=SA_RANGES[sa];
-  let total=0,instaladas=0,quitar=0;
+  let total=0,instaladas=0,quitar=0,actionsPending=0;
   for(let e=start;e<=end;e++){
     const s=getBldgStats(e);
-    total+=s.total;instaladas+=s.instaladas;quitar+=s.quitar;
+    total+=s.total;instaladas+=s.instaladas;quitar+=s.quitar;actionsPending+=s.actionsPending;
   }
-  return{total,instaladas,quitar,pctBruto:pct(instaladas,total),pctAjustado:pct(instaladas-quitar,total)};
+  const instaladasNeto=instaladas-quitar;
+  return{total,instaladas,instaladasNeto,quitar,actionsPending,pctReal:pct(instaladasNeto,total)};
 }
 
 function getGlobalStats(){
-  let total=0,instaladas=0,quitar=0,defCount=0;
+  let total=0,instaladas=0,quitar=0,defCount=0,actionsPending=0;
   for(let e=1;e<=34;e++){
     const s=getBldgStats(e);
-    total+=s.total;instaladas+=s.instaladas;quitar+=s.quitar;defCount+=s.defCount;
+    total+=s.total;instaladas+=s.instaladas;quitar+=s.quitar;defCount+=s.defCount;actionsPending+=s.actionsPending;
   }
-  return{total,instaladas,quitar,defCount,pctBruto:pct(instaladas,total),pctAjustado:pct(instaladas-quitar,total)};
+  const instaladasNeto=instaladas-quitar;
+  return{total,instaladas,instaladasNeto,quitar,defCount,actionsPending,pctReal:pct(instaladasNeto,total)};
 }
 
 /* ============================================
@@ -943,16 +954,14 @@ function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
     topbar('VentaControl v2.3'),
-    // Global stats
+    // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
-      statBox(g.instaladas.toLocaleString(),'Instaladas'),
+      statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
       statBox(g.total.toLocaleString(),'Total'),
-      statBox(g.pctBruto+'%','% Bruto'),
-      statBox(g.pctAjustado+'%','% Ajustado'),
-    ]),
-    h('div',{className:'pbar'},[h('div',{className:'pbar-fill blue',style:{width:g.pctBruto+'%'}})]),
-    h('div',{style:{height:'6px'}}),
-    h('div',{className:'pbar'},[h('div',{className:'pbar-fill green',style:{width:Math.max(0,g.pctAjustado)+'%'}})]),
+      statBox(g.pctReal+'%','% Avance'),
+      g.quitar?statBox(g.quitar.toString(),'A Quitar'):null,
+    ].filter(Boolean)),
+    h('div',{className:'pbar'},[h('div',{className:'pbar-fill green',style:{width:Math.max(0,g.pctReal)+'%'}})]),
     // SA cards
     h('div',{className:'section-hdr'},[h('h2',{},['Sub-Administraciones'])]),
     h('div',{className:'grid-2'},
@@ -960,22 +969,16 @@ function renderDashboard(){
         const s=getSAStats(sa);
         const card=h('div',{className:'card card-click sa-card',onClick:()=>navigate('sa',{sa})},[
           h('div',{className:'sa-label'},[SA_NAMES[sa]]),
-          h('div',{className:'sa-num'},[s.pctBruto+'%']),
-          h('div',{className:'sa-progress'},[`${s.instaladas}/${s.total}`]),
-          h('div',{className:'pbar'},[h('div',{className:'pbar-fill blue',style:{width:s.pctBruto+'%'}})]),
+          h('div',{className:'sa-num'},[s.pctReal+'%']),
+          h('div',{className:'sa-progress'},[`${s.instaladasNeto}/${s.total}`]),
+          h('div',{className:'pbar'},[h('div',{className:'pbar-fill green',style:{width:s.pctReal+'%'}})]),
         ]);
         return card;
       })
     ),
-    // Deficiency summary
-    h('div',{className:'section-hdr'},[h('h2',{},['Resumen Global']),h('span',{className:'badge badge-red'},[g.defCount+' inconformidades'])]),
-    g.defCount>0?h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'8px'}},['Inconformidades por tipo']),
-      renderGlobalDefBreakdown(),
-    ]):null,
 
-    // Global corrective actions panel (lazy — expands on click to avoid scanning 4740 windows on every render)
-    renderLazyActionsCard('Acciones Correctivas — Proyecto',1,34,true),
+    // Acciones correctivas globales — auto-expandido
+    renderLazyActionsCard('Acciones Correctivas — Proyecto',1,34,true,'dashboard',{}),
 
     // Sync bar
     renderSyncBar(),
@@ -999,13 +1002,14 @@ function renderSA(){
   const[start,end]=SA_RANGES[sa];
   const sStats=getSAStats(sa);
   const el=h('div',{className:'fade-in'},[
-    topbar(SA_NAMES[sa]+` — ${sStats.pctBruto}%`,'dashboard'),
+    topbar(SA_NAMES[sa]+` — ${sStats.pctReal}%`,'dashboard'),
     h('div',{className:'stats-row'},[
-      statBox(sStats.instaladas.toString(),'Instaladas'),
+      statBox(sStats.instaladasNeto.toString(),'Inst. Neto'),
       statBox(sStats.total.toString(),'Total'),
-      statBox(sStats.pctBruto+'%','Bruto'),
-      statBox(sStats.pctAjustado+'%','Ajustado'),
-    ]),
+      statBox(sStats.pctReal+'%','% Avance'),
+      sStats.quitar?statBox(sStats.quitar.toString(),'A Quitar'):null,
+    ].filter(Boolean)),
+    h('div',{className:'pbar',style:{marginBottom:'var(--gap)'}},[h('div',{className:'pbar-fill green',style:{width:sStats.pctReal+'%'}})]),
     ...Array.from({length:end-start+1},(_,i)=>{
       const e=start+i;
       const b=BUILDINGS[e];
@@ -1019,14 +1023,13 @@ function renderSA(){
             h('span',{className:'bld-num'},['Edif. '+e]),
             h('span',{className:'bld-tipo',style:{marginLeft:'8px'}},['Tipo '+b.tipo]),
           ]),
-          h('span',{className:'badge '+(s.pctBruto>=100?'badge-green':s.pctBruto>0?'badge-blue':'badge-orange')},[s.pctBruto+'%']),
+          h('span',{className:'badge '+(s.pctReal>=100?'badge-green':s.pctReal>0?'badge-blue':'badge-orange')},[s.pctReal+'%']),
         ]),
         stgInfo?h('div',{style:{fontSize:'0.75rem',color:'var(--ac-cyan)',marginTop:'4px',fontWeight:'500'}},['📋 '+stgInfo.short+' ('+stg+'/6)']):null,
-        h('div',{className:'pbar',style:{marginTop:'6px'}},[h('div',{className:'pbar-fill blue',style:{width:s.pctBruto+'%'}})]),
+        h('div',{className:'pbar',style:{marginTop:'6px'}},[h('div',{className:'pbar-fill green',style:{width:s.pctReal+'%'}})]),
         h('div',{style:{display:'flex',gap:'6px',marginTop:'8px',flexWrap:'wrap'}},[
-          s.defCount?h('span',{className:'badge badge-red'},[s.defCount+' def.']):null,
           s.actionsPending?h('span',{className:'badge badge-orange'},[s.actionsPending+' acc.']):null,
-          s.quitar?h('span',{className:'badge badge-purple'},[s.quitar+' quitar']):null,
+          s.quitar?h('span',{className:'badge badge-red'},[s.quitar+' quitar']):null,
         ]),
         // Comentario del edificio (si existe)
         bData.comment?h('div',{style:{marginTop:'6px',fontSize:'0.75rem',color:'var(--tx-1)',fontStyle:'italic',borderTop:'1px dashed var(--border)',paddingTop:'6px'}},[
@@ -1035,8 +1038,8 @@ function renderSA(){
       ].filter(Boolean));
     }),
 
-    // SA corrective actions panel (lazy)
-    renderLazyActionsCard('Acciones Correctivas — '+SA_NAMES[sa],start,end,true),
+    // SA corrective actions panel — auto-expandido
+    renderLazyActionsCard('Acciones Correctivas — '+SA_NAMES[sa],start,end,true,'sa',{sa}),
 
     renderSyncBar(),
   ]);
@@ -1056,33 +1059,37 @@ function renderBuilding(){
   const el=h('div',{className:'fade-in'},[
     topbar(`Edif. ${edif} — Tipo ${b.tipo}`,'sa',{sa:b.sa}),
 
-    // Stats
+    // Botón principal — Mapa completo (prominente, al inicio)
+    h('button',{
+      className:'btn btn-primary',
+      style:{width:'100%',justifyContent:'center',padding:'14px',fontSize:'1rem',marginBottom:'var(--gap)',borderRadius:'var(--radius)'},
+      onClick:()=>navigate('gridmap',{edif})
+    },['🗺 Ver Mapa Completo de Ventanas']),
+
+    // Stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
-      statBox(s.instaladas+'/'+s.total,'Ventanas'),
-      statBox(s.pctBruto+'%','Bruto'),
-      statBox(s.pctAjustado+'%','Ajustado'),
-      statBox(s.defCount.toString(),'Defectos'),
-    ]),
+      statBox(s.instaladasNeto+'/'+s.total,'Inst. Neto'),
+      statBox(s.pctReal+'%','% Avance'),
+      s.quitar?statBox(s.quitar.toString(),'A Quitar'):null,
+      s.actionsPending?statBox(s.actionsPending.toString(),'Acciones'):null,
+    ].filter(Boolean)),
+    h('div',{className:'pbar',style:{marginBottom:'var(--gap)'}},[h('div',{className:'pbar-fill green',style:{width:s.pctReal+'%'}})]),
 
     // Resumen de pendientes: solo totales
     (()=>{
-      const pw=getPendingWindows(edif);
-      const totalPending=pw.pendiente.length+pw.noInstalada.length;
-      if(totalPending===0)return h('div',{className:'card'},[
+      const noInst=s.pendientes+s.noInstalada+s.quitar;
+      if(noInst===0)return h('div',{className:'card'},[
         h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'4px'}},['Resumen de Pendientes']),
-        h('div',{style:{color:'var(--ac-green)',fontSize:'0.82rem',fontWeight:'600'}},['✓ Todas las ventanas instaladas']),
+        h('div',{style:{color:'var(--ac-green)',fontSize:'0.82rem',fontWeight:'600'}},['✓ Todas las ventanas instaladas correctamente']),
       ]);
       return h('div',{className:'card'},[
         h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'10px'}},['Resumen de Pendientes']),
-        h('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'10px'}},[
-          pw.pendiente.length?h('span',{className:'badge badge-orange',style:{fontSize:'0.82rem',padding:'6px 10px'}},[pw.pendiente.length+' pendiente'+(pw.pendiente.length!==1?'s':'')]):null,
-          pw.noInstalada.length?h('span',{className:'badge',style:{fontSize:'0.82rem',padding:'6px 10px'}},[pw.noInstalada.length+' sin instalar']):null,
-          h('span',{className:'badge badge-blue',style:{fontSize:'0.82rem',padding:'6px 10px'}},[totalPending+' total restante']),
+        h('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap'}},[
+          s.pendientes?h('span',{className:'badge badge-orange',style:{fontSize:'0.82rem',padding:'6px 10px'}},[s.pendientes+' pendiente'+(s.pendientes!==1?'s':'')]):null,
+          s.noInstalada?h('span',{className:'badge',style:{fontSize:'0.82rem',padding:'6px 10px'}},[s.noInstalada+' sin instalar']):null,
+          s.quitar?h('span',{className:'badge badge-red',style:{fontSize:'0.82rem',padding:'6px 10px'}},[s.quitar+' a quitar']):null,
+          s.sinVentana?h('span',{className:'badge',style:{fontSize:'0.82rem',padding:'6px 10px',color:'var(--tx-2)'}},[s.sinVentana+' sin ventana']):null,
         ].filter(Boolean)),
-        h('div',{style:{textAlign:'center'}},[
-          h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('gridmap',{edif})},
-            ['🗺 Ver mapa completo →'])
-        ]),
       ]);
     })(),
 
@@ -1151,9 +1158,8 @@ function renderBuilding(){
       }),
     ]),
 
-    // Quick nav buttons row (always visible)
+    // Quick nav buttons row
     h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
-      h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('gridmap',{edif})},['🗺 Mapa de ventanas']),
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('sealmap',{edif})},['🔵 Mapa de sello']),
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('report',{edif})},['📄 Informe']),
       isEditor()?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']):null,
@@ -1236,22 +1242,16 @@ function renderBuilding(){
       }),
     ]),
 
-    // Deficiency breakdown
-    s.defCount>0?h('div',{className:'card'},[
-      h('div',{style:{fontWeight:'600',marginBottom:'8px',fontSize:'0.85rem'}},['Inconformidades']),
-      renderBldgDefBreakdown(edif),
-    ]):null,
-
     // Type counts table
     h('div',{className:'card'},[
       h('div',{style:{fontWeight:'600',marginBottom:'4px',fontSize:'0.9rem'}},['Por Tipo (Edif. '+edif+')']),
       renderTypeTable(s.tipoCounts),
     ]),
 
-    // Corrective actions summary — clickeable
+    // Corrective actions summary — expandido
     h('div',{className:'card'},[
       h('div',{style:{fontWeight:'600',marginBottom:'10px',fontSize:'0.9rem'}},['Acciones Correctivas — Edif. '+edif]),
-      renderActionsPanel(collectActions(edif,edif),'Edif. '+edif,false),
+      renderActionsPanel(collectActions(edif,edif),'Edif. '+edif,false,'building',{edif}),
     ]),
 
     // Building comment
@@ -1309,14 +1309,17 @@ function showQuickEstado(key,code,deptoLabel,currentEstado,onDone,navView,navPar
   document.body.appendChild(overlay);
 }
 
+// Estado del filtro de acción en el mapa
+let gridMapActionFilter=null;
+
 function renderGridMap(){
   const edif=viewParams.edif;
   const s=getBldgStats(edif);
 
   // Color maps
-  const estadoBg={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)',noInstalar:'var(--ac-purple-soft)',sinVentana:'#f0f4f8'};
-  const estadoBorder={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'#94a3b8'};
-  const estadoText={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'#1e293b'};
+  const estadoBg={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)',noInstalar:'var(--bg-2)',sinVentana:'#f0f4f8'};
+  const estadoBorder={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)',noInstalar:'var(--border)',sinVentana:'#94a3b8'};
+  const estadoText={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--tx-2)',sinVentana:'#1e293b'};
   const actionColorMap={pulir:'purple',aplomar:'blue',impermeabilizar:'cyan',sellarFrente:'blue',repararEIFS:'blue',reemplazarVidrio:'cyan',repararMarco:'cyan',instalarFijacion:'purple',cargarMortero:'cyan'};
 
   function winTile(key,code,navView,navParams){
@@ -1327,8 +1330,20 @@ function renderGridMap(){
     if(w&&w.acciones){
       primaryAct=ACTIONS.find(a=>w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)||null;
     }
+    // Filtro activo: verificar si este tile pasa
+    const hasFilterAction=gridMapActionFilter&&w&&w.acciones[gridMapActionFilter]?.active&&!w.acciones[gridMapActionFilter]?.done;
+    const filteredOut=gridMapActionFilter&&!hasFilterAction;
+
     const style={};
-    if(primaryAct){
+    if(hasFilterAction){
+      // Highlight fuerte para la acción filtrada
+      const fAct=ACTIONS.find(a=>a.id===gridMapActionFilter);
+      const ac=fAct?fAct.color:'blue';
+      style.background=`var(--ac-${ac}-soft)`;
+      style.borderColor=`var(--ac-${ac})`;
+      style.color=`var(--ac-${ac})`;
+      style.borderWidth='2px';
+    } else if(primaryAct&&!gridMapActionFilter){
       const ac=actionColorMap[primaryAct.id]||'blue';
       style.background=`linear-gradient(to right,${estadoBg[estado]} 50%,var(--ac-${ac}-soft) 50%)`;
       style.borderColor=`var(--ac-${ac})`;
@@ -1338,6 +1353,7 @@ function renderGridMap(){
       style.borderColor=estadoBorder[estado];
       style.color=estadoText[estado];
     }
+    if(filteredOut){style.opacity='0.18';}
     // Build tile element manually to attach touch events
     const el=document.createElement('div');
     el.className='win-tile';
@@ -1405,6 +1421,7 @@ function renderGridMap(){
   ]);
 
   const floorSections=[1,2,3,4,5].map(f=>{
+    const fs=getFloorStats(edif,f);
     const deptoCols=[0,1,2,3].map(p=>{
       const tipo=getDeptType(edif,f,p);
       const dn=deptNum(f,p);
@@ -1419,8 +1436,22 @@ function renderGridMap(){
       h('div',{className:'grid-map-col-hdr'},[`EC${f}`]),
       ...cw.map(([code,loc])=>winTile(wKey(edif,`EC${f}`,code),code,'common',{edif,floor:f,code,backView:'gridmap',backParams:{edif}}))
     ]);
+    // Stats por piso
+    const pctPiso=pct(fs.instaladas,fs.total);
+    const floorStats=h('div',{style:{
+      display:'flex',gap:'6px',flexWrap:'wrap',alignItems:'center',
+      padding:'4px 8px',marginBottom:'6px',background:'var(--bg-2)',borderRadius:'var(--radius-sm)',fontSize:'0.72rem'
+    }},[
+      h('span',{style:{fontWeight:'700',color:'var(--ac-blue)',minWidth:'20px'}},['P'+f]),
+      h('span',{style:{color:pctPiso>=100?'var(--ac-green)':pctPiso>0?'var(--ac-blue)':'var(--tx-2)',fontWeight:'600'}},[fs.instaladas+'/'+fs.total]),
+      fs.pendientes?h('span',{className:'badge badge-orange',style:{fontSize:'0.65rem',padding:'2px 5px'}},[fs.pendientes+' pend.']):null,
+      fs.noInstalada?h('span',{className:'badge',style:{fontSize:'0.65rem',padding:'2px 5px'}},[fs.noInstalada+' sin inst.']):null,
+      fs.quitar?h('span',{className:'badge badge-red',style:{fontSize:'0.65rem',padding:'2px 5px'}},[fs.quitar+' quitar']):null,
+      fs.actionsPending?h('span',{className:'badge badge-orange',style:{fontSize:'0.65rem',padding:'2px 5px'}},[fs.actionsPending+' acc.']):null,
+    ].filter(Boolean));
     return h('div',{className:'grid-map-section'},[
       h('div',{className:'grid-map-floor-hdr'},[`Piso ${f}`]),
+      floorStats,
       h('div',{className:'grid-map-cols'},[
         ...deptoCols,
         h('div',{className:'grid-map-col-sep'},[]),
@@ -1429,21 +1460,52 @@ function renderGridMap(){
     ]);
   });
 
+  // Botones de filtro por acción correctiva
+  const filterBtns=h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},[
+    h('button',{
+      className:'btn btn-sm '+(gridMapActionFilter===null?'btn-primary':'btn-ghost'),
+      style:{fontSize:'0.72rem',padding:'5px 9px'},
+      onClick:()=>{gridMapActionFilter=null;renderGridMap();}
+    },['Todos']),
+    ...ACTIONS.map(a=>{
+      const isActive=gridMapActionFilter===a.id;
+      // Contar cuántas ventanas tienen esta acción pendiente en este edificio
+      let cnt=0;
+      for(let f=1;f<=5;f++){
+        for(let p=0;p<4;p++){const dn=deptNum(edif,f,p);getDeptWindows(getDeptType(edif,f,p)).forEach(([c])=>{const w=DATA.windows[wKey(edif,dn,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});}
+        getCommonWindows(f).forEach(([c])=>{const w=DATA.windows[wKey(edif,`EC${f}`,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});
+      }
+      if(!cnt&&!isActive)return null;
+      return h('button',{
+        className:'btn btn-sm '+(isActive?'btn-primary':'btn-ghost'),
+        style:{fontSize:'0.72rem',padding:'5px 9px'},
+        onClick:()=>{gridMapActionFilter=isActive?null:a.id;renderGridMap();}
+      },[a.icon+' '+a.label.slice(0,10)+(cnt?' ('+cnt+')':'')]);
+    }).filter(Boolean),
+  ]);
+
   const el=h('div',{className:'fade-in'},[
     topbar(`Mapa — Edif. ${edif}`,'building',{edif}),
     h('div',{className:'card'},[
-      // Totals summary
-      h('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'12px'}},[
-        h('span',{className:'badge badge-green',style:{fontSize:'0.78rem',padding:'5px 8px'}},[`${s.instaladas}/${s.total} instaladas`]),
+      // Totals summary — sin defCount
+      h('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'8px'}},[
+        h('span',{className:'badge badge-green',style:{fontSize:'0.78rem',padding:'5px 8px'}},[`${s.instaladasNeto}/${s.total} inst. neto`]),
         s.pendientes?h('span',{className:'badge badge-orange',style:{fontSize:'0.78rem',padding:'5px 8px'}},[s.pendientes+' pendientes']):null,
-        (s.total-s.instaladas-s.pendientes-s.quitar)>0?h('span',{className:'badge',style:{fontSize:'0.78rem',padding:'5px 8px'}},[(s.total-s.instaladas-s.pendientes-s.quitar)+' sin instalar']):null,
+        s.noInstalada?h('span',{className:'badge',style:{fontSize:'0.78rem',padding:'5px 8px'}},[s.noInstalada+' sin instalar']):null,
         s.quitar?h('span',{className:'badge badge-red',style:{fontSize:'0.78rem',padding:'5px 8px'}},[s.quitar+' quitar']):null,
-        s.defCount?h('span',{className:'badge badge-red',style:{fontSize:'0.78rem',padding:'5px 8px'}},[s.defCount+' def']):null,
         s.actionsPending?h('span',{className:'badge badge-orange',style:{fontSize:'0.78rem',padding:'5px 8px'}},[s.actionsPending+' acc']):null,
       ].filter(Boolean)),
+      // Filtros de acción
+      h('div',{style:{marginBottom:'8px'}},[
+        h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['🔍 Filtrar por acción correctiva:']),
+        filterBtns,
+      ]),
+      gridMapActionFilter?h('div',{style:{padding:'4px 8px',background:'var(--ac-blue-soft)',borderRadius:'var(--radius-sm)',fontSize:'0.75rem',color:'var(--ac-blue)',marginBottom:'8px',fontWeight:'600'}},[
+        'Mostrando: '+(ACTIONS.find(a=>a.id===gridMapActionFilter)?.label||gridMapActionFilter)+' — toca un tile resaltado para ir al detalle'
+      ]):null,
       legend,
       ...floorSections
-    ]),
+    ].filter(Boolean)),
     renderSyncBar(),
   ].filter(Boolean));
   app().innerHTML='';
@@ -1960,7 +2022,7 @@ function generateReport(edif){
   const padr=(s,n)=>String(s).padStart(n);
 
   // Collect all windows
-  const byEstado={instalada:[],pendiente:[],noInstalada:[],quitar:[],noInstalar:[],sinVentana:[]};
+  const byEstado={instalada:[],pendiente:[],noInstalada:[],quitar:[],sinVentana:[]};
   const byTipo={};
   const withDef=[];
   const withFunc=[];
@@ -1970,8 +2032,8 @@ function generateReport(edif){
     const estado=w.estado||'noInstalada';
     const entry={depto,code,loc,estado,w,isCommon};
     if(byEstado[estado])byEstado[estado].push(entry);
-    else byEstado[estado]=[entry];
-    if(!byTipo[code])byTipo[code]={total:0,instalada:0,pendiente:0,noInstalada:0,quitar:0,noInstalar:0,sinVentana:0};
+    else byEstado['noInstalada'].push(entry); // fallback para estados no reconocidos
+    if(!byTipo[code])byTipo[code]={total:0,instalada:0,pendiente:0,noInstalada:0,quitar:0,sinVentana:0};
     byTipo[code].total++;
     byTipo[code][estado]=(byTipo[code][estado]||0)+1;
     const defs=DEFICIENCIES.filter(d=>w.deficiencias[d.id]);
@@ -1994,16 +2056,22 @@ function generateReport(edif){
   add('');
 
   // ── RESUMEN ──────────────────────────────────
+  const instaladasNeto=s.instaladas-s.quitar;
+  const noInstaladoTotal=s.total-instaladasNeto;
   add('RESUMEN GENERAL');
   add(sep2);
-  add(`  Total ventanas   : ${s.total}`);
-  add(`  Instaladas       : ${s.instaladas}  (${pct(s.instaladas,s.total)}%)`);
-  add(`  Pendientes       : ${byEstado.pendiente.length}  (${pct(byEstado.pendiente.length,s.total)}%)`);
-  add(`  Sin instalar     : ${byEstado.noInstalada.length}  (${pct(byEstado.noInstalada.length,s.total)}%)`);
-  add(`  A quitar         : ${s.quitar}  (${pct(s.quitar,s.total)}%)`);
-  if(byEstado.noInstalar.length)add(`  No instalar      : ${byEstado.noInstalar.length}`);
-  if(byEstado.sinVentana.length)add(`  Sin ventana      : ${byEstado.sinVentana.length}`);
-  add(`  Con deficiencias : ${withDef.length}`);
+  add(`  Total ventanas       : ${s.total}`);
+  add('');
+  add(`  ✓ INSTALADAS (neto)  : ${instaladasNeto}  (${pct(instaladasNeto,s.total)}%)`);
+  add(`    → Incluye: ${s.instaladas} instaladas − ${s.quitar} a quitar`);
+  add('');
+  add(`  ✗ NO INSTALADAS      : ${noInstaladoTotal}  (${pct(noInstaladoTotal,s.total)}%)`);
+  if(byEstado.pendiente.length)add(`    Pendientes de inst.: ${byEstado.pendiente.length}`);
+  if(byEstado.noInstalada.length)add(`    Sin instalar       : ${byEstado.noInstalada.length}`);
+  if(s.quitar)add(`    A quitar (remover) : ${s.quitar}`);
+  if(byEstado.sinVentana.length)add(`    Sin ventana        : ${byEstado.sinVentana.length}`);
+  add('');
+  if(withDef.length)add(`  Con inconformidades  : ${withDef.length} ventanas`);
   add('');
 
   // ── PENDIENTES ───────────────────────────────
@@ -2060,8 +2128,8 @@ function generateReport(edif){
 
   // ── ACCIONES CORRECTIVAS PENDIENTES ──────────
   const actionCounts={};
-  Object.keys(byEstado).forEach(est=>{
-    byEstado[est].forEach(it=>{
+  Object.entries(byEstado).forEach(([,list])=>{
+    list.forEach(it=>{
       ACTIONS.forEach(a=>{
         if(it.w.acciones[a.id]?.active&&!it.w.acciones[a.id]?.done){
           if(!actionCounts[a.id])actionCounts[a.id]={label:a.label,count:0,items:[]};
@@ -2144,8 +2212,8 @@ function generateReport(edif){
   add(`  ${'Tipo'.padEnd(10)}| Total | Inst. | Pend. | Sin  | Quitar`);
   add(`  ${'-'.repeat(46)}`);
   const typeOrder=['V1-Izq','V1-Der','V1_D2','V1_D3','V1a','V2','V3','V4','V5_1','V5_2','V5_3','V5a','V6_1','V6_2','V7','V8','V9','PV1','PV2'];
-  const sorted=Object.entries(byTipo).sort((a,b)=>{const ia=typeOrder.indexOf(a[0]),ib=typeOrder.indexOf(b[0]);return(ia<0?99:ia)-(ib<0?99:ib);});
-  sorted.forEach(([tipo,c])=>{
+  const sortedByTipo=Object.entries(byTipo).sort((a,b)=>{const ia=typeOrder.indexOf(a[0]),ib=typeOrder.indexOf(b[0]);return(ia<0?99:ia)-(ib<0?99:ib);});
+  sortedByTipo.forEach(([tipo,c])=>{
     add(`  ${pad(tipo,10)}|  ${padr(c.total,3)}  |  ${padr(c.instalada,3)}  |  ${padr(c.pendiente||0,3)}  |  ${padr(c.noInstalada||0,3)} |    ${c.quitar||0}`);
   });
   add('');
@@ -2216,6 +2284,36 @@ function renderTypeTable(tipoCounts){
     tbl.appendChild(row);
   });
   return tbl;
+}
+
+function getFloorStats(edif,floor){
+  const e=parseInt(edif);
+  let total=0,instaladas=0,pendientes=0,quitar=0,actionsPending=0,noInstalada=0;
+  for(let p=0;p<4;p++){
+    const tipo=getDeptType(e,floor,p);
+    const dn=deptNum(floor,p);
+    getDeptWindows(tipo).forEach(([code])=>{
+      const w=DATA.windows[wKey(e,dn,code)];
+      if(!w)return;
+      total++;
+      if(w.estado==='instalada')instaladas++;
+      if(w.estado==='pendiente')pendientes++;
+      if(w.estado==='quitar')quitar++;
+      if(w.estado==='noInstalada')noInstalada++;
+      Object.values(w.acciones).forEach(a=>{if(a.active&&!a.done)actionsPending++;});
+    });
+  }
+  getCommonWindows(floor).forEach(([code])=>{
+    const w=DATA.windows[wKey(e,`EC${floor}`,code)];
+    if(!w)return;
+    total++;
+    if(w.estado==='instalada')instaladas++;
+    if(w.estado==='pendiente')pendientes++;
+    if(w.estado==='quitar')quitar++;
+    if(w.estado==='noInstalada')noInstalada++;
+    Object.values(w.acciones).forEach(a=>{if(a.active&&!a.done)actionsPending++;});
+  });
+  return{total,instaladas,pendientes,quitar,noInstalada,actionsPending};
 }
 
 function countBldgActions(edif,actionId){
@@ -2346,7 +2444,7 @@ function renderDept(){
 
 function renderEstadoMini(estado){
   const cfg=ESTADOS.find(e=>e.id===estado)||ESTADOS[2];
-  const colors={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--ac-purple)',sinVentana:'#64748b'};
+  const colors={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--tx-2)',sinVentana:'#64748b'};
   return h('span',{style:{fontSize:'1.2rem',color:colors[estado]||'var(--tx-2)'}},[cfg.sym]);
 }
 
@@ -2889,26 +2987,32 @@ function collectActions(edifStart,edifEnd){
   return items;
 }
 
-// Lazy-loaded actions card — avoids scanning thousands of windows on initial render
-function renderLazyActionsCard(title,edifStart,edifEnd,showEdif){
+// Auto-expand actions card — carga datos con requestIdleCallback para no bloquear render inicial
+function renderLazyActionsCard(title,edifStart,edifEnd,showEdif,backView,backParams){
+  const containerId='lac-'+edifStart+'-'+edifEnd;
   const card=h('div',{className:'card'},[
-    h('div',{style:{display:'flex',alignItems:'center',cursor:'pointer',gap:'8px'},onClick:()=>{
-      // Replace card content with actual data on first click
-      const items=collectActions(edifStart,edifEnd);
-      card.innerHTML='';
-      const header=h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},[title]);
-      card.appendChild(header);
-      card.appendChild(renderActionsPanel(items,title,showEdif));
-    }},[
-      h('span',{style:{fontWeight:'600',fontSize:'0.9rem',flex:1}},[title]),
-      h('span',{style:{fontSize:'0.78rem',color:'var(--ac-blue)',fontWeight:'500'}},['Toca para cargar ▸']),
-    ]),
+    h('div',{style:{fontWeight:'600',fontSize:'0.9rem',marginBottom:'10px'}},[title]),
+    h('div',{id:containerId,style:{color:'var(--tx-2)',fontSize:'0.8rem',padding:'4px 0'}},['⏳ Cargando acciones...']),
   ]);
+  // Auto-expand asíncrono para no bloquear el render de la vista
+  const expand=()=>{
+    const container=document.getElementById(containerId);
+    if(!container)return;
+    const items=collectActions(edifStart,edifEnd);
+    container.innerHTML='';
+    container.appendChild(renderActionsPanel(items,title,showEdif,backView||'dashboard',backParams||{}));
+  };
+  if(typeof requestIdleCallback!=='undefined'){
+    requestIdleCallback(expand,{timeout:500});
+  } else {
+    setTimeout(expand,80);
+  }
   return card;
 }
 
 // Render corrective actions panel (used in dashboard, SA, and building detail)
-function renderActionsPanel(items,title,showEdif=true){
+// backView/backParams: contexto de navegación para la vista actionDetail
+function renderActionsPanel(items,title,showEdif=true,backView='dashboard',backParams={}){
   if(!items.length)return h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',padding:'8px 0'}},['Sin acciones correctivas registradas']);
   // Group by action type
   const grouped={};
@@ -2923,56 +3027,69 @@ function renderActionsPanel(items,title,showEdif=true){
 
   return h('div',{},[
     h('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}},[
-      h('span',{className:'badge badge-orange'},[totalPending+' pendientes']),
-      h('span',{className:'badge badge-green'},[totalDone+' completadas']),
-    ]),
+      totalPending?h('span',{className:'badge badge-orange'},[totalPending+' pendientes']):null,
+      totalDone?h('span',{className:'badge badge-green'},[totalDone+' completadas']):null,
+      (!totalPending&&!totalDone)?h('span',{style:{fontSize:'0.8rem',color:'var(--tx-2)'}},[' Sin acciones activas']):null,
+    ].filter(Boolean)),
     ...ACTIONS.map(a=>{
       const g=grouped[a.id];
       if(!g.pending.length&&!g.done.length)return null;
+      // Para navigación correcta: si showEdif=false (single building), scope=ese edif
+      const navEdifStart=showEdif?edifStart(items):items[0]?.edif||1;
+      const navEdifEnd=showEdif?edifEnd(items):items[0]?.edif||1;
       return h('div',{style:{marginBottom:'10px'}},[
-        h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'},
+        h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'8px 10px',borderBottom:'1px solid var(--border)',cursor:'pointer',borderRadius:'var(--radius-sm)',background:'var(--bg-2)',marginBottom:'4px'},
           onClick:()=>{
-            // Navigate to action detail view
-            const edifScope=showEdif?null:items[0]?.edif;
-            navigate('actionDetail',{actionId:a.id,edifStart:edifScope||1,edifEnd:edifScope||34});
+            const eStart=showEdif?(typeof edifStart==='function'?edifStart(items):1):items[0]?.edif||1;
+            const eEnd=showEdif?(typeof edifEnd==='function'?edifEnd(items):34):items[0]?.edif||1;
+            navigate('actionDetail',{actionId:a.id,edifStart:eStart,edifEnd:eEnd,backView,backParams});
           }
         },[
-          h('span',{style:{fontSize:'1.2rem'}},[a.icon]),
-          h('span',{style:{fontWeight:'600',fontSize:'0.88rem',flex:1}},[a.label]),
-          g.pending.length?h('span',{className:'badge badge-orange'},[g.pending.length+' pend.']):null,
-          g.done.length?h('span',{className:'badge badge-green'},[g.done.length+' ✓']):null,
-          h('span',{style:{color:'var(--ac-blue)',fontSize:'0.9rem'}},['▸']),
+          h('span',{style:{fontSize:'1.3rem'}},[a.icon]),
+          h('span',{style:{fontWeight:'600',fontSize:'0.9rem',flex:1}},[a.label]),
+          g.pending.length?h('span',{className:'badge badge-orange',style:{fontSize:'0.82rem',padding:'4px 8px'}},[g.pending.length+' pend.']):null,
+          g.done.length?h('span',{className:'badge badge-green',style:{fontSize:'0.82rem',padding:'4px 8px'}},[g.done.length+' ✓']):null,
+          h('span',{style:{color:'var(--ac-blue)',fontSize:'1rem',marginLeft:'4px'}},['▶']),
         ]),
-        // Show first few pending items as preview
-        ...g.pending.slice(0,3).map(it=>
-          h('div',{style:{fontSize:'0.78rem',color:'var(--tx-1)',padding:'3px 0 3px 32px',display:'flex',gap:'6px'}},[
-            showEdif?h('span',{style:{fontWeight:'600',color:'var(--tx-2)'}},[`E${it.edif}`]):null,
+        // Preview de los primeros pendientes (agrupados por edif cuando showEdif=true)
+        ...g.pending.slice(0,2).map(it=>
+          h('div',{style:{fontSize:'0.77rem',color:'var(--tx-1)',padding:'2px 0 2px 28px',display:'flex',gap:'6px'}},[
+            showEdif?h('span',{style:{fontWeight:'700',color:'var(--ac-blue)',minWidth:'24px'}},[`E${it.edif}`]):null,
             h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'600'}},[String(it.depto)]),
             h('span',{},[it.code]),
-            h('span',{style:{color:'var(--tx-2)'}},[it.loc]),
+            h('span',{style:{color:'var(--tx-2)'}},[it.loc.slice(0,18)]),
           ].filter(Boolean))
         ),
-        g.pending.length>3?h('div',{style:{fontSize:'0.73rem',color:'var(--ac-blue)',padding:'2px 0 2px 32px',cursor:'pointer'},
-          onClick:()=>navigate('actionDetail',{actionId:a.id,edifStart:showEdif?1:items[0]?.edif||1,edifEnd:showEdif?34:items[0]?.edif||34})
+        g.pending.length>2?h('div',{style:{fontSize:'0.72rem',color:'var(--ac-blue)',padding:'2px 0 2px 28px',cursor:'pointer'},
+          onClick:()=>{
+            const eStart=showEdif?1:items[0]?.edif||1;
+            const eEnd=showEdif?34:items[0]?.edif||1;
+            navigate('actionDetail',{actionId:a.id,edifStart:eStart,edifEnd:eEnd,backView,backParams});
+          }
         },['... ver todas ('+g.pending.length+')']):null,
       ]);
     }).filter(Boolean),
   ]);
+
+  // Helpers para resolver el scope de edif dinámicamente
+  function edifStart(items){return Math.min(...items.map(i=>i.edif));}
+  function edifEnd(items){return Math.max(...items.map(i=>i.edif));}
 }
 
 /* ============================================
    VIEW: ACTION DETAIL — per action type
    ============================================ */
 function renderActionDetail(){
-  const{actionId,edifStart,edifEnd}=viewParams;
+  const{actionId,edifStart,edifEnd,backView:passedBack,backParams:passedBackParams}=viewParams;
   const actionDef=ACTIONS.find(a=>a.id===actionId);
   if(!actionDef){app().innerHTML='<p>Acción no encontrada</p>';return;}
 
-  // Determine back navigation
+  // Back nav: usa el contexto pasado, o infiere
   const isSingleEdif=edifStart===edifEnd;
-  const backView=isSingleEdif?'building':'dashboard';
-  const backParams=isSingleEdif?{edif:edifStart}:{};
-  const scopeLabel=isSingleEdif?`Edif. ${edifStart}`:'Proyecto';
+  const backView=passedBack||(isSingleEdif?'building':'dashboard');
+  const backParams=passedBackParams||(isSingleEdif?{edif:edifStart}:{});
+  const scopeLabel=isSingleEdif?`Edif. ${edifStart}`:
+    (edifStart===1&&edifEnd===34?'Proyecto global':`SA (Edif. ${edifStart}–${edifEnd})`);
 
   // Collect all items for this action
   const allItems=[];
@@ -2987,9 +3104,8 @@ function renderActionDetail(){
           if(!w)return;
           const act=w.acciones[actionId];
           if(act&&act.active){
-            // Count total deficiencies for importance
-            const defCount=Object.values(w.deficiencias).filter(Boolean).length;
-            allItems.push({edif:e,depto:dn,floor:f,code,loc,done:act.done,key:k,defCount,obs:w.observaciones||''});
+            const defCnt=Object.values(w.deficiencias).filter(Boolean).length;
+            allItems.push({edif:e,depto:dn,floor:f,code,loc,done:act.done,key:k,defCnt,obs:w.observaciones||''});
           }
         });
       }
@@ -3000,74 +3116,74 @@ function renderActionDetail(){
         const loc=code==='PV1'?'Mampara Acceso':code==='PV2'?'Mampara Trasera':code==='V8'?'Ventanal Escalera':'Ventana Escalera';
         const act=w.acciones[actionId];
         if(act&&act.active){
-          const defCount=Object.values(w.deficiencias).filter(Boolean).length;
-          allItems.push({edif:e,depto:`EC${f}`,floor:f,code,loc,done:act.done,key:k,defCount,obs:w.observaciones||''});
+          const defCnt=Object.values(w.deficiencias).filter(Boolean).length;
+          allItems.push({edif:e,depto:`EC${f}`,floor:f,code,loc,done:act.done,key:k,defCnt,obs:w.observaciones||''});
         }
       });
     }
   }
 
-  // Sort: pending first, then by importance (defCount desc), then by edif/depto
-  const pending=allItems.filter(i=>!i.done).sort((a,b)=>b.defCount-a.defCount||a.edif-b.edif||a.depto-b.depto);
-  const done=allItems.filter(i=>i.done).sort((a,b)=>a.edif-b.edif);
+  const pending=allItems.filter(i=>!i.done);
+  const done=allItems.filter(i=>i.done);
 
-  function importanceBadge(defCount){
-    if(defCount>=4)return h('span',{className:'badge badge-red',style:{fontSize:'0.65rem'}},['⚠ Alta']);
-    if(defCount>=2)return h('span',{className:'badge badge-orange',style:{fontSize:'0.65rem'}},['Media']);
-    return h('span',{className:'badge badge-blue',style:{fontSize:'0.65rem'}},['Baja']);
-  }
-
-  function renderActionItem(it){
+  // renderActionItem — ítem NO desaparece al marcar: solo actualiza el DOM del ítem
+  function renderActionItem(it,container){
     const w=DATA.windows[it.key];
-    return h('div',{style:{
-      padding:'10px 12px',borderBottom:'1px solid var(--border)',
-      background:it.done?'var(--ac-green-soft)':'transparent',
-      display:'flex',alignItems:'center',gap:'8px'
-    }},[
-      // Toggle done/pending
-      isEditor()?h('div',{
-        style:{
-          width:'32px',height:'32px',borderRadius:'50%',border:'2px solid '+(it.done?'var(--ac-green)':'var(--border)'),
-          display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,
-          background:it.done?'var(--ac-green)':'transparent',color:it.done?'#fff':'var(--tx-2)',fontSize:'0.85rem'
-        },
-        onClick:()=>{
-          if(!w)return;
-          if(!w.acciones[actionId])w.acciones[actionId]={active:true,done:false};
-          w.acciones[actionId].done=!w.acciones[actionId].done;
-          w.historial.unshift({t:ts(),cambio:`Acción ${actionDef.label}: ${w.acciones[actionId].done?'Completada':'Reabierta'}`});
-          saveLocal();
-          renderActionDetail();
-        }
-      },[it.done?'✓':'']):h('div',{style:{width:'32px',height:'32px',borderRadius:'50%',border:'2px solid '+(it.done?'var(--ac-green)':'var(--border)'),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,background:it.done?'var(--ac-green)':'transparent',color:it.done?'#fff':'var(--tx-2)',fontSize:'0.85rem'}},[it.done?'✓':'']),
-      // Info
-      h('div',{style:{flex:1,minWidth:0}},[
-        h('div',{style:{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}},[
-          !isSingleEdif?h('span',{style:{fontWeight:'700',fontSize:'0.82rem',color:'var(--ac-blue)'}},[`E${it.edif}`]):null,
-          h('span',{style:{fontWeight:'600',fontFamily:'var(--font-mono)',fontSize:'0.85rem'}},[String(it.depto)]),
-          h('span',{style:{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color:'var(--tx-2)'}},[it.code]),
-          h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[it.loc]),
-        ].filter(Boolean)),
-        h('div',{style:{display:'flex',gap:'6px',marginTop:'3px',alignItems:'center'}},[
-          importanceBadge(it.defCount),
-          it.obs?h('span',{style:{fontSize:'0.72rem',color:'var(--tx-2)'}},[it.obs.slice(0,40)+(it.obs.length>40?'…':'')]):null,
-        ]),
-      ]),
-      // Navigate to window detail
-      h('button',{className:'btn-icon',style:{color:'var(--ac-blue)',fontSize:'1rem',flexShrink:0},
-        onClick:()=>{
-          if(it.depto.toString().startsWith('EC')){
-            const floor=parseInt(it.depto.replace('EC',''));
-            navigate('common',{edif:it.edif,floor,code:it.code});
-          } else {
-            navigate('window',{edif:it.edif,depto:parseInt(it.depto),code:it.code,loc:it.loc});
-          }
-        }
-      },['▸']),
+    const itemEl=document.createElement('div');
+    itemEl.style.cssText='padding:11px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:background 0.2s;';
+    if(it.done)itemEl.style.background='var(--ac-green-soft)';
+
+    // Circle toggle
+    const circle=document.createElement('div');
+    circle.style.cssText=`width:36px;height:36px;border-radius:50%;border:2px solid ${it.done?'var(--ac-green)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${it.done?'var(--ac-green)':'transparent'};color:${it.done?'#fff':'var(--tx-2)'};font-size:0.9rem;${isEditor()?'cursor:pointer;':''};user-select:none;`;
+    circle.textContent=it.done?'✓':'';
+    if(isEditor()){
+      circle.addEventListener('click',()=>{
+        if(!w||!w.acciones[actionId])return;
+        w.acciones[actionId].done=!w.acciones[actionId].done;
+        it.done=w.acciones[actionId].done;
+        w.historial.unshift({t:ts(),cambio:`Acción ${actionDef.label}: ${it.done?'Completada':'Reabierta'}`});
+        saveLocal();
+        // Actualizar solo este ítem visualmente (no re-render completo)
+        itemEl.style.background=it.done?'var(--ac-green-soft)':'transparent';
+        circle.style.background=it.done?'var(--ac-green)':'transparent';
+        circle.style.borderColor=it.done?'var(--ac-green)':'var(--border)';
+        circle.style.color=it.done?'#fff':'var(--tx-2)';
+        circle.textContent=it.done?'✓':'';
+        statPend.textContent=allItems.filter(i=>!i.done).length.toString();
+        statDone.textContent=allItems.filter(i=>i.done).length.toString();
+      });
+    }
+    itemEl.appendChild(circle);
+
+    // Info
+    const info=h('div',{style:{flex:'1',minWidth:'0'}},[
+      h('div',{style:{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}},[
+        !isSingleEdif?h('span',{style:{fontWeight:'700',fontSize:'0.82rem',color:'var(--ac-blue)'}},[`E${it.edif}`]):null,
+        h('span',{style:{fontWeight:'600',fontFamily:'var(--font-mono)',fontSize:'0.85rem'}},[String(it.depto)]),
+        h('span',{style:{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color:'var(--tx-2)'}},[it.code]),
+        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[it.loc]),
+      ].filter(Boolean)),
+      it.obs?h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginTop:'2px'}},[it.obs.slice(0,50)+(it.obs.length>50?'…':'')]):null,
     ].filter(Boolean));
+    itemEl.appendChild(info);
+
+    // Ir al detalle de ventana
+    const navBtn=h('button',{className:'btn-icon',style:{color:'var(--ac-blue)',fontSize:'1.1rem',flexShrink:0,padding:'8px'},
+      onClick:()=>{
+        if(it.depto.toString().startsWith('EC')){
+          const fl=parseInt(it.depto.replace('EC',''));
+          navigate('common',{edif:it.edif,floor:fl,code:it.code,backView:'actionDetail',backParams:viewParams});
+        } else {
+          navigate('window',{edif:it.edif,depto:parseInt(it.depto),code:it.code,loc:it.loc,backView:'actionDetail',backParams:viewParams});
+        }
+      }
+    },['▶']);
+    itemEl.appendChild(navBtn);
+    return itemEl;
   }
 
-  // Bulk complete/reopen for editor
+  // Bulk complete/reopen
   function bulkToggle(items,setDone){
     if(!isEditor())return;
     items.forEach(it=>{
@@ -3081,42 +3197,110 @@ function renderActionDetail(){
     renderActionDetail();
   }
 
+  // Agrupar por edificio cuando scope multi-edif
+  function renderGroupedByEdif(items){
+    if(isSingleEdif){
+      const wrap=h('div',{className:'card',style:{padding:0}});
+      items.forEach(it=>wrap.appendChild(renderActionItem(it)));
+      return wrap;
+    }
+    // Agrupar por edif
+    const byEdif={};
+    items.forEach(it=>{
+      if(!byEdif[it.edif])byEdif[it.edif]=[];
+      byEdif[it.edif].push(it);
+    });
+    const wrap=h('div',{});
+    Object.entries(byEdif).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).forEach(([edif,edifItems])=>{
+      const isExpanded={v:true};
+      const edifCard=h('div',{className:'card',style:{padding:0,marginBottom:'8px'}});
+      const edifHdr=h('div',{style:{
+        padding:'10px 14px',fontWeight:'700',fontSize:'0.88rem',
+        display:'flex',alignItems:'center',gap:'8px',cursor:'pointer',
+        background:'var(--ac-blue-soft)',borderRadius:'var(--radius) var(--radius) 0 0',
+        color:'var(--ac-blue)',userSelect:'none'
+      }},[
+        h('span',{style:{flex:1}},['Edif. '+edif]),
+        h('span',{className:'badge badge-orange',style:{fontSize:'0.75rem'}},[edifItems.filter(i=>!i.done).length+' pend.']),
+        edifItems.filter(i=>i.done).length?h('span',{className:'badge badge-green',style:{fontSize:'0.75rem'}},[edifItems.filter(i=>i.done).length+' ✓']):null,
+        h('span',{style:{fontSize:'0.9rem'}},['▾']),
+      ].filter(Boolean));
+      const edifBody=h('div',{});
+      edifItems.forEach(it=>edifBody.appendChild(renderActionItem(it)));
+      edifHdr.addEventListener('click',()=>{
+        isExpanded.v=!isExpanded.v;
+        edifBody.style.display=isExpanded.v?'block':'none';
+        edifHdr.lastChild.textContent=isExpanded.v?'▾':'▸';
+      });
+      edifCard.appendChild(edifHdr);
+      edifCard.appendChild(edifBody);
+      wrap.appendChild(edifCard);
+    });
+    return wrap;
+  }
+
+  // Construir stats boxes (referencias guardadas para actualizar inline)
+  let statPend,statDone;
+  const statsRow=h('div',{className:'stats-row'},[]);
+  const makeStatBox=(val,label)=>{
+    const b=statBox(val,label);
+    return b;
+  };
+  const pendStatEl=h('div',{className:'stat-box'},[
+    (statPend=h('div',{className:'stat-val'},[pending.length.toString()])),
+    h('div',{className:'stat-label'},['Pendientes']),
+  ]);
+  const doneStatEl=h('div',{className:'stat-box'},[
+    (statDone=h('div',{className:'stat-val'},[done.length.toString()])),
+    h('div',{className:'stat-label'},['Completadas']),
+  ]);
+  const totalStatEl=statBox(allItems.length.toString(),'Total');
+  statsRow.appendChild(pendStatEl);
+  statsRow.appendChild(doneStatEl);
+  statsRow.appendChild(totalStatEl);
+
   const el=h('div',{className:'fade-in'},[
     topbar(`${actionDef.icon} ${actionDef.label}`,backView,backParams),
     h('div',{style:{fontSize:'0.82rem',color:'var(--tx-2)',marginBottom:'12px'}},[scopeLabel+' — '+allItems.length+' registros']),
-
-    // Stats
-    h('div',{className:'stats-row'},[
-      statBox(pending.length.toString(),'Pendientes'),
-      statBox(done.length.toString(),'Completadas'),
-      statBox(allItems.length.toString(),'Total'),
-    ]),
+    statsRow,
 
     // Bulk actions
-    isEditor()&&pending.length?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)'}},[
-      h('button',{className:'btn btn-sm btn-primary',onClick:()=>{
+    isEditor()&&allItems.length?h('div',{style:{display:'flex',gap:'8px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
+      pending.length?h('button',{className:'btn btn-sm btn-primary',onClick:()=>{
         if(confirm(`¿Marcar las ${pending.length} acciones pendientes como completadas?`))bulkToggle(pending,true);
-      }},['✓ Completar todas']),
+      }},['✓ Completar todas ('+pending.length+')']):null,
       done.length?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>{
         if(confirm(`¿Reabrir las ${done.length} acciones completadas?`))bulkToggle(done,false);
-      }},['↩ Reabrir todas']):null,
+      }},['↩ Reabrir ('+done.length+')']):null,
     ].filter(Boolean)):null,
 
-    // Pending list
-    pending.length?h('div',{className:'card',style:{padding:0}},[
-      h('div',{style:{padding:'10px 12px',fontWeight:'600',fontSize:'0.85rem',borderBottom:'1px solid var(--border)',background:'var(--ac-orange-soft)',color:'var(--ac-orange)',borderRadius:'var(--radius) var(--radius) 0 0'}},['Pendientes ('+pending.length+')']),
-      ...pending.map(renderActionItem),
+    // Lista pendientes — ítems NO desaparecen al marcar (toggle inline)
+    pending.length?h('div',{},[
+      h('div',{style:{padding:'8px 12px',fontWeight:'600',fontSize:'0.85rem',color:'var(--ac-orange)',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px'}},[
+        h('span',{style:{flex:1}},['⏳ Pendientes']),
+        h('span',{className:'badge badge-orange'},[pending.length.toString()]),
+      ]),
+      renderGroupedByEdif(pending),
     ]):null,
 
-    // Done list (collapsed by default)
-    done.length?h('div',{className:'card',style:{padding:0}},[
-      h('div',{style:{padding:'10px 12px',fontWeight:'600',fontSize:'0.85rem',borderBottom:'1px solid var(--border)',background:'var(--ac-green-soft)',color:'var(--ac-green)',borderRadius:'var(--radius) var(--radius) 0 0',cursor:'pointer'},
-        onClick:(e)=>{
-          const list=e.target.nextElementSibling;
-          if(list)list.style.display=list.style.display==='none'?'block':'none';
+    // Lista completadas — colapsable, visible
+    done.length?h('div',{},[
+      h('div',{style:{padding:'8px 12px',fontWeight:'600',fontSize:'0.85rem',color:'var(--ac-green)',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px',cursor:'pointer'},
+        onClick:(ev)=>{
+          const next=ev.currentTarget.nextElementSibling;
+          if(next)next.style.display=next.style.display==='none'?'block':'none';
+          ev.currentTarget.lastChild.textContent=next&&next.style.display!=='none'?'▾':'▸';
         }
-      },['Completadas ('+done.length+') ▾']),
-      h('div',{style:{display:'none'}},done.map(renderActionItem)),
+      },[
+        h('span',{style:{flex:1}},['✓ Completadas']),
+        h('span',{className:'badge badge-green'},[done.length.toString()]),
+        h('span',{style:{fontSize:'0.9rem'}},['▾']),
+      ]),
+      h('div',{},[renderGroupedByEdif(done)]),
+    ]):null,
+
+    !allItems.length?h('div',{className:'card'},[
+      h('div',{style:{color:'var(--tx-2)',fontSize:'0.85rem',padding:'8px 0',textAlign:'center'}},['Sin registros de esta acción']),
     ]):null,
 
     renderSyncBar(),
@@ -3543,9 +3727,10 @@ function mergeFromSheets(rows){
     if(s==='pendiente')return 'pendiente';
     if(s.includes('no instal')||s==='no'||s==='noinstalada')return 'noInstalada';
     if(s==='quitar'||s==='desinstalar'||s==='retirar')return 'quitar';
-    if(s==='no instalar'||s==='noinstalar')return 'noInstalar';
+    if(s==='no instalar'||s==='noinstalar')return 'noInstalada'; // migrado
     if(s==='sin ventana'||s==='sinventana')return 'sinVentana';
-    if(['instalada','pendiente','noInstalada','quitar','noInstalar','sinVentana'].includes(val))return val;
+    if(['instalada','pendiente','noInstalada','quitar','sinVentana'].includes(val))return val;
+    if(val==='noInstalar')return 'noInstalada'; // migrado
     return null;
   }
 
@@ -3836,6 +4021,8 @@ function migrateV1(){
           if(w.funcionalidad===undefined)w.funcionalidad=0;
           if(w.estadoVano==='Pulir'){w.estadoVano='';saveLocal();}
           if(w.estado===undefined)w.estado='noInstalada';
+          // Migrar 'noInstalar' → 'noInstalada' (estado eliminado v2.6)
+          if(w.estado==='noInstalar')w.estado='noInstalada';
         });
       }
       getCommonWindows(f).forEach(([code])=>{
@@ -3855,6 +4042,8 @@ function migrateV1(){
         if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
         if(w.funcionalidad===undefined)w.funcionalidad=0;
         if(w.estadoVano==='Pulir'){w.estadoVano='';saveLocal();}
+        // Migrar 'noInstalar' → 'noInstalada' (estado eliminado v2.6)
+        if(w.estado==='noInstalar')w.estado='noInstalada';
       });
     }
   }
