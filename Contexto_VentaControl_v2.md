@@ -53,10 +53,11 @@ C:\Proyectos\VentaControl\
 | Stats | 575–685 | `getBldgStats()`, `getDeptStats()`, `getCommonStats()`, `getSAStats()` |
 | Router | 685–725 | `currentView`, `viewParams`, `navigate()`, `navigateBack()`, `render()` |
 | Vistas | 725–1455 | `renderLogin`, `renderDashboard`, `renderSA`, `renderBuilding`, `renderDept`, `renderGridMap`, `renderCommon` |
-| MM Picker | 1455–1575 | `showMmPicker()` — drum-roll scroll 1–50 mm |
-| Sello Popup | 1575–1705 | `showSelloPopup()` — modal sello con estado/grado/comentario |
-| Seal Map | 1705–1915 | `renderSealMap()` — grilla sello exterior |
-| Report | 1915–2115 | `generateReport()`, `renderReport()` |
+| Action Report | 1455–1520 | `generateActionReport()`, `renderActionReport()` — informe rápido por acción correctiva |
+| MM Picker | 1520–1640 | `showMmPicker()` — drum-roll scroll 1–50 mm |
+| Sello Popup | 1640–1770 | `showSelloPopup()` — modal sello con estado/grado/comentario |
+| Seal Map | 1770–1980 | `renderSealMap()` — grilla sello exterior |
+| Report | 1980–2280 | `generateReport()`, `renderReport()` — informe completo edificio |
 | Window Detail | 2115–2650 | `renderWindowDetail()`, `renderWindowEC()`, `renderWindowDepto()` |
 | Bulk/Modals | 2650–2720 | `showBulkModal()`, `showLegend()`, `topbar()` |
 | Sync engine | 2720–2920 | `doSync()`, `buildSyncPayload()`, `mergeFromSheets()` |
@@ -466,7 +467,14 @@ for(let f=1;f<=5;f++) floorCodes[f].forEach(c=>{ if(!seen.has(c)){ seen.add(c); 
 6. ACCIONES CORRECTIVAS PENDIENTES
 7. SELLO EXTERIOR
 8. CONDICIÓN DE FUNCIONALIDAD
-9. RESUMEN POR TIPO (pedido materiales)
+9. PEDIDO DE VENTANAS (solo estado `sinVentana`, columnas: Depto, Tipo, Orientación)
+
+### Informe rápido por Acción Correctiva (renderActionReport)
+- [x] Vista detallada: tabla ventanas con Dpto, Recinto, Tipo, Estado, Observaciones
+- [x] Vista resumen: tabla agregada por depto con contes de ventanas
+- [x] Botones copy/share/download (patrón idéntico a report)
+- [x] Acceso desde vistabuilding: card "Informes por Acción Correctiva" con botones por acción pendiente
+- [x] Acceso desde renderActionDetail: botón "📋 Ver informe detallado — Edif. X" (solo si single-building)
 
 ### Vistas disponibles:
 - `dashboard` → `sa` → `building` → `dept` → `window` (detalle ventana)
@@ -503,8 +511,18 @@ AD:SelloEstado  AE:SelloGrado  AF:SelloComentario  AG:Funcionalidad  AH:Separaci
 
 ## 12. Estado del Repositorio
 
-### Commits recientes (sesión 2026-04-16):
+### Commits recientes:
 
+**Sesión 2026-04-25:**
+```
+436078f fix: PEDIDO DE VENTANAS — solo sinVentana, con tipo/depto/orientación
+3ae1831 feat: comentarios arriba + acceso directo a informes por acción
+87f7c36 feat: informe rápido por acción + fix filtros gridmap
+31b9280 v2.5: dashboard, stats, navigation, gridmap, touch targets overhaul
+43c0242 docs: contexto v2.5 — guía completa para sesiones futuras de IA
+```
+
+**Sesión 2026-04-16:**
 ```
 db27f40 Paleta de colores: estados únicos, inconformidades y acciones distintos
 5daf995 4 mejoras: mapa sello MR, nav ventana, salida segura, descuadre
@@ -526,6 +544,14 @@ c4bc779 Sello exterior: estados ricos con popup, perfil de ventana e informe
 
 ## 13. Próximos Pasos (To-Do)
 
+### Completado en sesión 2026-04-25
+- [x] Informe rápido por acción correctiva (renderActionReport con dos tablas: detalle + resumen)
+- [x] Acceso directo desde vista building (card "Informes por Acción Correctiva" + botones por acción)
+- [x] Acceso desde renderActionDetail (botón "📋 Ver informe detallado")
+- [x] Comentarios/observaciones movidos al tope de cada vista (building, window, dept) con visual destacado
+- [x] Fix gridmap: filtro deptNum corregido (eliminada referencia incorrecta a `edif`)
+- [x] PEDIDO DE VENTANAS: solo sinVentana, columnas tipo/depto/orientación
+
 ### Alta prioridad
 1. **Sync nuevos campos a Sheets** — `selloExterior` y `funcionalidad` NO se sincronizan aún:
    - Agregar columnas AD–AH en `HEADERS[]` del Apps Script
@@ -539,6 +565,8 @@ c4bc779 Sello exterior: estados ricos con popup, perfil de ventana e informe
 3. **Preservar scroll al navegar atrás** — `navigate()` siempre hace `scrollTo(0,0)`. Guardar `scrollY` en navStack y restaurar al `navigateBack()`.
 
 4. **Scroll position en gridmap** — Al volver de detalle ventana a gridmap, restaurar posición.
+
+5. **PWA installability** — manifest.json usa data: URI para icon. Generar PNG reales (icon-192.png, icon-512.png) y actualizar manifest.
 
 ---
 
@@ -555,7 +583,10 @@ c4bc779 Sello exterior: estados ricos con popup, perfil de ventana e informe
 9. dirtyKeys se perdía al recargar → persistido en `localStorage('vc2_dirty')`
 10. Long-press disparaba nav + popup simultáneos → flag `touchHandled` + `contextmenu` prevention
 11. posSection MR solo mostraba P1 → `floorCodes[f]` por piso, separador visual, `—` donde no aplica
+12. GridMap filtros no mostraban todas las acciones → `deptNum(edif,f,p)` pasaba edif como parámetro floor (bug línea 1476) → corregido a `deptNum(f,p)`
+13. Informe rápido por acción no era descubrible → agregada card en renderBuilding con botones directos por acción
+14. Comentarios/observaciones no eran visibles → movidos al tope de building/window/dept con highlight naranja
 
 ---
 
-*Actualizado: 2026-04-16 — Versión: v2.5 — Líneas: ~3890*
+*Actualizado: 2026-04-25 — Versión: v2.5 — Líneas: ~3890*
