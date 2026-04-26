@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.3</title>
+<title>VentaControl v2.6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -291,13 +291,118 @@ body{
 .pending-win-item .pw-depto{font-family:var(--font-mono);font-weight:700;font-size:0.78rem;min-width:36px;}
 .pending-win-item .pw-code{font-family:var(--font-mono);font-size:0.82rem;font-weight:600;min-width:56px;}
 .pending-win-item .pw-loc{font-size:0.75rem;color:var(--tx-2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* === VISTA IMPRESIÓN === */
+.print-mode { background:#fff !important; color:#111 !important; }
+.print-mode .topbar, .print-mode .sync-bar, .print-mode .no-print { display:none !important; }
+.print-mode #app { padding:14px; max-width:none; }
+
+.print-header { display:flex; justify-content:space-between; align-items:flex-end;
+  border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:12px; gap:12px; flex-wrap:wrap; }
+.print-header .title { font-size:1.1rem; font-weight:700; margin:0; color:#000; }
+.print-header .meta { font-size:0.78rem; color:#444; text-align:right; }
+.print-header .meta b { color:#000; }
+
+.print-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:14px; }
+.print-summary .box { border:1px solid #555; padding:6px 8px; text-align:center; background:#f9fafb; }
+.print-summary .box .lbl { font-size:0.65rem; color:#555; text-transform:uppercase; letter-spacing:0.4px; }
+.print-summary .box .val { font-size:1.1rem; font-weight:700; color:#000; }
+
+.print-eifs { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:10px; font-size:0.7rem; }
+.print-eifs .phase { border:1px solid #888; padding:4px 6px; background:#f9fafb; }
+.print-eifs .phase.complete { background:#bbf7d0; border-color:#16a34a; color:#065f46; font-weight:600; }
+.print-eifs .phase.partial { background:#fed7aa; border-color:#d97706; color:#78350f; }
+.print-eifs .phase .pname { font-weight:700; }
+.print-eifs .phase .pitems { font-size:0.62rem; color:#444; }
+
+.print-comment { font-size:0.78rem; padding:6px 8px; background:#fffbeb; border-left:3px solid #d97706;
+  margin-bottom:10px; color:#3f3f3f; }
+
+.print-floor { margin-bottom:12px; page-break-inside:avoid; }
+.print-floor h3 { margin:8px 0 4px; font-size:0.92rem; border-left:4px solid #000;
+  padding:2px 8px; background:#f3f4f6; color:#000; display:flex; justify-content:space-between; }
+.print-floor h3 .stat { font-weight:400; font-size:0.8rem; color:#444; }
+.print-floor .grid {
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,42px);
+  gap:2px; border:1px solid #333; background:#333;
+}
+.print-cell { padding:4px; font-size:0.72rem; display:flex; flex-direction:column;
+  justify-content:center; align-items:center; background:#fff; text-align:center; line-height:1.15; }
+.print-cell .num { font-weight:700; font-size:0.85rem; color:#000; }
+.print-cell .sub { font-size:0.65rem; color:#444; }
+.print-cell.dept.complete { background:#dcfce7; }
+.print-cell.dept.partial  { background:#fef3c7; }
+.print-cell.dept.empty    { background:#fff; color:#555; }
+.print-cell.dept.issues   { background:#fecaca; outline:2px solid #dc2626; outline-offset:-2px; }
+.print-cell.dept.allSinventana { background:#fde68a; color:#78350f; outline:1.5px dashed #b45309; outline-offset:-2px; }
+.print-cell.access, .print-cell.stairway { background:#fff; color:#222; font-weight:600; }
+.print-cell.access.installed, .print-cell.stairway.installed { background:#dcfce7; color:#065f46; }
+.print-cell.access.issue, .print-cell.stairway.issue { background:#fecaca; color:#991b1b; outline:2px solid #dc2626; outline-offset:-2px; }
+.print-cell.filler        { background:#fafafa; color:#888; font-style:italic; font-size:0.65rem; }
+/* Sub-componentes celda depto */
+.print-cell.dept .dept-head { display:flex; gap:6px; align-items:baseline; justify-content:center; line-height:1; }
+.print-cell.dept .dept-head .num { font-size:0.85rem; font-weight:700; color:#000; }
+.print-cell.dept .dept-head .sub { font-size:0.62rem; color:#444; }
+.print-cell.dept .dept-foot { font-size:0.65rem; margin-top:1px; color:#333; }
+.print-cell.dept .dept-foot .def-badge { color:#991b1b; font-weight:700; }
+.print-cell .wicons-row { display:flex; gap:1px; flex-wrap:nowrap; justify-content:center; margin:1px 0; }
+.wicon { display:inline-block; width:11px; height:11px; line-height:11px; font-size:9px; text-align:center;
+  border:1px solid #888; border-radius:2px; background:#fff; color:#000; font-weight:700; }
+.wicon.wi-instalada   { background:#16a34a; color:#fff; border-color:#15803d; }
+.wicon.wi-pendiente   { background:#f59e0b; color:#fff; border-color:#b45309; }
+.wicon.wi-noInstalada { background:#fff;    color:#525252; border-color:#a3a3a3; }
+.wicon.wi-quitar      { background:#dc2626; color:#fff; border-color:#991b1b; }
+.wicon.wi-sinVentana  { background:#fde68a; color:#78350f; border-color:#b45309; }
+.wicon.wi-def         { outline:1.5px solid #dc2626; outline-offset:0; }
+/* Separadores en tabla — resaltar agrupaciones */
+.print-table tr.dept-row td       { background:#dbeafe; color:#1e3a8a; font-weight:700; border-top:2px solid #1e3a8a; }
+.print-table tr.dept-row.ec td    { background:#ede9fe; color:#5b21b6; border-top:2px solid #5b21b6; }
+.print-table tr.floor-sep td      { background:#475569; color:#fff; font-weight:700; padding:5px 8px; border-top:3px solid #000; letter-spacing:0.5px; }
+
+.print-table { width:100%; border-collapse:collapse; font-size:0.7rem; margin-top:8px; }
+.print-table th, .print-table td { border:1px solid #888; padding:3px 5px; text-align:left; vertical-align:top; }
+.print-table th { background:#e5e7eb; color:#000; font-weight:700; }
+.print-table tr.dept-row td { background:#f3f4f6; font-weight:600; }
+.print-table .row-issue td:first-child { border-left:3px solid #dc2626; }
+.print-table .est-instalada { color:#065f46; font-weight:600; }
+.print-table .est-pendiente { color:#9a3412; font-weight:600; }
+.print-table .est-noInstalada { color:#525252; }
+.print-table .est-quitar { color:#991b1b; font-weight:600; }
+.print-table .est-sinVentana { color:#475569; font-style:italic; }
+
+.print-section-title { font-weight:700; font-size:0.95rem; margin:14px 0 6px;
+  border-bottom:1px solid #000; padding-bottom:3px; color:#000; }
+
+.print-legend { display:flex; gap:12px; flex-wrap:wrap; font-size:0.7rem; margin:6px 0 10px; color:#333; }
+.print-legend .swatch { display:inline-block; width:12px; height:12px; border:1px solid #555;
+  vertical-align:middle; margin-right:4px; }
+
+.print-footer { margin-top:16px; border-top:1px solid #888; padding-top:6px;
+  font-size:0.7rem; color:#555; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.print-footer .firma { border-top:1px solid #555; min-width:160px; padding-top:2px; text-align:center; margin-top:18px; }
+
+.print-controls { display:flex; gap:8px; justify-content:center; margin-top:18px; padding:12px 0; }
+.print-controls .btn { padding:8px 16px; font-size:0.85rem; }
+
+@media print {
+  body { background:#fff !important; color:#000 !important; }
+  body, .print-mode, .print-cell, .print-summary .box, .print-table th, .print-table td,
+  .print-floor h3, .print-comment, .print-eifs .phase {
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+    color-adjust:exact !important;
+  }
+  .topbar, .sync-bar, .no-print, .print-controls { display:none !important; }
+  .print-floor, .print-table tr, .print-section-title { page-break-inside:avoid; }
+  #app { padding:0 !important; }
+  @page { margin:10mm; size:A4; }
+}
 </style>
 </head>
 <body data-theme="dark">
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.3 — Configuration & Data
+   VentaControl v2.6 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -437,6 +542,28 @@ const EIFS_PHASES = [
 
 const SA_NAMES = {1:'SA1',2:'SA2',3:'SA3',4:'SA4',5:'SA5'};
 const SA_RANGES = {1:[1,8],2:[9,17],3:[18,25],4:[26,29],5:[30,34]};
+
+// Print layout — geometría espacial del edificio derivada del croquis del usuario.
+// Grid 3 cols × 4 filas. Lado superior: X01 + X02 (PV1/V8). Inferior: X03 + X04 (PV2/V9).
+const PRINT_LAYOUT = {
+  gridCols: 3, gridRows: 4,
+  deptPositions: [
+    {col:1, row:1, w:1, h:2, label:'X01', mano:'derecha'},
+    {col:3, row:1, w:1, h:2, label:'X02', mano:'izquierda'},
+    {col:1, row:3, w:1, h:2, label:'X03', mano:'izquierda'},
+    {col:3, row:3, w:1, h:2, label:'X04', mano:'derecha'},
+  ],
+  accessPoints: [
+    {col:2, row:1, w:1, h:1, code:'PV1', label:'Mampara Principal'},
+    {col:2, row:4, w:1, h:1, code:'PV2', label:'Mampara Trasera'},
+  ],
+  commonStairway: [
+    {col:2, row:1, w:1, h:1, code:'V8', label:'V8'},
+    {col:2, row:4, w:1, h:1, code:'V9', label:'V9'},
+  ],
+  centralFiller: {col:2, row:2, w:1, h:2, label:'Escalera'},
+  variants: {},
+};
 
 // ---- PROFILE ----
 let userRole = localStorage.getItem('vc2_role') || null;
@@ -795,6 +922,7 @@ let viewParams={};
 const scrollHistory=[];
 
 function navigate(view,params={}){
+  const appEl=$('#app'); if(appEl) appEl.classList.remove('print-mode');
   // Save current scroll position for back navigation
   scrollHistory.push({view:currentView,params:viewParams,scrollY:window.scrollY});
   if(scrollHistory.length>20)scrollHistory.shift();
@@ -805,6 +933,7 @@ function navigate(view,params={}){
 }
 
 function navigateBack(view,params={}){
+  const appEl=$('#app'); if(appEl) appEl.classList.remove('print-mode');
   const prev=scrollHistory.pop();
   currentView=view;
   viewParams=params;
@@ -833,7 +962,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.3']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.6']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -874,7 +1003,8 @@ function render(){
     common:renderCommon,
     actionDetail:renderActionDetail,
     actionReport:renderActionReport,
-    sealmap:renderSealMap
+    sealmap:renderSealMap,
+    print:renderPrint
   };
   (views[currentView]||renderDashboard)();
 }
@@ -954,7 +1084,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.3'),
+    topbar('VentaControl v2.6'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1748,6 +1878,299 @@ function showSelloPopup(key,code,deptoLabel,onDone){
 
   draw();
   document.body.appendChild(overlay);
+}
+
+/* ============================================
+   VIEW: PRINT — vista imprimible por edificio (A4)
+   ============================================ */
+function renderPrint(){
+  const edif = viewParams.edif;
+  if(!edif){ navigate('dashboard'); return; }
+  const e = parseInt(edif);
+  const cfg = BUILDINGS[e];
+  if(!cfg){ navigate('dashboard'); return; }
+  const bldg = DATA.buildings[bKey(e)] || {};
+  const stats = getBldgStats(e);
+  const layout = PRINT_LAYOUT.variants[e] || PRINT_LAYOUT;
+
+  const appEl = $('#app');
+  appEl.innerHTML = '';
+  appEl.classList.add('print-mode');
+
+  appEl.appendChild(renderPrintHeader(e, cfg, stats, bldg));
+  appEl.appendChild(renderPrintEifs(bldg));
+  appEl.appendChild(renderPrintLegend());
+  appEl.appendChild(renderPrintSummary(stats));
+  if(bldg.comment) appEl.appendChild(h('div',{className:'print-comment'},['💬 '+bldg.comment]));
+  appEl.appendChild(h('div',{className:'print-section-title'},['Plano por piso (5° → 1°)']));
+  for(let f=5; f>=1; f--) appEl.appendChild(renderPrintFloor(e, f, cfg, layout));
+  appEl.appendChild(h('div',{className:'print-section-title'},['Detalle por departamento (5° → 1°)']));
+  appEl.appendChild(renderPrintDetailTable(e, cfg));
+  appEl.appendChild(renderPrintFooter(e));
+  appEl.appendChild(renderPrintControls(e));
+}
+
+function renderPrintHeader(e, cfg, stats, bldg){
+  return h('div',{className:'print-header'},[
+    h('div',{},[
+      h('div',{className:'title'},[`Edificio ${e} — Tipo ${cfg.tipo} — ${SA_NAMES[cfg.sa]}`]),
+    ]),
+    h('div',{className:'meta'},[
+      h('div',{},[h('b',{},['Generado: ']),ts()]),
+      h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.6']),
+    ]),
+  ]);
+}
+
+function renderPrintEifs(bldg){
+  const si = bldg.stageItems || {};
+  return h('div',{className:'print-eifs'},
+    EIFS_PHASES.map(phase=>{
+      const total = phase.items.length;
+      const done = phase.items.filter(it=>si[it.id]).length;
+      const cls = done===total ? 'complete' : (done>0 ? 'partial' : '');
+      return h('div',{className:`phase ${cls}`},[
+        h('div',{className:'pname'},[phase.label.replace('EIFS ','')]),
+        h('div',{className:'pitems'},[`${done}/${total} sub-ítems${done===total?' ✓':''}`]),
+      ]);
+    })
+  );
+}
+
+function renderPrintLegend(){
+  return h('div',{className:'print-legend'},[
+    h('span',{},[h('span',{className:'swatch',style:{background:'#dcfce7'}}),'100% instaladas']),
+    h('span',{},[h('span',{className:'swatch',style:{background:'#fef3c7'}}),'Parcial']),
+    h('span',{},[h('span',{className:'swatch',style:{background:'#fecaca',border:'2px solid #dc2626'}}),'Con defectos']),
+    h('span',{},[h('span',{className:'swatch',style:{background:'#fde68a',border:'1.5px dashed #b45309'}}),'Sin ventana']),
+  ]);
+}
+
+function renderPrintSummary(stats){
+  return h('div',{className:'print-summary'},[
+    h('div',{className:'box'},[
+      h('div',{className:'lbl'},['Ventanas']),
+      h('div',{className:'val'},[`${stats.instaladas}/${stats.total}`]),
+    ]),
+    h('div',{className:'box'},[
+      h('div',{className:'lbl'},['% Real']),
+      h('div',{className:'val'},[`${stats.pctReal}%`]),
+    ]),
+    h('div',{className:'box'},[
+      h('div',{className:'lbl'},['Defectos']),
+      h('div',{className:'val'},[String(stats.defCount)]),
+    ]),
+    h('div',{className:'box'},[
+      h('div',{className:'lbl'},['Acc. pend.']),
+      h('div',{className:'val'},[String(stats.actionsPending)]),
+    ]),
+  ]);
+}
+
+// Estado agregado de un depto: 'complete'|'partial'|'issues'|'allSinventana'|'empty'
+function deptAggState(e, depto){
+  const st = getDeptStats(e, depto);
+  if(!st || st.total===0) return 'empty';
+  if(st.defCount>0) return 'issues';
+  // Si todas las ventanas son sinVentana (no quitar, no instalar)
+  const e2 = parseInt(e);
+  const floor = Math.floor(depto/100);
+  const posIdx = (depto%100)-1;
+  const tipo = getDeptType(e2, floor, posIdx);
+  const wins = getDeptWindows(tipo);
+  let allSin = wins.length>0;
+  for(const [code] of wins){
+    const w = DATA.windows[wKey(e2,depto,code)];
+    if(!w || w.estado!=='sinVentana'){ allSin=false; break; }
+  }
+  if(allSin) return 'allSinventana';
+  if(st.instaladas===st.total) return 'complete';
+  if(st.instaladas>0) return 'partial';
+  return 'empty';
+}
+
+function commonAggState(e, floor, code){
+  const w = DATA.windows[wKey(e, `EC${floor}`, code)];
+  if(!w) return 'empty';
+  const hasDef = w.deficiencias && Object.values(w.deficiencias).some(v=>v);
+  if(hasDef) return 'issue';
+  if(w.estado==='instalada') return 'installed';
+  return 'empty';
+}
+
+function renderPrintFloor(e, f, cfg, layout){
+  const positions = (f===1) ? cfg.p1 : cfg.p25;
+  const grid = h('div',{className:'grid'},[]);
+
+  // Mini-icono por estado de ventana (con clase de color)
+  function winIcon(w){
+    const est = w?.estado || 'noInstalada';
+    const map = {
+      instalada:   {sym:'✓', cls:'wi-instalada'},
+      pendiente:   {sym:'◷', cls:'wi-pendiente'},
+      noInstalada: {sym:'✗', cls:'wi-noInstalada'},
+      quitar:      {sym:'↩', cls:'wi-quitar'},
+      sinVentana:  {sym:'▢', cls:'wi-sinVentana'},
+    };
+    const cfg = map[est] || map.noInstalada;
+    const hasDef = w && w.deficiencias && Object.values(w.deficiencias).some(v=>v);
+    return h('span',{className:`wicon ${cfg.cls}${hasDef?' wi-def':''}`,title:est+(hasDef?' · con defecto':'')},[cfg.sym]);
+  }
+
+  layout.deptPositions.forEach((dp, idx)=>{
+    const tipo = positions[idx];
+    if(!tipo){
+      grid.appendChild(h('div',{
+        className:'print-cell dept empty',
+        style:{ gridColumn:`${dp.col} / span ${dp.w}`, gridRow:`${dp.row} / span ${dp.h}` }
+      },[h('div',{className:'sub'},['—'])]));
+      return;
+    }
+    const dn = deptNum(f, idx);
+    const st = getDeptStats(e, dn);
+    const aggSt = deptAggState(e, dn);
+    const wins = getDeptWindows(tipo);
+    const iconRow = h('div',{className:'wicons-row'},
+      wins.map(([code])=>winIcon(DATA.windows[wKey(e,dn,code)]))
+    );
+    grid.appendChild(h('div',{
+      className:`print-cell dept ${aggSt}`,
+      style:{ gridColumn:`${dp.col} / span ${dp.w}`, gridRow:`${dp.row} / span ${dp.h}` }
+    },[
+      h('div',{className:'dept-head'},[
+        h('span',{className:'num'},[`${dn}`]),
+        h('span',{className:'sub'},[`${tipo}·${dp.mano}`]),
+      ]),
+      iconRow,
+      h('div',{className:'sub dept-foot'},[
+        `${st.instaladas}/${st.total}`,
+        st.defCount>0 ? h('span',{className:'def-badge'},[` ⚠${st.defCount}`]) : null,
+      ].filter(Boolean)),
+    ]));
+  });
+
+  const centralWindows = (f===1) ? layout.accessPoints : layout.commonStairway;
+  centralWindows.forEach(cw=>{
+    const aggSt = commonAggState(e, f, cw.code);
+    const w = DATA.windows[wKey(e, `EC${f}`, cw.code)];
+    const cls = (f===1) ? 'access' : 'stairway';
+    grid.appendChild(h('div',{
+      className:`print-cell ${cls} ${aggSt}`,
+      style:{ gridColumn:`${cw.col} / span ${cw.w}`, gridRow:`${cw.row} / span ${cw.h}` }
+    },[
+      h('div',{className:'num'},[cw.code]),
+      winIcon(w),
+    ]));
+  });
+
+  if(layout.centralFiller){
+    const fl = layout.centralFiller;
+    grid.appendChild(h('div',{
+      className:'print-cell filler',
+      style:{ gridColumn:`${fl.col} / span ${fl.w}`, gridRow:`${fl.row} / span ${fl.h}` }
+    },[fl.label]));
+  }
+
+  let totF=0, instF=0, defF=0;
+  for(let p=0;p<4;p++){
+    const tipo = positions[p];
+    if(!tipo) continue;
+    const dn = deptNum(f,p);
+    const st = getDeptStats(e, dn);
+    totF += st.total; instF += st.instaladas; defF += st.defCount;
+  }
+  const cs = getCommonStats(e, f);
+  totF += cs.total; instF += cs.instaladas;
+
+  return h('div',{className:'print-floor'},[
+    h('h3',{},[
+      h('span',{},[`Piso ${f}`]),
+      h('span',{className:'stat'},[`${instF}/${totF} instaladas${defF>0?` · ${defF} defectos`:''}`]),
+    ]),
+    grid,
+  ]);
+}
+
+function renderPrintDetailTable(e, cfg){
+  const rows = [];
+  for(let f=5; f>=1; f--){
+    // Separador de piso (más fuerte)
+    rows.push(h('tr',{className:'floor-sep'},[
+      h('td',{colspan:'7'},[`━━ PISO ${f} ━━`])
+    ]));
+    const positions = (f===1) ? cfg.p1 : cfg.p25;
+    for(let p=0; p<4; p++){
+      const tipo = positions[p];
+      if(!tipo) continue;
+      const dn = deptNum(f,p);
+      const wins = getDeptWindows(tipo);
+      const st = getDeptStats(e, dn);
+      rows.push(h('tr',{className:'dept-row'},[
+        h('td',{colspan:'7'},[`Depto ${dn} · Tipo ${tipo} · ${st.instaladas}/${st.total} instaladas${st.defCount>0?` · ⚠ ${st.defCount} defectos`:''}`])
+      ]));
+      wins.forEach(([code, loc])=>{
+        const k = wKey(e, dn, code);
+        const w = DATA.windows[k];
+        if(!w) return;
+        rows.push(renderPrintWindowRow(code, loc, w));
+      });
+    }
+    const commons = getCommonWindows(f);
+    if(commons.length>0){
+      rows.push(h('tr',{className:'dept-row ec'},[
+        h('td',{colspan:'7'},[`Espacios Comunes (EC${f})`])
+      ]));
+      commons.forEach(([code, loc])=>{
+        const k = wKey(e, `EC${f}`, code);
+        const w = DATA.windows[k];
+        if(!w) return;
+        rows.push(renderPrintWindowRow(code, loc, w));
+      });
+    }
+  }
+  return h('table',{className:'print-table'},[
+    h('thead',{},[h('tr',{},[
+      h('th',{},['Vent.']),
+      h('th',{},['Ubicación']),
+      h('th',{},['Estado']),
+      h('th',{},['Vano']),
+      h('th',{},['Deficiencias']),
+      h('th',{},['Acciones pend.']),
+      h('th',{},['Observaciones']),
+    ])]),
+    h('tbody',{},rows),
+  ]);
+}
+
+function renderPrintWindowRow(code, loc, w){
+  const estCfg = ESTADOS.find(es=>es.id===w.estado) || ESTADOS[2];
+  const defs = DEFICIENCIES.filter(d=>w.deficiencias?.[d.id]).map(d=>d.label);
+  const acts = ACTIONS.filter(a=>w.acciones?.[a.id]?.active && !w.acciones?.[a.id]?.done).map(a=>a.label);
+  const isIssue = defs.length>0 || acts.length>0;
+  return h('tr',{className: isIssue ? 'row-issue' : ''},[
+    h('td',{},[code]),
+    h('td',{},[loc||'']),
+    h('td',{className:`est-${w.estado||'noInstalada'}`},[`${estCfg.sym} ${estCfg.label}`]),
+    h('td',{},[w.estadoVano||'—']),
+    h('td',{},[defs.length ? defs.join(', ') : '—']),
+    h('td',{},[acts.length ? acts.join(', ') : '—']),
+    h('td',{},[w.observaciones||'']),
+  ]);
+}
+
+function renderPrintFooter(e){
+  return h('div',{className:'print-footer'},[
+    h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.6`]),
+  ]);
+}
+
+function renderPrintControls(e){
+  return h('div',{className:'print-controls no-print'},[
+    h('button',{className:'btn btn-primary',onClick:()=>window.print()},['🖨 Imprimir / Guardar PDF']),
+    h('button',{className:'btn btn-ghost',onClick:()=>navigateBack('building',{edif:e})},['← Volver al edificio']),
+  ]);
 }
 
 /* ============================================
@@ -3586,6 +4009,7 @@ function renderBldgIssueMap(edif){
 function renderSyncBar(){
   const inBuilding=currentView==='building'||currentView==='dept'||currentView==='window'||currentView==='common';
   const inDept=currentView==='dept'||currentView==='window';
+  const inPrintable=currentView==='building'||currentView==='gridmap'||currentView==='print';
   const edif=viewParams.edif;
   const depto=viewParams.depto;
 
@@ -3595,6 +4019,10 @@ function renderSyncBar(){
     inBuilding&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'0.85rem',color:'var(--ac-cyan)'},
       onClick:()=>doPullSection(edif,inDept?depto:null)
     },['⬇ '+(inDept?depto:'E'+edif)]):null,
+    inPrintable&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},
+      title:'Vista imprimible del edificio',
+      onClick:()=>navigate('print',{edif})
+    },['🖨']):null,
     h('span',{className:'sync-status',id:'sync-status',style:{flex:1,fontSize:'0.7rem',textAlign:'center',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},[DATA.meta.lastSync?DATA.meta.lastSync:'Sin sync']),
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'0.9rem'},onClick:showExportMenu},['⋮']),
   ].filter(Boolean));
@@ -4290,7 +4718,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  console.log('VentaControl v2.3 — '+totalWins+' ventanas cargadas');
+  console.log('VentaControl v2.6 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
