@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.6</title>
+<title>VentaControl v2.8</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -293,7 +293,7 @@ body{
 .pending-win-item .pw-loc{font-size:0.75rem;color:var(--tx-2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* === VISTA IMPRESIÓN === */
 .print-mode { background:#fff !important; color:#111 !important; }
-.print-mode .topbar, .print-mode .sync-bar, .print-mode .no-print { display:none !important; }
+.print-mode .topbar, .print-mode .sync-bar { display:none !important; }
 .print-mode #app { padding:14px; max-width:none; }
 
 .print-header { display:flex; justify-content:space-between; align-items:flex-end;
@@ -322,7 +322,7 @@ body{
   padding:2px 8px; background:#f3f4f6; color:#000; display:flex; justify-content:space-between; }
 .print-floor h3 .stat { font-weight:400; font-size:0.8rem; color:#444; }
 .print-floor .grid {
-  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,42px);
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,58px);
   gap:2px; border:1px solid #333; background:#333;
 }
 .print-cell { padding:4px; font-size:0.72rem; display:flex; flex-direction:column;
@@ -330,10 +330,10 @@ body{
 .print-cell .num { font-weight:700; font-size:0.85rem; color:#000; }
 .print-cell .sub { font-size:0.65rem; color:#444; }
 .print-cell.dept.complete { background:#dcfce7; }
-.print-cell.dept.partial  { background:#fef3c7; }
+.print-cell.dept.partial  { background:#fed7aa; outline:1px solid #ea580c; outline-offset:-2px; }
 .print-cell.dept.empty    { background:#fff; color:#555; }
 .print-cell.dept.issues   { background:#fecaca; outline:2px solid #dc2626; outline-offset:-2px; }
-.print-cell.dept.allSinventana { background:#fde68a; color:#78350f; outline:1.5px dashed #b45309; outline-offset:-2px; }
+.print-cell.dept.allSinventana { background:repeating-linear-gradient(45deg,#fff 0,#fff 4px,#fca5a5 4px,#fca5a5 8px); color:#7f1d1d; outline:2px solid #dc2626; outline-offset:-2px; }
 .print-cell.access, .print-cell.stairway { background:#fff; color:#222; font-weight:600; }
 .print-cell.access.installed, .print-cell.stairway.installed { background:#dcfce7; color:#065f46; }
 .print-cell.access.issue, .print-cell.stairway.issue { background:#fecaca; color:#991b1b; outline:2px solid #dc2626; outline-offset:-2px; }
@@ -344,14 +344,16 @@ body{
 .print-cell.dept .dept-head .sub { font-size:0.62rem; color:#444; }
 .print-cell.dept .dept-foot { font-size:0.65rem; margin-top:1px; color:#333; }
 .print-cell.dept .dept-foot .def-badge { color:#991b1b; font-weight:700; }
-.print-cell .wicons-row { display:flex; gap:1px; flex-wrap:nowrap; justify-content:center; margin:1px 0; }
-.wicon { display:inline-block; width:11px; height:11px; line-height:11px; font-size:9px; text-align:center;
+.print-cell .wicons-row { display:flex; gap:3px; flex-wrap:wrap; justify-content:center; margin:2px 0; }
+.wicon-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:1px; }
+.wi-label { font-size:6.5px; color:#222; line-height:1; font-weight:700; }
+.wicon { display:inline-block; width:14px; height:14px; line-height:14px; font-size:10px; text-align:center;
   border:1px solid #888; border-radius:2px; background:#fff; color:#000; font-weight:700; }
 .wicon.wi-instalada   { background:#16a34a; color:#fff; border-color:#15803d; }
-.wicon.wi-pendiente   { background:#f59e0b; color:#fff; border-color:#b45309; }
+.wicon.wi-pendiente   { background:#ea580c; color:#fff; border-color:#c2410c; }
 .wicon.wi-noInstalada { background:#fff;    color:#525252; border-color:#a3a3a3; }
 .wicon.wi-quitar      { background:#dc2626; color:#fff; border-color:#991b1b; }
-.wicon.wi-sinVentana  { background:#fde68a; color:#78350f; border-color:#b45309; }
+.wicon.wi-sinVentana  { background:repeating-linear-gradient(45deg,#fff 0,#fff 2px,#fca5a5 2px,#fca5a5 4px); color:#7f1d1d; border-color:#dc2626; }
 .wicon.wi-def         { outline:1.5px solid #dc2626; outline-offset:0; }
 /* Separadores en tabla — resaltar agrupaciones */
 .print-table tr.dept-row td       { background:#dbeafe; color:#1e3a8a; font-weight:700; border-top:2px solid #1e3a8a; }
@@ -393,16 +395,31 @@ body{
   }
   .topbar, .sync-bar, .no-print, .print-controls { display:none !important; }
   .print-floor, .print-table tr, .print-section-title { page-break-inside:avoid; }
-  #app { padding:0 !important; }
-  @page { margin:10mm; size:A4; }
+  #app { padding:0 !important; margin-bottom:0 !important; }
+  html, body { height:auto !important; }
+  .print-footer { page-break-after:avoid; margin-bottom:0 !important; }
+  /* @page se inyecta dinámicamente vía applyPaperSize() */
 }
+/* Barra de controles sticky en top (solo en print-mode pantalla, oculta al imprimir) */
+.print-mode .print-controls-top {
+  position:sticky; top:0; z-index:50;
+  background:#fff; border-bottom:1px solid #888;
+  padding:8px 6px; margin:-14px -14px 12px;
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center;
+  box-shadow:0 2px 4px rgba(0,0,0,0.08);
+}
+.print-mode .print-controls-top select {
+  padding:6px 10px; font-size:0.85rem; border:1px solid #888; border-radius:4px;
+  background:#fff; color:#000; font-family:inherit;
+}
+.print-mode .print-controls-top label { font-size:0.78rem; color:#444; margin-right:4px; }
 </style>
 </head>
 <body data-theme="dark">
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.6 — Configuration & Data
+   VentaControl v2.8 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -568,6 +585,16 @@ const PRINT_LAYOUT = {
 // ---- PROFILE ----
 let userRole = localStorage.getItem('vc2_role') || null;
 function isEditor(){ return userRole === 'editor'; }
+
+// ---- PRINT PAPER SIZE ----
+// Default 'letter' (Carta) — uso común en Latinoamérica/Norteamérica.
+function getPaperSize(){ return localStorage.getItem('vc2_paper_size') || 'letter'; }
+function setPaperSize(s){ localStorage.setItem('vc2_paper_size', s); applyPaperSize(s); }
+function applyPaperSize(s){
+  let style = document.getElementById('print-page-css');
+  if(!style){ style = document.createElement('style'); style.id = 'print-page-css'; document.head.appendChild(style); }
+  style.textContent = `@media print { @page { margin:10mm; size:${s}; } }`;
+}
 
 // ---- UI STATE ----
 let defSectionOpen = true;
@@ -962,7 +989,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.6']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.8']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1084,7 +1111,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.6'),
+    topbar('VentaControl v2.8'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1897,6 +1924,7 @@ function renderPrint(){
   appEl.innerHTML = '';
   appEl.classList.add('print-mode');
 
+  appEl.appendChild(renderPrintControls(e, 'top'));
   appEl.appendChild(renderPrintHeader(e, cfg, stats, bldg));
   appEl.appendChild(renderPrintEifs(bldg));
   appEl.appendChild(renderPrintLegend());
@@ -1904,8 +1932,8 @@ function renderPrint(){
   if(bldg.comment) appEl.appendChild(h('div',{className:'print-comment'},['💬 '+bldg.comment]));
   appEl.appendChild(h('div',{className:'print-section-title'},['Plano por piso (5° → 1°)']));
   for(let f=5; f>=1; f--) appEl.appendChild(renderPrintFloor(e, f, cfg, layout));
-  appEl.appendChild(h('div',{className:'print-section-title'},['Detalle por departamento (5° → 1°)']));
-  appEl.appendChild(renderPrintDetailTable(e, cfg));
+  appEl.appendChild(h('div',{className:'print-section-title no-print'},['Detalle por departamento (5° → 1°)']));
+  appEl.appendChild(h('div',{className:'no-print'},[renderPrintDetailTable(e, cfg)]));
   appEl.appendChild(renderPrintFooter(e));
   appEl.appendChild(renderPrintControls(e));
 }
@@ -1918,7 +1946,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.6']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.8']),
     ]),
   ]);
 }
@@ -1941,9 +1969,9 @@ function renderPrintEifs(bldg){
 function renderPrintLegend(){
   return h('div',{className:'print-legend'},[
     h('span',{},[h('span',{className:'swatch',style:{background:'#dcfce7'}}),'100% instaladas']),
-    h('span',{},[h('span',{className:'swatch',style:{background:'#fef3c7'}}),'Parcial']),
+    h('span',{},[h('span',{className:'swatch',style:{background:'#fed7aa',border:'1px solid #ea580c'}}),'Parcial']),
     h('span',{},[h('span',{className:'swatch',style:{background:'#fecaca',border:'2px solid #dc2626'}}),'Con defectos']),
-    h('span',{},[h('span',{className:'swatch',style:{background:'#fde68a',border:'1.5px dashed #b45309'}}),'Sin ventana']),
+    h('span',{},[h('span',{className:'swatch',style:{background:'repeating-linear-gradient(45deg,#fff 0,#fff 3px,#fca5a5 3px,#fca5a5 6px)',border:'1.5px solid #dc2626'}}),'Sin ventana']),
   ]);
 }
 
@@ -2003,8 +2031,8 @@ function renderPrintFloor(e, f, cfg, layout){
   const positions = (f===1) ? cfg.p1 : cfg.p25;
   const grid = h('div',{className:'grid'},[]);
 
-  // Mini-icono por estado de ventana (con clase de color)
-  function winIcon(w){
+  // Icono por estado con código de ventana
+  function winIcon(w, code){
     const est = w?.estado || 'noInstalada';
     const map = {
       instalada:   {sym:'✓', cls:'wi-instalada'},
@@ -2013,9 +2041,12 @@ function renderPrintFloor(e, f, cfg, layout){
       quitar:      {sym:'↩', cls:'wi-quitar'},
       sinVentana:  {sym:'▢', cls:'wi-sinVentana'},
     };
-    const cfg = map[est] || map.noInstalada;
+    const wc = map[est] || map.noInstalada;
     const hasDef = w && w.deficiencias && Object.values(w.deficiencias).some(v=>v);
-    return h('span',{className:`wicon ${cfg.cls}${hasDef?' wi-def':''}`,title:est+(hasDef?' · con defecto':'')},[cfg.sym]);
+    return h('span',{className:'wicon-wrap'},[
+      h('span',{className:`wicon ${wc.cls}${hasDef?' wi-def':''}`,title:est+(hasDef?' · con defecto':'')},[wc.sym]),
+      h('span',{className:'wi-label'},[code||'?']),
+    ]);
   }
 
   layout.deptPositions.forEach((dp, idx)=>{
@@ -2032,7 +2063,7 @@ function renderPrintFloor(e, f, cfg, layout){
     const aggSt = deptAggState(e, dn);
     const wins = getDeptWindows(tipo);
     const iconRow = h('div',{className:'wicons-row'},
-      wins.map(([code])=>winIcon(DATA.windows[wKey(e,dn,code)]))
+      wins.map(([code])=>winIcon(DATA.windows[wKey(e,dn,code)], code))
     );
     grid.appendChild(h('div',{
       className:`print-cell dept ${aggSt}`,
@@ -2060,7 +2091,7 @@ function renderPrintFloor(e, f, cfg, layout){
       style:{ gridColumn:`${cw.col} / span ${cw.w}`, gridRow:`${cw.row} / span ${cw.h}` }
     },[
       h('div',{className:'num'},[cw.code]),
-      winIcon(w),
+      winIcon(w, cw.code),
     ]));
   });
 
@@ -2162,15 +2193,83 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.6`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.8`]),
   ]);
 }
 
-function renderPrintControls(e){
-  return h('div',{className:'print-controls no-print'},[
+function exportPrintHTML(edif){
+  const css = Array.from(document.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  const content = document.getElementById('app').innerHTML;
+  const d = new Date();
+  const dateStr = d.toISOString().slice(0,10);
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Edificio ${edif} — VentaControl v2.8 — ${dateStr}</title>
+<style>
+${css}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;background:#f0f2f5;font-family:inherit;}
+#app{max-width:none!important;width:100%!important;padding:20px 32px!important;}
+.print-header,.print-summary,.print-section-title,
+.print-floors,.print-detail-table,.print-legend,.print-footer,.print-comment{
+  max-width:1200px;margin-left:auto;margin-right:auto;
+}
+.print-floor-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
+#print-btn{position:fixed;top:12px;right:18px;z-index:999;padding:9px 18px;
+  background:#1a6fc4;color:#fff;border:none;border-radius:6px;cursor:pointer;
+  font-size:0.92rem;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+#print-btn:hover{background:#155da0;}
+@media print{
+  #print-btn{display:none!important;}
+  body{background:#fff;}
+  #app{padding:0!important;}
+}
+</style>
+</head>
+<body>
+<button id="print-btn" onclick="window.print()">🖨 Imprimir</button>
+<div id="app" class="print-mode">
+${content}
+</div>
+<script>
+document.querySelectorAll('.print-controls').forEach(el=>el.remove());
+<\/script>
+</body>
+</html>`;
+  const blob = new Blob([html],{type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Edificio_${edif}_${dateStr}.html`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+}
+
+function renderPrintControls(e, pos){
+  const isTop = pos === 'top';
+  const children = [
     h('button',{className:'btn btn-primary',onClick:()=>window.print()},['🖨 Imprimir / Guardar PDF']),
     h('button',{className:'btn btn-ghost',onClick:()=>navigateBack('building',{edif:e})},['← Volver al edificio']),
-  ]);
+  ];
+  if(isTop){
+    children.push(h('button',{className:'btn btn-secondary',onClick:()=>exportPrintHTML(e)},['💾 Exportar HTML']));
+    const sel = h('select',{onChange:(ev)=>setPaperSize(ev.target.value)},[
+      h('option',{value:'letter'},['Carta']),
+      h('option',{value:'a4'},['A4']),
+      h('option',{value:'letter landscape'},['Carta horizontal']),
+      h('option',{value:'a4 landscape'},['A4 horizontal']),
+    ]);
+    sel.value = getPaperSize();
+    children.push(h('span',{style:{display:'flex',gap:'6px',alignItems:'center'}},[
+      h('label',{},['Formato:']),
+      sel,
+    ]));
+  }
+  return h('div',{className:`print-controls no-print${isTop?' print-controls-top':''}`},children);
 }
 
 /* ============================================
@@ -4654,6 +4753,9 @@ function migrateV1(){
   const savedTheme=localStorage.getItem('vc2_theme');
   if(savedTheme)document.body.setAttribute('data-theme',savedTheme);
 
+  // Apply saved paper size for printing (default 'letter')
+  applyPaperSize(getPaperSize());
+
   // Init data
   initData();
 
@@ -4718,7 +4820,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  console.log('VentaControl v2.6 — '+totalWins+' ventanas cargadas');
+  console.log('VentaControl v2.8 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
