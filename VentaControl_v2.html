@@ -297,38 +297,38 @@ body{
 .print-mode #app { padding:14px; max-width:none; }
 
 .print-header { display:flex; justify-content:space-between; align-items:flex-end;
-  border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:12px; gap:12px; flex-wrap:wrap; }
-.print-header .title { font-size:1.1rem; font-weight:700; margin:0; color:#000; }
-.print-header .meta { font-size:0.78rem; color:#444; text-align:right; }
+  border-bottom:3px solid #000; padding-bottom:10px; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
+.print-header .title { font-size:1.8rem; font-weight:700; margin:0; color:#000; }
+.print-header .meta { font-size:0.92rem; color:#444; text-align:right; line-height:1.5; }
 .print-header .meta b { color:#000; }
 
-.print-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:14px; }
-.print-summary .box { border:1px solid #555; padding:6px 8px; text-align:center; background:#f9fafb; }
-.print-summary .box .lbl { font-size:0.65rem; color:#555; text-transform:uppercase; letter-spacing:0.4px; }
-.print-summary .box .val { font-size:1.1rem; font-weight:700; color:#000; }
+.print-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+.print-summary .box { border:1px solid #555; padding:10px 12px; text-align:center; background:#f9fafb; }
+.print-summary .box .lbl { font-size:0.85rem; color:#555; text-transform:uppercase; letter-spacing:0.4px; }
+.print-summary .box .val { font-size:2.4rem; font-weight:700; color:#000; line-height:1.1; }
 
-.print-eifs { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:10px; font-size:0.7rem; }
-.print-eifs .phase { border:1px solid #888; padding:4px 6px; background:#f9fafb; }
+.print-eifs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:14px; font-size:0.9rem; }
+.print-eifs .phase { border:1px solid #888; padding:6px 10px; background:#f9fafb; }
 .print-eifs .phase.complete { background:#bbf7d0; border-color:#16a34a; color:#065f46; font-weight:600; }
 .print-eifs .phase.partial { background:#fed7aa; border-color:#d97706; color:#78350f; }
 .print-eifs .phase .pname { font-weight:700; }
-.print-eifs .phase .pitems { font-size:0.62rem; color:#444; }
+.print-eifs .phase .pitems { font-size:0.78rem; color:#444; }
 
 .print-comment { font-size:0.78rem; padding:6px 8px; background:#fffbeb; border-left:3px solid #d97706;
   margin-bottom:10px; color:#3f3f3f; }
 
-.print-floor { margin-bottom:12px; page-break-inside:avoid; }
-.print-floor h3 { margin:8px 0 4px; font-size:0.92rem; border-left:4px solid #000;
-  padding:2px 8px; background:#f3f4f6; color:#000; display:flex; justify-content:space-between; }
-.print-floor h3 .stat { font-weight:400; font-size:0.8rem; color:#444; }
+.print-floor { margin-bottom:14px; page-break-inside:avoid; }
+.print-floor h3 { margin:10px 0 5px; font-size:1.1rem; border-left:5px solid #000;
+  padding:4px 10px; background:#f3f4f6; color:#000; display:flex; justify-content:space-between; }
+.print-floor h3 .stat { font-weight:400; font-size:0.95rem; color:#444; }
 .print-floor .grid {
-  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,58px);
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,84px);
   gap:2px; border:1px solid #333; background:#333;
 }
-.print-cell { padding:4px; font-size:0.72rem; display:flex; flex-direction:column;
+.print-cell { padding:5px 3px; font-size:0.82rem; display:flex; flex-direction:column;
   justify-content:center; align-items:center; background:#fff; text-align:center; line-height:1.15; }
-.print-cell .num { font-weight:700; font-size:0.85rem; color:#000; }
-.print-cell .sub { font-size:0.65rem; color:#444; }
+.print-cell .num { font-weight:700; font-size:1rem; color:#000; }
+.print-cell .sub { font-size:0.72rem; color:#444; }
 .print-cell.dept.complete { background:#dcfce7; }
 .print-cell.dept.partial  { background:#fed7aa; outline:1px solid #ea580c; outline-offset:-2px; }
 .print-cell.dept.empty    { background:#fff; color:#555; }
@@ -340,14 +340,14 @@ body{
 .print-cell.filler        { background:#fafafa; color:#888; font-style:italic; font-size:0.65rem; }
 /* Sub-componentes celda depto */
 .print-cell.dept .dept-head { display:flex; gap:6px; align-items:baseline; justify-content:center; line-height:1; }
-.print-cell.dept .dept-head .num { font-size:0.85rem; font-weight:700; color:#000; }
-.print-cell.dept .dept-head .sub { font-size:0.62rem; color:#444; }
-.print-cell.dept .dept-foot { font-size:0.65rem; margin-top:1px; color:#333; }
+.print-cell.dept .dept-head .num { font-size:1rem; font-weight:700; color:#000; }
+.print-cell.dept .dept-head .sub { font-size:0.78rem; color:#444; }
+.print-cell.dept .dept-foot { font-size:0.78rem; margin-top:2px; color:#333; }
 .print-cell.dept .dept-foot .def-badge { color:#991b1b; font-weight:700; }
-.print-cell .wicons-row { display:flex; gap:3px; flex-wrap:wrap; justify-content:center; margin:2px 0; }
-.wicon-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:1px; }
-.wi-label { font-size:6.5px; color:#222; line-height:1; font-weight:700; }
-.wicon { display:inline-block; width:14px; height:14px; line-height:14px; font-size:10px; text-align:center;
+.print-cell .wicons-row { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; margin:3px 0; }
+.wicon-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:2px; }
+.wi-label { font-size:11px; color:#222; line-height:1; font-weight:700; }
+.wicon { display:inline-block; width:22px; height:22px; line-height:22px; font-size:14px; text-align:center;
   border:1px solid #888; border-radius:2px; background:#fff; color:#000; font-weight:700; }
 .wicon.wi-instalada   { background:#16a34a; color:#fff; border-color:#15803d; }
 .wicon.wi-pendiente   { background:#ea580c; color:#fff; border-color:#c2410c; }
@@ -371,12 +371,12 @@ body{
 .print-table .est-quitar { color:#991b1b; font-weight:600; }
 .print-table .est-sinVentana { color:#475569; font-style:italic; }
 
-.print-section-title { font-weight:700; font-size:0.95rem; margin:14px 0 6px;
-  border-bottom:1px solid #000; padding-bottom:3px; color:#000; }
+.print-section-title { font-weight:700; font-size:1.1rem; margin:16px 0 8px;
+  border-bottom:2px solid #000; padding-bottom:4px; color:#000; }
 
-.print-legend { display:flex; gap:12px; flex-wrap:wrap; font-size:0.7rem; margin:6px 0 10px; color:#333; }
-.print-legend .swatch { display:inline-block; width:12px; height:12px; border:1px solid #555;
-  vertical-align:middle; margin-right:4px; }
+.print-legend { display:flex; gap:16px; flex-wrap:wrap; font-size:0.9rem; margin:8px 0 14px; color:#333; }
+.print-legend .swatch { display:inline-block; width:16px; height:16px; border:1px solid #555;
+  vertical-align:middle; margin-right:5px; }
 
 .print-footer { margin-top:16px; border-top:1px solid #888; padding-top:6px;
   font-size:0.7rem; color:#555; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
@@ -1932,8 +1932,8 @@ function renderPrint(){
   if(bldg.comment) appEl.appendChild(h('div',{className:'print-comment'},['💬 '+bldg.comment]));
   appEl.appendChild(h('div',{className:'print-section-title'},['Plano por piso (5° → 1°)']));
   for(let f=5; f>=1; f--) appEl.appendChild(renderPrintFloor(e, f, cfg, layout));
-  appEl.appendChild(h('div',{className:'print-section-title no-print'},['Detalle por departamento (5° → 1°)']));
-  appEl.appendChild(h('div',{className:'no-print'},[renderPrintDetailTable(e, cfg)]));
+  appEl.appendChild(h('div',{className:'print-section-title',style:{pageBreakBefore:'always',breakBefore:'page'}},['Detalle por departamento (5° → 1°)']));
+  appEl.appendChild(renderPrintDetailTable(e, cfg));
   appEl.appendChild(renderPrintFooter(e));
   appEl.appendChild(renderPrintControls(e));
 }
