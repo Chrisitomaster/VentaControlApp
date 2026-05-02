@@ -292,7 +292,7 @@ body{
 .pending-win-item .pw-code{font-family:var(--font-mono);font-size:0.82rem;font-weight:600;min-width:56px;}
 .pending-win-item .pw-loc{font-size:0.75rem;color:var(--tx-2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* === VISTA IMPRESIÓN === */
-.print-mode { background:#fff !important; color:#111 !important; }
+.print-mode { background:#fff; color:#111; }
 .print-mode .topbar, .print-mode .sync-bar { display:none !important; }
 .print-mode #app { padding:14px; max-width:none; }
 
@@ -585,6 +585,9 @@ const PRINT_LAYOUT = {
   centralFiller: {col:2, row:2, w:1, h:2, label:'Escalera'},
   variants: {},
 };
+
+// ---- DEBUG ----
+const DEBUG = false;
 
 // ---- PROFILE ----
 let userRole = localStorage.getItem('vc2_role') || null;
@@ -2311,7 +2314,6 @@ function renderSealMap(){
   function getSelloEstado(key){
     const w=DATA.windows[key];
     if(!w)return null;
-    if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
     return w.selloExterior;
   }
 
@@ -2352,7 +2354,6 @@ function renderSealMap(){
       td.style.color='var(--tx-2)';
       return td;
     }
-    if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
     const se=w.selloExterior;
     const c=selloColors[se.estado]||selloColors.sinSellar;
 
@@ -4474,7 +4475,7 @@ function buildSyncPayload(dirtyOnly=false){
 
 // ---- DEBUG LOG SYSTEM ----
 const vcLog=[];
-function logMsg(msg){vcLog.push(`[${ts()}] ${msg}`);console.log('[VC]',msg);}
+function logMsg(msg){vcLog.push(`[${ts()}] ${msg}`);if(DEBUG)console.log('[VC]',msg);}
 
 function showLogPanel(){
   const text=vcLog.length?vcLog.join('\n'):'Sin registros de log';
@@ -4837,11 +4838,11 @@ function migrateV1(){
       });
     }
   }
-  if(added>0){saveLocalNow();console.log('Agregadas '+added+' ventanas faltantes');}
+  if(added>0){saveLocalNow();if(DEBUG)console.log('Agregadas '+added+' ventanas faltantes');}
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  console.log('VentaControl v2.8 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.8 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
