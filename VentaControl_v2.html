@@ -692,25 +692,56 @@ function getDeptWindows(tipo){return WIN_DEF[tipo]||[];}
 function getCommonWindows(floor){return floor===1?COMMON_WIN[1]:COMMON_WIN.other;}
 
 // Iterate all windows of a floor (4 deptos + espacios comunes). Callback recibe (window, key, ctx).
-// ctx: {floor, depto, code, isCommon, tipo?} — tipo solo presente cuando isCommon=false.
+// ctx: {floor, depto, code, loc, isCommon, tipo?} — tipo solo presente cuando isCommon=false.
 function forEachWindowInFloor(edif, floor, cb){
   const e=parseInt(edif);
   for(let p=0;p<4;p++){
     const tipo=getDeptType(e,floor,p);
     const dn=deptNum(floor,p);
-    getDeptWindows(tipo).forEach(([code])=>{
+    getDeptWindows(tipo).forEach(([code, loc])=>{
       const key=wKey(e,dn,code);
-      cb(DATA.windows[key], key, {floor, depto:dn, code, isCommon:false, tipo});
+      cb(DATA.windows[key], key, {floor, depto:dn, code, loc, isCommon:false, tipo});
     });
   }
-  getCommonWindows(floor).forEach(([code])=>{
+  getCommonWindows(floor).forEach(([code, loc])=>{
     const depto=`EC${floor}`;
     const key=wKey(e,depto,code);
-    cb(DATA.windows[key], key, {floor, depto, code, isCommon:true});
+    cb(DATA.windows[key], key, {floor, depto, code, loc, isCommon:true});
   });
 }
 function forEachWindowInBldg(edif, cb){
   for(let f=1;f<=5;f++) forEachWindowInFloor(edif, f, cb);
+}
+
+// Search index — construido lazy. Invalidar (=null) tras migrations que agreguen/quiten ventanas.
+let _searchIndex=null;
+function buildSearchIndex(){
+  const idx=[];
+  for(const edif of Object.keys(BUILDINGS)){
+    forEachWindowInBldg(edif, (_w, key, ctx)=>{
+      const deptoStr=String(ctx.depto);
+      const locStr=ctx.loc||'';
+      const searchText=`edif${edif} ${edif} ${deptoStr} ${ctx.code} ${locStr} ${key}`.toLowerCase();
+      idx.push({key, edif:parseInt(edif), depto:ctx.depto, code:ctx.code, loc:locStr, isCommon:ctx.isCommon, searchText});
+    });
+  }
+  _searchIndex=idx;
+}
+function searchWindows(query){
+  if(!_searchIndex) buildSearchIndex();
+  const tokens=query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if(!tokens.length) return [];
+  const matched=_searchIndex.filter(e=>tokens.every(t=>e.searchText.includes(t)));
+  // Ordenar: keys exactas primero, luego por edif/depto/code natural.
+  return matched.sort((a,b)=>{
+    const ka=a.key.toLowerCase(), kb=b.key.toLowerCase();
+    const exactA=tokens.some(t=>ka===t)?0:1;
+    const exactB=tokens.some(t=>kb===t)?0:1;
+    if(exactA!==exactB)return exactA-exactB;
+    if(a.edif!==b.edif)return a.edif-b.edif;
+    if(String(a.depto)!==String(b.depto))return String(a.depto).localeCompare(String(b.depto));
+    return a.code.localeCompare(b.code);
+  }).slice(0,30);
 }
 
 // Initialize all window data
@@ -726,6 +757,7 @@ function initData(){
     DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
     forEachWindowInBldg(e, (_, key)=>{ DATA.windows[key]=newWindowRecord(); });
   }
+  _searchIndex=null;
   saveLocalNow();
 }
 
@@ -4109,6 +4141,7 @@ function renderSyncBar(){
   const depto=viewParams.depto;
 
   return h('div',{className:'sync-bar'},[
+    h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},onClick:doSync},['⟳ Sync']),
     h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',style:{padding:'8px 12px',fontSize:'0.85rem'},onClick:doPullOnly},['⬇ All']),
     inBuilding&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'0.85rem',color:'var(--ac-cyan)'},
@@ -4121,6 +4154,65 @@ function renderSyncBar(){
     h('span',{className:'sync-status',id:'sync-status',style:{flex:1,fontSize:'0.7rem',textAlign:'center',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},[DATA.meta.lastSync?DATA.meta.lastSync:'Sin sync']),
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'0.9rem'},onClick:showExportMenu},['⋮']),
   ].filter(Boolean));
+}
+
+function showSearchModal(){
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
+    h('div',{className:'modal',style:{maxHeight:'90vh',overflowY:'auto',width:'min(95vw,520px)'}},[
+      h('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'12px'}},[
+        h('span',{style:{fontSize:'1.1rem'}},['🔍']),
+        h('input',{
+          id:'search-input',type:'text',autocomplete:'off',
+          placeholder:'V8, 301, edif 5, 5-301-V8...',
+          style:{flex:1,padding:'10px 12px',fontSize:'0.95rem',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-2)',color:'var(--tx-1)'},
+          onInput:(e)=>renderResults(e.target.value),
+          onKeydown:(e)=>{if(e.key==='Escape')overlay.remove();},
+        }),
+        h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 10px'},onClick:()=>overlay.remove()},['✕']),
+      ]),
+      h('div',{id:'search-results',style:{display:'flex',flexDirection:'column',gap:'4px'}},[
+        h('p',{style:{fontSize:'0.82rem',color:'var(--tx-2)',padding:'8px 4px'}},['Tipea código ventana, depto, edificio o key…']),
+      ]),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+  setTimeout(()=>{const inp=$('#search-input',overlay);if(inp)inp.focus();},50);
+
+  function renderResults(q){
+    const cont=$('#search-results',overlay);
+    if(!cont)return;
+    cont.innerHTML='';
+    if(!q.trim()){
+      cont.appendChild(h('p',{style:{fontSize:'0.82rem',color:'var(--tx-2)',padding:'8px 4px'}},['Tipea código ventana, depto, edificio o key…']));
+      return;
+    }
+    const results=searchWindows(q);
+    if(!results.length){
+      cont.appendChild(h('p',{style:{fontSize:'0.82rem',color:'var(--tx-2)',padding:'8px 4px'}},['Sin resultados para "'+q+'"']));
+      return;
+    }
+    cont.appendChild(h('p',{style:{fontSize:'0.72rem',color:'var(--tx-2)',padding:'2px 4px 6px'}},[results.length+(results.length===30?'+ resultados (refina la búsqueda)':' resultado'+(results.length>1?'s':''))]));
+    results.forEach(r=>{
+      const w=DATA.windows[r.key];
+      const estado=(w&&w.estado)||'noInstalada';
+      const estObj=ESTADOS.find(e=>e.id===estado);
+      const pendAcc=w?ACTIONS.find(a=>w.acciones[a.id]?.active&&!w.acciones[a.id]?.done):null;
+      cont.appendChild(h('button',{
+        className:'btn btn-ghost',
+        style:{justifyContent:'flex-start',gap:'10px',padding:'10px 12px',fontSize:'0.85rem',textAlign:'left',width:'100%'},
+        onClick:()=>{
+          overlay.remove();
+          navigate('window',{edif:String(r.edif),depto:r.depto,code:r.code,loc:r.loc});
+        },
+      },[
+        h('span',{style:{fontSize:'1.05rem',width:'24px',textAlign:'center'}},[estObj?estObj.sym:'?']),
+        h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'700',minWidth:'52px'}},[r.code]),
+        h('span',{style:{color:'var(--tx-2)',fontSize:'0.78rem',minWidth:'56px'}},[String(r.depto)]),
+        h('span',{style:{color:'var(--tx-2)',fontSize:'0.78rem',flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},['Edif. '+r.edif+(r.loc?' · '+r.loc:'')]),
+        pendAcc?h('span',{style:{fontSize:'0.95rem'},title:pendAcc.label},[pendAcc.icon]):null,
+      ].filter(Boolean)));
+    });
+  }
 }
 
 function showLegend(){
@@ -4733,6 +4825,7 @@ function migrateV1(){
         }
       }
     }
+    if(migrated>0)_searchIndex=null;
     saveLocalNow();
     alert(`Migración completada: ${migrated} registros importados.`);
     render();
@@ -4812,7 +4905,7 @@ function migrateV1(){
       });
     }
   }
-  if(added>0){saveLocalNow();if(DEBUG)console.log('Agregadas '+added+' ventanas faltantes');}
+  if(added>0){_searchIndex=null;saveLocalNow();if(DEBUG)console.log('Agregadas '+added+' ventanas faltantes');}
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
