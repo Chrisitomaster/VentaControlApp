@@ -691,6 +691,28 @@ function getDeptWindows(tipo){return WIN_DEF[tipo]||[];}
 // Get common area windows for a floor
 function getCommonWindows(floor){return floor===1?COMMON_WIN[1]:COMMON_WIN.other;}
 
+// Iterate all windows of a floor (4 deptos + espacios comunes). Callback recibe (window, key, ctx).
+// ctx: {floor, depto, code, isCommon, tipo?} — tipo solo presente cuando isCommon=false.
+function forEachWindowInFloor(edif, floor, cb){
+  const e=parseInt(edif);
+  for(let p=0;p<4;p++){
+    const tipo=getDeptType(e,floor,p);
+    const dn=deptNum(floor,p);
+    getDeptWindows(tipo).forEach(([code])=>{
+      const key=wKey(e,dn,code);
+      cb(DATA.windows[key], key, {floor, depto:dn, code, isCommon:false, tipo});
+    });
+  }
+  getCommonWindows(floor).forEach(([code])=>{
+    const depto=`EC${floor}`;
+    const key=wKey(e,depto,code);
+    cb(DATA.windows[key], key, {floor, depto, code, isCommon:true});
+  });
+}
+function forEachWindowInBldg(edif, cb){
+  for(let f=1;f<=5;f++) forEachWindowInFloor(edif, f, cb);
+}
+
 // Initialize all window data
 function initData(){
   loadDirtyKeys();
@@ -699,28 +721,10 @@ function initData(){
     try{DATA=JSON.parse(stored);return;}catch(e){console.error('Parse error',e);}
   }
   // Fresh init
-  for(const[edif,cfg] of Object.entries(BUILDINGS)){
+  for(const[edif] of Object.entries(BUILDINGS)){
     const e=parseInt(edif);
-    // Building-level data
     DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
-    // Department windows
-    for(let f=1;f<=5;f++){
-      for(let p=0;p<4;p++){
-        const tipo=getDeptType(e,f,p);
-        const dn=deptNum(f,p);
-        const wins=getDeptWindows(tipo);
-        wins.forEach(([code])=>{
-          const key=wKey(e,dn,code);
-          DATA.windows[key]=newWindowRecord();
-        });
-      }
-      // Common area windows
-      const cw=getCommonWindows(f);
-      cw.forEach(([code])=>{
-        const key=wKey(e,`EC${f}`,code);
-        DATA.windows[key]=newWindowRecord();
-      });
-    }
+    forEachWindowInBldg(e, (_, key)=>{ DATA.windows[key]=newWindowRecord(); });
   }
   saveLocalNow();
 }
