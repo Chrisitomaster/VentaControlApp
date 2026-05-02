@@ -1462,10 +1462,7 @@ function renderBuilding(){
     (()=>{
       const actionItems=ACTIONS.map(a=>{
         let cnt=0;
-        for(let f=1;f<=5;f++){
-          for(let p=0;p<4;p++){const dn=deptNum(f,p);getDeptWindows(getDeptType(edif,f,p)).forEach(([c])=>{const w=DATA.windows[wKey(edif,dn,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});}
-          getCommonWindows(f).forEach(([c])=>{const w=DATA.windows[wKey(edif,`EC${f}`,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});
-        }
+        forEachWindowInBldg(edif, w=>{ if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done) cnt++; });
         return cnt>0?{a,cnt}:null;
       }).filter(Boolean);
       if(!actionItems.length)return null;
@@ -1683,10 +1680,7 @@ function renderGridMap(){
       const isActive=gridMapActionFilter===a.id;
       // Contar cuántas ventanas tienen esta acción pendiente en este edificio
       let cnt=0;
-      for(let f=1;f<=5;f++){
-        for(let p=0;p<4;p++){const dn=deptNum(f,p);getDeptWindows(getDeptType(edif,f,p)).forEach(([c])=>{const w=DATA.windows[wKey(edif,dn,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});}
-        getCommonWindows(f).forEach(([c])=>{const w=DATA.windows[wKey(edif,`EC${f}`,c)];if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)cnt++;});
-      }
+      forEachWindowInBldg(edif, w=>{ if(w&&w.acciones[a.id]?.active&&!w.acciones[a.id]?.done) cnt++; });
       if(!cnt&&!isActive)return null;
       return h('button',{
         className:'btn btn-sm '+(isActive?'btn-primary':'btn-ghost'),
@@ -2331,29 +2325,14 @@ function renderSealMap(){
 
   // Global counts
   let cSellado=0,cPendiente=0,cSinSellar=0,cDeficiente=0;
-  for(let f=1;f<=5;f++){
-    for(let p=0;p<4;p++){
-      const tipo=getDeptType(e,f,p);
-      getDeptWindows(tipo).forEach(([code])=>{
-        const se=getSelloEstado(wKey(e,deptNum(f,p),code));
-        if(se){
-          if(se.estado==='sellado')cSellado++;
-          else if(se.estado==='pendiente')cPendiente++;
-          else if(se.estado==='deficiente')cDeficiente++;
-          else cSinSellar++;
-        }
-      });
-    }
-    getCommonWindows(f).forEach(([code])=>{
-      const se=getSelloEstado(wKey(e,`EC${f}`,code));
-      if(se){
-        if(se.estado==='sellado')cSellado++;
-        else if(se.estado==='pendiente')cPendiente++;
-        else if(se.estado==='deficiente')cDeficiente++;
-        else cSinSellar++;
-      }
-    });
-  }
+  forEachWindowInBldg(e, (_w, key)=>{
+    const se=getSelloEstado(key);
+    if(!se)return;
+    if(se.estado==='sellado')cSellado++;
+    else if(se.estado==='pendiente')cPendiente++;
+    else if(se.estado==='deficiente')cDeficiente++;
+    else cSinSellar++;
+  });
 
   // Build a single cell TD with touch events
   function sealCell(key,code,deptoLabel){
@@ -3677,14 +3656,9 @@ function applyBulkStatus(scope,params,newEstado){
     const fl=Math.floor(depto/100),pi=(depto%100)-1;
     getDeptWindows(getDeptType(e,fl,pi)).forEach(([c])=>changeWin(wKey(e,depto,c)));
   } else if(scope==='floor'){
-    const f=params.floor;
-    for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>changeWin(wKey(e,deptNum(f,p),c)));}
-    getCommonWindows(f).forEach(([c])=>changeWin(wKey(e,`EC${f}`,c)));
+    forEachWindowInFloor(e, params.floor, (_w, key)=>changeWin(key));
   } else if(scope==='building'){
-    for(let f=1;f<=5;f++){
-      for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>changeWin(wKey(e,deptNum(f,p),c)));}
-      getCommonWindows(f).forEach(([c])=>changeWin(wKey(e,`EC${f}`,c)));
-    }
+    forEachWindowInBldg(e, (_w, key)=>changeWin(key));
   }
   saveLocalNow();
 }
@@ -3703,10 +3677,7 @@ function confirmClearBuilding(edif){
   if(!isEditor())return;
   if(!confirm(`¿Limpiar TODOS los datos del Edificio ${edif}?\n\nSe restablecen todas las ventanas y espacios comunes.\n\nNo se puede deshacer.`))return;
   const e=parseInt(edif);
-  for(let f=1;f<=5;f++){
-    for(let p=0;p<4;p++){getDeptWindows(getDeptType(e,f,p)).forEach(([c])=>{const k=wKey(e,deptNum(f,p),c);DATA.windows[k]=newWindowRecord();dirtyKeys.add(k);});}
-    getCommonWindows(f).forEach(([c])=>{const k=wKey(e,`EC${f}`,c);DATA.windows[k]=newWindowRecord();dirtyKeys.add(k);});
-  }
+  forEachWindowInBldg(e, (_w, key)=>{ DATA.windows[key]=newWindowRecord(); dirtyKeys.add(key); });
   DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
   saveLocalNow();
   renderBuilding();
@@ -3716,19 +3687,10 @@ function renderBldgDefBreakdown(edif){
   const e=parseInt(edif);
   const counts={};
   DEFICIENCIES.forEach(d=>{counts[d.id]=0;});
-  for(let f=1;f<=5;f++){
-    for(let p=0;p<4;p++){
-      const tipo=getDeptType(e,f,p);
-      getDeptWindows(tipo).forEach(([c])=>{
-        const w=DATA.windows[wKey(e,deptNum(f,p),c)];
-        if(w)DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])counts[d.id]++;});
-      });
-    }
-    getCommonWindows(f).forEach(([c])=>{
-      const w=DATA.windows[wKey(e,`EC${f}`,c)];
-      if(w)DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])counts[d.id]++;});
-    });
-  }
+  forEachWindowInBldg(e, w=>{
+    if(!w)return;
+    DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])counts[d.id]++;});
+  });
   const active=DEFICIENCIES.filter(d=>counts[d.id]>0);
   if(!active.length)return h('p',{style:{fontSize:'0.8rem',color:'var(--tx-2)'}},[' Sin inconformidades']);
   return h('div',{style:{display:'flex',flexDirection:'column',gap:'2px'}},
