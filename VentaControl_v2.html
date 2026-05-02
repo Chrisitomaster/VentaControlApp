@@ -636,6 +636,9 @@ function h(tag,attrs={},children=[]){
 }
 function ts(){return new Date().toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});}
 function pct(n,t){return t?Math.round(n/t*100):0;}
+// Click en backdrop (no en modal interior) cierra overlay. Compatible con onClick inline y addEventListener.
+function closeOnBackdropClick(e){if(e.target===e.currentTarget)e.currentTarget.remove();}
+function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropClick);}
 
 /* ============================================
    DATA MODEL
@@ -1491,7 +1494,7 @@ function renderBuilding(){
 function showQuickEstado(key,code,deptoLabel,currentEstado,onDone,navView,navParams){
   const overlay=document.createElement('div');
   overlay.className='overlay';
-  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+  closeOverlayOnBackdrop(overlay);
   const modal=h('div',{className:'modal'},[
     h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontWeight:'700',fontSize:'0.9rem'}},[code]),
@@ -1800,7 +1803,7 @@ function showMmPicker(currentMm,label,onConfirm){
   btnRow.appendChild(btnCancel);btnRow.appendChild(btnOk);
   modal.appendChild(title);modal.appendChild(sub);modal.appendChild(wrap);modal.appendChild(btnRow);
   overlay.appendChild(modal);
-  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+  closeOverlayOnBackdrop(overlay);
   document.body.appendChild(overlay);
 }
 
@@ -1827,7 +1830,7 @@ function showSelloPopup(key,code,deptoLabel,onDone){
 
   const overlay=document.createElement('div');
   overlay.className='overlay';
-  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+  closeOverlayOnBackdrop(overlay);
 
   function draw(){
     // Preserve typed comment before redraw
@@ -3628,7 +3631,7 @@ function showBulkModal(scope,params){
   const scopeLabel=scope==='building'?`Edificio ${params.edif}`:
                    scope==='dept'?`Depto ${params.depto} — Edif. ${params.edif}`:
                    `Piso ${params.floor} — Edif. ${params.edif}`;
-  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal'},[
       h('h3',{},['⚡ Cambio Masivo']),
       h('p',{style:{fontSize:'0.82rem',color:'var(--tx-2)',marginBottom:'12px'}},[scopeLabel]),
@@ -4155,7 +4158,7 @@ function renderSyncBar(){
 }
 
 function showLegend(){
-  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'90vh',overflowY:'auto'}},[
       h('h3',{style:{marginBottom:'14px'}},['Leyenda de Iconos y Colores']),
       // Estados
@@ -4221,7 +4224,7 @@ function showLegend(){
 }
 
 function showExportMenu(){
-  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal'},[
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
@@ -4246,7 +4249,7 @@ function showExportMenu(){
 }
 
 function showUrlConfig(){
-  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal'},[
       h('h3',{},['⚙️ URL de Sincronización']),
       h('p',{style:{fontSize:'0.8rem',color:'var(--tx-2)',marginBottom:'12px'}},['Pega aquí la URL de tu Apps Script (termina en /exec)']),
@@ -4484,7 +4487,7 @@ function logMsg(msg){vcLog.push(`[${ts()}] ${msg}`);if(DEBUG)console.log('[VC]',
 
 function showLogPanel(){
   const text=vcLog.length?vcLog.join('\n'):'Sin registros de log';
-  const overlay=h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}},[
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'90vh'}},[
       h('h3',{},['Log de Diagnóstico']),
       h('textarea',{
