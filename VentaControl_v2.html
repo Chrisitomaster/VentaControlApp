@@ -564,6 +564,14 @@ const EIFS_PHASES = [
 const SA_NAMES = {1:'SA1',2:'SA2',3:'SA3',4:'SA4',5:'SA5'};
 const SA_RANGES = {1:[1,8],2:[9,17],3:[18,25],4:[26,29],5:[30,34]};
 
+// Color maps compartidos por vistas que muestran estado de ventana / acción correctiva
+const WINDOW_COLOR_MAPS = {
+  estadoBg:       {instalada:'var(--ac-green-soft)', pendiente:'var(--ac-orange-soft)', noInstalada:'var(--bg-2)',  quitar:'var(--ac-red-soft)', noInstalar:'var(--bg-2)',  sinVentana:'#f0f4f8'},
+  estadoBorder:   {instalada:'var(--ac-green)',      pendiente:'var(--ac-orange)',      noInstalada:'var(--border)',quitar:'var(--ac-red)',      noInstalar:'var(--border)',sinVentana:'#94a3b8'},
+  estadoText:     {instalada:'var(--ac-green)',      pendiente:'var(--ac-orange)',      noInstalada:'var(--tx-2)',  quitar:'var(--ac-red)',      noInstalar:'var(--tx-2)',  sinVentana:'#1e293b'},
+  actionColorMap: {pulir:'purple', aplomar:'blue', impermeabilizar:'cyan', sellarFrente:'blue', repararEIFS:'blue', reemplazarVidrio:'cyan', repararMarco:'cyan', instalarFijacion:'purple', cargarMortero:'cyan'},
+};
+
 // Print layout — geometría espacial del edificio derivada del croquis del usuario.
 // Grid 3 cols × 4 filas. Lado superior: X01 + X02 (PV1/V8). Inferior: X03 + X04 (PV2/V9).
 const PRINT_LAYOUT = {
@@ -1516,11 +1524,8 @@ function renderGridMap(){
   const edif=viewParams.edif;
   const s=getBldgStats(edif);
 
-  // Color maps
-  const estadoBg={instalada:'var(--ac-green-soft)',pendiente:'var(--ac-orange-soft)',noInstalada:'var(--bg-2)',quitar:'var(--ac-red-soft)',noInstalar:'var(--bg-2)',sinVentana:'#f0f4f8'};
-  const estadoBorder={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--border)',quitar:'var(--ac-red)',noInstalar:'var(--border)',sinVentana:'#94a3b8'};
-  const estadoText={instalada:'var(--ac-green)',pendiente:'var(--ac-orange)',noInstalada:'var(--tx-2)',quitar:'var(--ac-red)',noInstalar:'var(--tx-2)',sinVentana:'#1e293b'};
-  const actionColorMap={pulir:'purple',aplomar:'blue',impermeabilizar:'cyan',sellarFrente:'blue',repararEIFS:'blue',reemplazarVidrio:'cyan',repararMarco:'cyan',instalarFijacion:'purple',cargarMortero:'cyan'};
+  // Color maps compartidos
+  const {estadoBg, estadoBorder, estadoText, actionColorMap} = WINDOW_COLOR_MAPS;
 
   function winTile(key,code,navView,navParams){
     const w=DATA.windows[key];
