@@ -1,6 +1,6 @@
-# Documento de Traspaso de Contexto — VentaControl v2.5
+# Documento de Traspaso de Contexto — VentaControl v2.9
 
-> **PARA LA IA QUE LEA ESTO:** Este archivo es el punto de entrada para cualquier sesión nueva. Léelo completo antes de tocar código. Contiene el estado real del proyecto, decisiones técnicas críticas, y patrones que DEBES respetar para no romper cosas. El archivo principal es `VentaControl_v2.html` (~3890 líneas), single-file, sin bundler, sin framework.
+> **PARA LA IA QUE LEA ESTO:** Este archivo es el punto de entrada para cualquier sesión nueva. Léelo completo antes de tocar código. Contiene el estado real del proyecto, decisiones técnicas críticas, y patrones que DEBES respetar para no romper cosas. El archivo principal es `VentaControl_v2.html` (~4900 líneas), single-file, sin bundler, sin framework. Ver también `Roadmap_VentaControl_v2.md` para mejoras priorizadas y patrones helper introducidos en v2.9.
 
 ---
 
@@ -16,7 +16,7 @@ App HTML single-file (PWA) para el control de instalación de ventanas en el Con
 
 | Componente | Detalle |
 |---|---|
-| Frontend | HTML5 + CSS3 + JS vanilla — **todo en un solo archivo** (`VentaControl_v2.html`, ~3890 líneas) |
+| Frontend | HTML5 + CSS3 + JS vanilla — **todo en un solo archivo** (`VentaControl_v2.html`, ~4900 líneas) |
 | Rendering | Imperativo via helper `h(tag, props, children)` (createElement wrapper). NO React, NO Vue. |
 | Persistencia local | `localStorage` clave `ventacontrol_v2` (JSON completo) |
 | Dirty tracking | `localStorage` clave `vc2_dirty` (Set serializado de keys modificadas) |
@@ -35,34 +35,39 @@ App HTML single-file (PWA) para el control de instalación de ventanas en el Con
 
 ```
 C:\Proyectos\VentaControl\
-├── VentaControl_v2.html        ← ÚNICO ARCHIVO A MODIFICAR (~3890 líneas)
-├── sw.js                       ← Service Worker (cache-first)
-├── manifest.json               ← PWA manifest
-├── AppsScript_VentaControl_v2.js ← Google Apps Script (se copia a Google)
-└── Contexto_VentaControl_v2.md ← Este archivo
+├── VentaControl_v2.html         ← ARCHIVO PRINCIPAL (~4900 líneas)
+├── sw.js                        ← Service Worker (cache-first; bumpear CACHE en cada release)
+├── manifest.json                ← PWA manifest
+├── AppsScript_VentaControl_v2.js ← Google Apps Script (se copia a Google manualmente)
+├── Contexto_VentaControl_v2.md  ← Este archivo
+├── Roadmap_VentaControl_v2.md   ← Roadmap mejoras + patrones helper v2.9
+└── README.md
 ```
 
-### Mapa de secciones internas (`VentaControl_v2.html`):
+### Mapa de secciones internas (`VentaControl_v2.html`, post-v2.9):
 
 | Sección | Líneas aprox. | Qué hay |
 |---|---|---|
-| CSS `<style>` | 1–260 | Variables CSS (claro/oscuro), todos los componentes UI |
-| Constantes JS | 260–415 | `BLDG_RAW`, `BUILDINGS`, `WIN_DEF`, `COMMON_WIN`, `DEFICIENCIES`, `ACTIONS`, `DEF_ACTION_MAP`, `ESTADOS`, `VANO_OPTS`, `SELLO_ESTADOS`, `EIFS_PHASES` |
-| Helpers DOM | 415–435 | `$()`, `$$()`, `h()`, `ts()`, `pct()` |
-| Data model | 435–575 | `DATA`, `dirtyKeys`, `newWindowRecord()`, `saveLocal()`, `updateWindow()` |
-| Stats | 575–685 | `getBldgStats()`, `getDeptStats()`, `getCommonStats()`, `getSAStats()` |
-| Router | 685–725 | `currentView`, `viewParams`, `navigate()`, `navigateBack()`, `render()` |
-| Vistas | 725–1455 | `renderLogin`, `renderDashboard`, `renderSA`, `renderBuilding`, `renderDept`, `renderGridMap`, `renderCommon` |
-| Action Report | 1455–1520 | `generateActionReport()`, `renderActionReport()` — informe rápido por acción correctiva |
-| MM Picker | 1520–1640 | `showMmPicker()` — drum-roll scroll 1–50 mm |
-| Sello Popup | 1640–1770 | `showSelloPopup()` — modal sello con estado/grado/comentario |
-| Seal Map | 1770–1980 | `renderSealMap()` — grilla sello exterior |
-| Report | 1980–2280 | `generateReport()`, `renderReport()` — informe completo edificio |
-| Window Detail | 2115–2650 | `renderWindowDetail()`, `renderWindowEC()`, `renderWindowDepto()` |
-| Bulk/Modals | 2650–2720 | `showBulkModal()`, `showLegend()`, `topbar()` |
-| Sync engine | 2720–2920 | `doSync()`, `buildSyncPayload()`, `mergeFromSheets()` |
-| CSV/Import | 2920–3120 | `exportCSV()`, `importCSV()`, migración v1 |
-| Init | 3720–3892 | `initData()` — integrity checks, migración de campos, PWA registration, back-button guard |
+| CSS `<style>` | 1–425 | Variables CSS (claro/oscuro), componentes UI, vista print, badge classes |
+| Constantes JS | 426–600 | `BLDG_RAW`, `BUILDINGS`, `WIN_DEF`, `COMMON_WIN`, `DEFICIENCIES`, `ACTIONS`, `DEF_ACTION_MAP`, `ESTADOS`, `VANO_OPTS`, `SELLO_ESTADOS`, `EIFS_PHASES`, `SA_RANGES`, `WINDOW_COLOR_MAPS`, `PRINT_LAYOUT`, `DEBUG` flag |
+| Helpers DOM | 609–632 | `$()`, `$$()`, `h()`, `ts()`, `pct()`, `closeOnBackdropClick()`, `closeOverlayOnBackdrop()` |
+| Iteration helpers | 695–714 | `forEachWindowInFloor(edif, floor, cb)`, `forEachWindowInBldg(edif, cb)` — itera deptos+comunes con ctx (loc, isCommon, etc.) |
+| Search index | 716–746 | `_searchIndex`, `buildSearchIndex()`, `searchWindows(query)` — búsqueda global lazy |
+| Data model | 717–855 | `DATA`, `dirtyKeys`, `newWindowRecord()`, `saveLocal()`, `updateWindow()` |
+| Stats | 855–1060 | `getBldgStats()`, `getDeptStats()`, `getCommonStats()`, `getSAStats()`, `getGlobalStats()` |
+| Router | 970–995 | `currentView`, `viewParams`, `navigate()`, `navigateBack()`, `render()` |
+| Vistas principales | 1000–1750 | `renderLogin`, `renderDashboard`, `renderSA`, `renderBuilding`, `renderDept`, `renderGridMap`, `renderCommon` |
+| Quick estado / pickers | 1486–1820 | `showQuickEstado`, `showMmPicker` (drum-roll 1–50 mm) |
+| Sello Popup | 1820–1980 | `showSelloPopup()` — modal con estado/grado/comentario |
+| Seal Map | 2090–2200 | `renderSealMap()` — grilla sello exterior |
+| Print views | 2090–2450 | `renderPrint*()` — vista imprimible por edificio |
+| Window Detail | 3232–3615 | `renderWindow()`, `renderWindowDetail()` — perfil ventana |
+| Bulk/Clear | 3618–3715 | `showBulkModal()`, `applyBulkStatus()`, `confirmClearBuilding()`, `confirmClearDept()` |
+| Sync engine | 4282–4540 | `doSync()`, `buildSyncPayload()`, `mergeFromSheets()`, `doPullOnly()`, `doPullSection()` |
+| Sync bar / search modal | 4104–4220 | `renderSyncBar()` (incluye botón 🔍), `showSearchModal()` |
+| Modals adicionales | 4225–4500 | `showLegend()`, `showExportMenu()`, `showUrlConfig()`, `showLogPanel()` |
+| CSV / migración v1 | 4710–4830 | `exportCSV()`, `importCSV()`, `migrateV1()` |
+| Init | 4836–4920 | `initData()` — integrity checks, migración de campos, PWA registration, back-button guard |
 
 ### Flujo de datos — Sync:
 
@@ -100,7 +105,7 @@ topbar(title, backView, backParams) → genera topbar con botón ← que llama n
   separacionMm: '',                // string '1'-'50', solo si estadoVano es Sobre/Sub
   deficiencias: {
     separacion: false,             // Separación >5mm
-    descuadre: false,              // Descuadre de Rasgo (renombrado, sin sugerencia de acción)
+    descuadre: false,              // Descuadre de Rasgo (sin sugerencia de acción)
     desaplomo: false,              // Ventana desaplomada
     sinSellador: false,            // Sin FC11 bajo marco
     sinSelladorFrente: false,      // Sin FC11 frente
@@ -109,17 +114,19 @@ topbar(title, backView, backParams) → genera topbar con botón ← que llama n
     vidrioTrizado: false,
     marcoPerforado: false,
     faltaFijacion: false,
+    sinImpermeabilizar: false,     // v2.9: rasgo sin impermeabilizar
   },
   acciones: {
-    pulir:            {active:false, done:false},
-    impermeabilizar:  {active:false, done:false},
-    repararEIFS:      {active:false, done:false},
-    aplomar:          {active:false, done:false},
-    sellarFrente:     {active:false, done:false},
-    reemplazarVidrio: {active:false, done:false},
-    repararMarco:     {active:false, done:false},
-    instalarFijacion: {active:false, done:false},
-    cargarMortero:    {active:false, done:false},
+    pulir:                {active:false, done:false},
+    impermeabilizar:      {active:false, done:false},
+    repararEIFS:          {active:false, done:false},
+    aplomar:              {active:false, done:false},
+    sellarFrente:         {active:false, done:false},
+    reemplazarVidrio:     {active:false, done:false},
+    repararMarco:         {active:false, done:false},
+    instalarFijacion:     {active:false, done:false},
+    cargarMortero:        {active:false, done:false},
+    impermeabilizarRasgo: {active:false, done:false},  // v2.9
   },
   observaciones: '',
   selloExterior: {
@@ -135,14 +142,31 @@ topbar(title, backView, backParams) → genera topbar con botón ← que llama n
 
 ### Migración de campos en `initData()`:
 
-**REGLA CRÍTICA:** Cada vez que se agrega un campo nuevo a `newWindowRecord()`, hay que agregar su migración en **DOS lugares** del loop de `initData()` (loop deptos + loop EC):
+**REGLA CRÍTICA:** Cada vez que se agrega un campo nuevo a `newWindowRecord()`, hay que agregar su migración en **DOS lugares** del loop de `initData()` integrity check (loop deptos + loop EC, ~líneas 4868/4875 y 4891/4897). Hay arrays hardcoded con todos los ids de defs y acciones — agregar el nuevo id ahí también.
 
 ```js
-// Ejemplo — patrón a seguir:
+// Patrón a seguir — en initData integrity loop:
+['pulir',...,'cargarMortero','impermeabilizarRasgo'].forEach(a=>{       // ← agregar id
+  if(!w.acciones[a]) w.acciones[a] = {active:false, done:false};
+});
+['separacion',...,'faltaFijacion','sinImpermeabilizar'].forEach(f=>{    // ← agregar id
+  if(w.deficiencias[f]===undefined) w.deficiencias[f] = false;
+});
 if(!w.selloExterior) w.selloExterior = {estado:'sinSellar', grado:0, comentario:''};
 if(w.funcionalidad === undefined) w.funcionalidad = 0;
-if(w.estadoVano === 'Pulir') { w.estadoVano = ''; saveLocal(); }  // migración de valor obsoleto
+if(w.estadoVano === 'Pulir') { w.estadoVano = ''; saveLocal(); }  // migración valor obsoleto
 ```
+
+**Sitios adicionales a actualizar al agregar def/action nueva:**
+1. `DEFICIENCIES` o `ACTIONS` array (constantes ~líneas 491/504).
+2. `DEF_ACTION_MAP` si la def auto-activa una acción.
+3. `WINDOW_COLOR_MAPS.actionColorMap` para color en GridMap.
+4. `newWindowRecord()` (~línea 768).
+5. Migración initData (4 sitios — 2 deptos + 2 EC, ~líneas 4868/4875/4891/4897).
+6. `buildSyncPayload` row builder (~línea 4515).
+7. `mergeFromSheets` dmap + actions array (~línea 4668/4680).
+8. `_searchIndex=null` se invalida solo via `forEachWindowInBldg` reuse — no requiere cambio.
+9. **Apps Script** `HEADERS`, `widths`, `syncData` row, `DEFS_CONFIG`, `buildResumen` defCols/actCols, `readAll` — ver `AppsScript_VentaControl_v2.js`.
 
 ---
 
@@ -179,36 +203,38 @@ const SELLO_ESTADOS = [
 ];
 ```
 
-### DEFICIENCIAS (10 tipos)
+### DEFICIENCIAS (11 tipos)
 
-| id | label | DEF_ACTION_MAP |
-|---|---|---|
-| separacion | Separación >5mm | pulir |
-| descuadre | Descuadre de Rasgo | (ninguna — removido) |
-| desaplomo | Ventana desaplomada | aplomar |
-| sinSellador | Sin FC11 bajo marco | impermeabilizar |
-| sinSelladorFrente | Sin FC11 frente | sellarFrente |
-| retornoMalla | Malla retorno EIFS | repararEIFS |
-| mallaPulida | Malla pulida | repararEIFS |
-| vidrioTrizado | Vidrio trizado | reemplazarVidrio |
-| marcoPerforado | Marco perforado | repararMarco |
-| faltaFijacion | Falta fijación | instalarFijacion |
+| id | label | icon | DEF_ACTION_MAP |
+|---|---|---|---|
+| separacion | Separación >5mm | ↔ | pulir |
+| descuadre | Descuadre de Rasgo | ◇ | (ninguna — removido) |
+| desaplomo | Ventana desaplomada | 📐 | aplomar |
+| sinSellador | Sin FC11 bajo marco | 💧 | impermeabilizar |
+| sinSelladorFrente | Sin FC11 frente | 💦 | sellarFrente |
+| retornoMalla | Malla retorno EIFS | 🔲 | repararEIFS |
+| mallaPulida | Malla pulida | ⚠ | repararEIFS |
+| vidrioTrizado | Vidrio trizado | 🔍 | reemplazarVidrio |
+| marcoPerforado | Marco perforado | 🔧 | repararMarco |
+| faltaFijacion | Falta fijación en marco | 🔩 | instalarFijacion |
+| **sinImpermeabilizar** | **Rasgo sin impermeabilizar** | 🌧 | **impermeabilizarRasgo** (v2.9) |
 
-### ACTIONS (9 acciones correctivas)
+### ACTIONS (10 acciones correctivas)
 
-| id | label | color CSS |
-|---|---|---|
-| pulir | Pulir Rasgo | purple |
-| aplomar | Aplomar ventana | **blue** |
-| impermeabilizar | Aplicar sello bajo marco | cyan |
-| sellarFrente | Aplicar sello frente ventana | **blue** |
-| repararEIFS | Reparar retorno EIFS | **blue** |
-| reemplazarVidrio | Reemplazar vidrio | **cyan** |
-| repararMarco | Aplicar sello | **cyan** |
-| instalarFijacion | Instalar fijación | purple |
-| cargarMortero | Cargar mortero en rasgo | **cyan** |
+| id | label | icon | color CSS |
+|---|---|---|---|
+| pulir | Pulir Rasgo | 🟣 | purple |
+| aplomar | Aplomar ventana | 📐 | blue |
+| impermeabilizar | Aplicar sello bajo marco | 💧 | cyan |
+| sellarFrente | Aplicar sello frente ventana | 💦 | blue |
+| repararEIFS | Reparar retorno EIFS | 🔧 | blue |
+| reemplazarVidrio | Reemplazar vidrio | 🔍 | cyan |
+| repararMarco | Aplicar sello | 🪣 | cyan |
+| instalarFijacion | Instalar fijación | 🔩 | purple |
+| cargarMortero | Cargar mortero en rasgo | 🏗 | cyan |
+| **impermeabilizarRasgo** | **Impermeabilizar rasgo** | 🛡 | **yellow** (v2.9) |
 
-> **REGLA:** colores de acciones = solo `blue`, `cyan`, `purple`. NUNCA `red`, `orange`, `green` (reservados para estados de ventana).
+> **REGLA:** colores de acciones = `blue`, `cyan`, `purple`, `yellow` (yellow nuevo en v2.9 para distinguir impermeabilización de rasgo). NUNCA `red`, `orange`, `green` (reservados para estados de ventana).
 
 ---
 
@@ -240,10 +266,13 @@ const SELLO_ESTADOS = [
 --ac-red, --ac-red-soft
 --ac-purple, --ac-purple-soft
 --ac-cyan, --ac-cyan-soft
+--ac-yellow, --ac-yellow-soft   /* v2.9 — usado por acción impermeabilizarRasgo */
 --bg-0, --bg-1, --bg-2, --bg-3
 --tx-0, --tx-1, --tx-2
 --border, --radius, --radius-sm
 ```
+
+Badge classes: `.badge-blue`, `.badge-green`, `.badge-orange`, `.badge-red`, `.badge-purple`, `.badge-cyan`, `.badge-yellow` (v2.9).
 Tema oscuro via `[data-theme="dark"]`. Overrides específicos por tema: `[data-theme="dark"] .clase-especifica { ... }`.
 
 ---
@@ -329,9 +358,17 @@ el.addEventListener('contextmenu',(ev)=>ev.preventDefault());
 ### Elementos touch dentro de tablas scrollables (sealCell):
 Usar **`document.createElement` imperativo**, NO `h()`, para poder adjuntar eventos touch correctamente. Ver `sealCell()` como referencia.
 
-### Overlay/Modal pattern:
+### Overlay/Modal pattern (post-v2.9):
 ```js
-const overlay = h('div',{className:'overlay',onClick:(e)=>{if(e.target===overlay)overlay.remove();}}, [
+// Tipo A — overlay creado con createElement, listener separado:
+const overlay = document.createElement('div');
+overlay.className = 'overlay';
+closeOverlayOnBackdrop(overlay);  // helper v2.9
+overlay.appendChild(modal);
+document.body.appendChild(overlay);
+
+// Tipo B — overlay creado con h() inline:
+const overlay = h('div',{className:'overlay', onClick:closeOnBackdropClick}, [
   h('div',{className:'modal'},[...contenido...])
 ]);
 document.body.appendChild(overlay);
@@ -493,80 +530,91 @@ for(let f=1;f<=5;f++) floorCodes[f].forEach(c=>{ if(!seen.has(c)){ seen.add(c); 
 
 ---
 
-## 11. Google Sheets — Columnas
+## 11. Google Sheets — Columnas (32 columnas, sheet `REGISTRO`)
 
 ```
 A:Edificio  B:Piso  C:N°Depto  D:TipoDepto  E:Elemento  F:TipoElemento  G:Estado
 H:Separacion>5mm  I:Descuadre  J:SinFC11bajomarco  K:MallaEIFS  L:EstadoVano
-M:Observaciones  N:UltimaActualizacion  O:Desaplomado  P:SinFC11frente
-Q:MallaRetornoPulida  R:VidrioTrizado  S:MarcoPerforado  T:FaltaFijacion
+M:Observaciones  N:UltimaActualizacion
+─── v2 ───
+O:Desaplomado  P:SinFC11frente  Q:MallaRetornoPulida  R:VidrioTrizado
+S:MarcoPerforado  T:FaltaFijacion
 U:Acc.PulirVano  V:Acc.Impermeabilizar  W:Acc.RepararEIFS  X:Acc.Aplomar
+─── v2.2 ───
 Y:Acc.SellarFrente  Z:Acc.Reempl.Vidrio  AA:Acc.RepararMarco  AB:Acc.InstalarFijac
-AC:EtapaConstruccion
-──── PENDIENTE AGREGAR ────
-AD:SelloEstado  AE:SelloGrado  AF:SelloComentario  AG:Funcionalidad  AH:SeparacionMm
+AC:EtapaConstruccion  AD:Acc.CargarMortero
+─── v2.9 ───
+AE:SinImpermeabilizar (def)  AF:Acc.Imperm.Rasgo
+─── PENDIENTE AGREGAR (selloExterior + funcionalidad NO sincronizan aún) ───
+AG:SelloEstado  AH:SelloGrado  AI:SelloComentario  AJ:Funcionalidad  AK:SeparacionMm
 ```
+
+**Nota deploy v2.9:** las columnas AE/AF requieren ejecutar `setup()` en Apps Script una vez para que la hoja real reciba los headers. El push/pull funciona aunque la hoja aún no tenga las columnas (`syncData` escribe celdas vacías; `readAll` lee `''` → coerce a 0/'').
+
+---
 
 ---
 
 ## 12. Estado del Repositorio
 
-### Commits recientes:
+### Commits recientes (sesión 2026-05-07/08, v2.9):
+```
+d388216 feat(apps-script): persistir sinImpermeabilizar + impermeabilizarRasgo en Sheets
+1b42b53 feat(v2.9): nueva deficiencia 'Rasgo sin impermeabilizar' + acción 'Impermeabilizar rasgo'
+6aba3de feat: búsqueda global de ventanas + Roadmap doc
+888a00d refactor: migrar 6 loops anidados a forEachWindowIn{Floor,Bldg}
+5e62dab refactor: helpers forEachWindowInFloor / forEachWindowInBldg
+454da6f refactor: helper closeOnBackdropClick — unifica cierre de overlay
+9293910 refactor: centralizar color maps en WINDOW_COLOR_MAPS
+7731c7b refactor: cleanup trivial — DEBUG flag, selloExterior defaults, !important
+```
 
-**Sesión 2026-04-25:**
-```
-436078f fix: PEDIDO DE VENTANAS — solo sinVentana, con tipo/depto/orientación
-3ae1831 feat: comentarios arriba + acceso directo a informes por acción
-87f7c36 feat: informe rápido por acción + fix filtros gridmap
-31b9280 v2.5: dashboard, stats, navigation, gridmap, touch targets overhaul
-43c0242 docs: contexto v2.5 — guía completa para sesiones futuras de IA
-```
-
-**Sesión 2026-04-16:**
-```
-db27f40 Paleta de colores: estados únicos, inconformidades y acciones distintos
-5daf995 4 mejoras: mapa sello MR, nav ventana, salida segura, descuadre
-73388c1 docs: actualizar contexto v2.4
-70470be Rasgo: quitar Pulir, picker mm carrete, funcionalidad 1-5
-c4bc779 Sello exterior: estados ricos con popup, perfil de ventana e informe
-9508b07 Mapa de sello: rediseñar grilla por posición de depto × piso
-304159a Hardcodear URL de Apps Script para sync automático
-1cb7573 UX overhaul: 19 mejoras de interfaz, nuevos estados y vistas
-```
+**Helpers nuevos (post-v2.9, ya disponibles):**
+- `forEachWindowInFloor`, `forEachWindowInBldg` — iteración de ventanas (no escribir loops anidados nuevos).
+- `WINDOW_COLOR_MAPS.{estadoBg,estadoBorder,estadoText,actionColorMap}` — colores estado/acción centralizados.
+- `closeOnBackdropClick(e)` / `closeOverlayOnBackdrop(ov)` — cierre de modales por click en backdrop.
+- `searchWindows(q)` / `showSearchModal()` — búsqueda global con índice lazy.
+- `DEBUG` flag — gate para console.logs no críticos.
 
 ### Estado:
-- Worktree: `C:\Proyectos\VentaControl\.claude\worktrees\interesting-raman\`
-- Branch local: `claude/interesting-raman`
-- Deploy: `git push origin claude/interesting-raman:main`
+- Worktree de trabajo: `C:\Proyectos\VentaControl\.claude\worktrees\print-letter\`
+- Branch local: `print-letter` (trackea `origin/main`)
+- Deploy: `git push origin HEAD:main` (la rama local NO se llama main, hay que ser explícito)
+- Repo principal en `C:\Proyectos\VentaControl\` está en branch `master` (atrás respecto a main — no usar para edits)
 - Todo pusheado ✓
 
 ---
 
 ## 13. Próximos Pasos (To-Do)
 
-### Completado en sesión 2026-04-25
-- [x] Informe rápido por acción correctiva (renderActionReport con dos tablas: detalle + resumen)
-- [x] Acceso directo desde vista building (card "Informes por Acción Correctiva" + botones por acción)
-- [x] Acceso desde renderActionDetail (botón "📋 Ver informe detallado")
-- [x] Comentarios/observaciones movidos al tope de cada vista (building, window, dept) con visual destacado
-- [x] Fix gridmap: filtro deptNum corregido (eliminada referencia incorrecta a `edif`)
-- [x] PEDIDO DE VENTANAS: solo sinVentana, columnas tipo/depto/orientación
+### Completado en sesión 2026-05-07/08 (v2.9)
+- [x] Refactor mantenibilidad — DEBUG flag, color maps globales, helpers iteración + overlay (5 commits)
+- [x] Búsqueda global ventana/depto/edif (botón 🔍 en sync bar) — `showSearchModal` + `searchWindows`
+- [x] Roadmap doc (`Roadmap_VentaControl_v2.md`) con mejoras priorizadas en 5 tiers
+- [x] Nueva deficiencia `sinImpermeabilizar` + acción `impermeabilizarRasgo` con color amarillo distintivo
+- [x] Apps Script actualizado: persiste `sinImpermeabilizar` (col AE) y `impermeabilizarRasgo` (col AF)
+- [x] Bug-fix: `act_cargarMortero` ahora se cuenta en stats RESUMEN (no se contaba antes)
+
+### Pendiente para próxima sesión
+
+**Action manual (no automatizable):**
+- Re-deployar Apps Script en Google: pegar `AppsScript_VentaControl_v2.js` actualizado, ejecutar `setup()`, crear nueva versión del deployment. La URL no cambia.
 
 ### Alta prioridad
-1. **Sync nuevos campos a Sheets** — `selloExterior` y `funcionalidad` NO se sincronizan aún:
-   - Agregar columnas AD–AH en `HEADERS[]` del Apps Script
-   - Actualizar `syncData()` y `readAll()` en AppsScript
-   - Actualizar `buildSyncPayload()` (agregar campos al objeto de cada ventana)
-   - Actualizar `mergeFromSheets()` (leer y aplicar campos nuevos)
-
-2. **Filtro por edificio en panel de acciones correctivas** — `renderLazyActionsCard` carga rango 1–34. Agregar selector de edificio para acotar.
+1. **Sync `selloExterior` + `funcionalidad` a Sheets** — siguen sin sincronizarse:
+   - Agregar columnas AG–AK en `HEADERS[]` del Apps Script
+   - Actualizar `syncData()`, `readAll()`, `buildSyncPayload()`, `mergeFromSheets()`
+2. **Filtro por edificio en panel de acciones correctivas** (`renderLazyActionsCard`).
+3. **Backup automático local** — descarga JSON al sync exitoso o guarda en IndexedDB. localStorage = pérdida silenciosa al limpiar pestaña.
 
 ### Media prioridad
-3. **Preservar scroll al navegar atrás** — `navigate()` siempre hace `scrollTo(0,0)`. Guardar `scrollY` en navStack y restaurar al `navigateBack()`.
+4. **Preservar scroll al navegar atrás** — `navigateBack()` ya tiene infra de `scrollHistory`, pero `navigate()` siempre hace scrollTo(0,0). Verificar restauración funciona.
+5. **Scroll position en gridmap** — al volver de detalle ventana → restaurar posición.
+6. **PWA installability** — manifest.json usa data: URI. Generar PNG reales (icon-192.png, icon-512.png).
+7. **Filtros adicionales en GridMap** (por estado, por deficiencia) — infra de filtro por acción ya existe.
+8. **Dark mode toggle visible** — variables CSS ya existen, falta UI.
 
-4. **Scroll position en gridmap** — Al volver de detalle ventana a gridmap, restaurar posición.
-
-5. **PWA installability** — manifest.json usa data: URI para icon. Generar PNG reales (icon-192.png, icon-512.png) y actualizar manifest.
+Ver `Roadmap_VentaControl_v2.md` Tier 1–5 para detalle completo.
 
 ---
 
@@ -586,7 +634,9 @@ c4bc779 Sello exterior: estados ricos con popup, perfil de ventana e informe
 12. GridMap filtros no mostraban todas las acciones → `deptNum(edif,f,p)` pasaba edif como parámetro floor (bug línea 1476) → corregido a `deptNum(f,p)`
 13. Informe rápido por acción no era descubrible → agregada card en renderBuilding con botones directos por acción
 14. Comentarios/observaciones no eran visibles → movidos al tope de building/window/dept con highlight naranja
+15. (v2.9) `act_cargarMortero` no se contaba en stats RESUMEN del Apps Script → reemplazo `for(a=20;a<=27)` por `actCols=[20-27,29,31]`
+16. (v2.9) `def_vanoAjustado` era código zombie en Apps Script (escribía pos 30 pero normalize truncaba a HEADERS.length=30) → eliminado, columna 30 reasignada a `sinImpermeabilizar`
 
 ---
 
-*Actualizado: 2026-04-25 — Versión: v2.5 — Líneas: ~3890*
+*Actualizado: 2026-05-08 — Versión: v2.9 — Líneas: ~4920*
