@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.8</title>
+<title>VentaControl v2.9</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -29,6 +29,7 @@
   --ac-red:#dc2626;--ac-red-soft:#fee2e2;
   --ac-purple:#9333ea;--ac-purple-soft:#f3e8ff;
   --ac-cyan:#0891b2;--ac-cyan-soft:#cffafe;
+  --ac-yellow:#ca8a04;--ac-yellow-soft:#fef3c7;
   --border:#d1d5db;--shadow:0 1px 3px rgba(0,0,0,0.08);
   --card-hover:#f8fafc;
 }
@@ -41,6 +42,7 @@
   --ac-red:#ef4444;--ac-red-soft:#7f1d1d;
   --ac-purple:#a855f7;--ac-purple-soft:#581c87;
   --ac-cyan:#06b6d4;--ac-cyan-soft:#164e63;
+  --ac-yellow:#eab308;--ac-yellow-soft:#713f12;
   --border:#1e3050;--shadow:0 2px 8px rgba(0,0,0,0.3);
   --card-hover:#1a2540;
 }
@@ -143,6 +145,7 @@ body{
 .badge-red{background:var(--ac-red-soft);color:var(--ac-red);}
 .badge-purple{background:var(--ac-purple-soft);color:var(--ac-purple);}
 .badge-cyan{background:var(--ac-cyan-soft);color:var(--ac-cyan);}
+.badge-yellow{background:var(--ac-yellow-soft);color:var(--ac-yellow);}
 /* STATS ROW */
 .stats-row{display:flex;gap:var(--gap);flex-wrap:wrap;margin-bottom:var(--gap);}
 .stat-box{flex:1;min-width:80px;text-align:center;padding:10px 6px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-sm);}
@@ -423,7 +426,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.8 — Configuration & Data
+   VentaControl v2.9 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -499,18 +502,20 @@ const DEFICIENCIES = [
   {id:'vidrioTrizado',     label:'Vidrio trizado',                     icon:'🔍'},
   {id:'marcoPerforado',    label:'Marco perforado',                    icon:'🔧'},
   {id:'faltaFijacion',     label:'Falta fijación en marco',             icon:'🔩'},
+  {id:'sinImpermeabilizar',label:'Rasgo sin impermeabilizar',           icon:'🌧'},
 ];
 
 const ACTIONS = [
-  {id:'pulir',          label:'Pulir Rasgo',                  icon:'🟣',color:'purple'},
-  {id:'aplomar',        label:'Aplomar ventana',               icon:'📐',color:'blue'},
-  {id:'impermeabilizar',label:'Aplicar sello bajo marco',      icon:'💧',color:'cyan'},
-  {id:'sellarFrente',   label:'Aplicar sello frente ventana',  icon:'💦',color:'blue'},
-  {id:'repararEIFS',    label:'Reparar retorno EIFS',          icon:'🔧',color:'blue'},
-  {id:'reemplazarVidrio',label:'Reemplazar vidrio',            icon:'🔍',color:'cyan'},
-  {id:'repararMarco',   label:'Aplicar sello',                 icon:'🪣',color:'cyan'},
-  {id:'instalarFijacion',label:'Instalar fijación',            icon:'🔩',color:'purple'},
-  {id:'cargarMortero',  label:'Cargar mortero en rasgo',       icon:'🏗',color:'cyan'},
+  {id:'pulir',                label:'Pulir Rasgo',                  icon:'🟣',color:'purple'},
+  {id:'aplomar',              label:'Aplomar ventana',               icon:'📐',color:'blue'},
+  {id:'impermeabilizar',      label:'Aplicar sello bajo marco',      icon:'💧',color:'cyan'},
+  {id:'sellarFrente',         label:'Aplicar sello frente ventana',  icon:'💦',color:'blue'},
+  {id:'repararEIFS',          label:'Reparar retorno EIFS',          icon:'🔧',color:'blue'},
+  {id:'reemplazarVidrio',     label:'Reemplazar vidrio',            icon:'🔍',color:'cyan'},
+  {id:'repararMarco',         label:'Aplicar sello',                 icon:'🪣',color:'cyan'},
+  {id:'instalarFijacion',     label:'Instalar fijación',            icon:'🔩',color:'purple'},
+  {id:'cargarMortero',        label:'Cargar mortero en rasgo',       icon:'🏗',color:'cyan'},
+  {id:'impermeabilizarRasgo', label:'Impermeabilizar rasgo',         icon:'🛡',color:'yellow'},
 ];
 
 // Deficiency → Action mapping
@@ -524,6 +529,7 @@ const DEF_ACTION_MAP = {
   vidrioTrizado:'reemplazarVidrio',
   marcoPerforado:'repararMarco',
   faltaFijacion:'instalarFijacion',
+  sinImpermeabilizar:'impermeabilizarRasgo',
 };
 
 const ESTADOS = [
@@ -569,7 +575,7 @@ const WINDOW_COLOR_MAPS = {
   estadoBg:       {instalada:'var(--ac-green-soft)', pendiente:'var(--ac-orange-soft)', noInstalada:'var(--bg-2)',  quitar:'var(--ac-red-soft)', noInstalar:'var(--bg-2)',  sinVentana:'#f0f4f8'},
   estadoBorder:   {instalada:'var(--ac-green)',      pendiente:'var(--ac-orange)',      noInstalada:'var(--border)',quitar:'var(--ac-red)',      noInstalar:'var(--border)',sinVentana:'#94a3b8'},
   estadoText:     {instalada:'var(--ac-green)',      pendiente:'var(--ac-orange)',      noInstalada:'var(--tx-2)',  quitar:'var(--ac-red)',      noInstalar:'var(--tx-2)',  sinVentana:'#1e293b'},
-  actionColorMap: {pulir:'purple', aplomar:'blue', impermeabilizar:'cyan', sellarFrente:'blue', repararEIFS:'blue', reemplazarVidrio:'cyan', repararMarco:'cyan', instalarFijacion:'purple', cargarMortero:'cyan'},
+  actionColorMap: {pulir:'purple', aplomar:'blue', impermeabilizar:'cyan', sellarFrente:'blue', repararEIFS:'blue', reemplazarVidrio:'cyan', repararMarco:'cyan', instalarFijacion:'purple', cargarMortero:'cyan', impermeabilizarRasgo:'yellow'},
 };
 
 // Print layout — geometría espacial del edificio derivada del croquis del usuario.
@@ -765,8 +771,8 @@ function newWindowRecord(){
   return{
     estado:'noInstalada',
     estadoVano:'',
-    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false},
-    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false}},
+    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false,sinImpermeabilizar:false},
+    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false},impermeabilizarRasgo:{active:false,done:false}},
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
     funcionalidad:0,
@@ -1043,7 +1049,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.8']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.9']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1165,7 +1171,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.8'),
+    topbar('VentaControl v2.9'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1991,7 +1997,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.8']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.9']),
     ]),
   ]);
 }
@@ -2255,7 +2261,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.8`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.9`]),
   ]);
 }
 
@@ -2269,7 +2275,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.8 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.9 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -4522,6 +4528,7 @@ function buildSyncPayload(dirtyOnly=false){
       vidrioTrizado:w.deficiencias.vidrioTrizado?1:0,
       marcoPerforado:w.deficiencias.marcoPerforado?1:0,
       faltaFijacion:w.deficiencias.faltaFijacion?1:0,
+      sinImpermeabilizar:w.deficiencias.sinImpermeabilizar?1:0,
       vano:w.estadoVano||'',
       obs:w.observaciones||'',
       act_pulir:w.acciones.pulir?.active?(w.acciones.pulir.done?'done':'pending'):'',
@@ -4533,6 +4540,7 @@ function buildSyncPayload(dirtyOnly=false){
       act_repararMarco:w.acciones.repararMarco?.active?(w.acciones.repararMarco.done?'done':'pending'):'',
       act_instalarFijacion:w.acciones.instalarFijacion?.active?(w.acciones.instalarFijacion.done?'done':'pending'):'',
       act_cargarMortero:w.acciones.cargarMortero?.active?(w.acciones.cargarMortero.done?'done':'pending'):'',
+      act_impermeabilizarRasgo:w.acciones.impermeabilizarRasgo?.active?(w.acciones.impermeabilizarRasgo.done?'done':'pending'):'',
       etapa:(DATA.buildings[bKey(parseInt(edif))]||{}).stage||'',
     });
   }
@@ -4675,9 +4683,10 @@ function mergeFromSheets(rows){
       vidrioTrizado:pd(r,'vidrioTrizado','def_vidrioTrizado'),
       marcoPerforado:pd(r,'marcoPerforado','def_marcoPerforado'),
       faltaFijacion:pd(r,'faltaFijacion','def_faltaFijacion'),
+      sinImpermeabilizar:pd(r,'sinImpermeabilizar','def_sinImpermeabilizar'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{
+    ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero','impermeabilizarRasgo'].forEach(a=>{
       if(!w.acciones[a])w.acciones[a]={active:false,done:false};
       const val=r['act_'+a];
       if(val==='done'){w.acciones[a].active=true;w.acciones[a].done=true;}
@@ -4865,14 +4874,14 @@ function migrateV1(){
           const w=DATA.windows[key];
           if(!w.acciones)w.acciones={};
           // Ensure all action fields exist
-          ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{
+          ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero','impermeabilizarRasgo'].forEach(a=>{
             if(!w.acciones[a])w.acciones[a]={active:false,done:false};
           });
           if(!w.historial)w.historial=[];
           if(!w.fotos)w.fotos=[];
           if(!w.deficiencias)w.deficiencias={};
           // Ensure all deficiency fields exist (handles migration from older records)
-          ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion'].forEach(f=>{
+          ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion','sinImpermeabilizar'].forEach(f=>{
             if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
           });
           if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
@@ -4888,13 +4897,13 @@ function migrateV1(){
         if(!DATA.windows[key]){DATA.windows[key]=newWindowRecord();added++;}
         const w=DATA.windows[key];
         if(!w.acciones)w.acciones={};
-        ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero'].forEach(a=>{
+        ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero','impermeabilizarRasgo'].forEach(a=>{
           if(!w.acciones[a])w.acciones[a]={active:false,done:false};
         });
         if(!w.historial)w.historial=[];
         if(!w.fotos)w.fotos=[];
         if(!w.deficiencias)w.deficiencias={};
-        ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion'].forEach(f=>{
+        ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion','sinImpermeabilizar'].forEach(f=>{
           if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
         });
         if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
@@ -4909,7 +4918,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.8 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.9 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
