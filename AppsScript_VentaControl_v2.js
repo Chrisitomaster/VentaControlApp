@@ -12,7 +12,7 @@
 
 var SHEET_NAME = 'REGISTRO';
 
-// Columnas actuales (A-N = 1-14) + v2 (O-X = 15-24) + v2.2 (Y-AC = 25-29)
+// Columnas actuales (A-N = 1-14) + v2 (O-X = 15-24) + v2.2 (Y-AD = 25-30) + v2.9 (AE-AF = 31-32)
 var HEADERS = [
   'Edificio',            // A  1
   'Piso',                // B  2
@@ -46,6 +46,9 @@ var HEADERS = [
   'Acc. Instalar Fijac', // AB 28
   'Etapa Construcción',  // AC 29
   'Acc. Cargar Mortero', // AD 30
+  // ---- Columnas v2.9 ----
+  'Sin Impermeabilizar', // AE 31  (deficiencia: rasgo no impermeabilizado)
+  'Acc. Imperm. Rasgo',  // AF 32  (acción: impermeabilizar rasgo)
 ];
 
 function setup() {
@@ -69,7 +72,7 @@ function setup() {
   var lastRow = Math.max(sheet.getLastRow(), 2);
   sheet.getRange(1, 1, lastRow, HEADERS.length).createFilter();
 
-  var widths = [65,45,75,70,80,150,100,110,80,120,130,110,240,140,90,130,130,90,100,90,110,130,120,90,120,120,120,120,130];
+  var widths = [65,45,75,70,80,150,100,110,80,120,130,110,240,140,90,130,130,90,100,90,110,130,120,90,120,120,120,120,130,130,130,130];
   for (var i = 0; i < widths.length; i++) {
     sheet.setColumnWidth(i + 1, widths[i] || 100);
   }
@@ -196,7 +199,8 @@ function syncData(records) {
       rec.act_instalarFijacion || '',
       rec.etapa !== undefined ? rec.etapa : '',
       rec.act_cargarMortero || '',
-      rec.def_vanoAjustado ? yesNo(rec.def_vanoAjustado) : '',
+      yesNo(rec.sinImpermeabilizar),                  // AE 31  v2.9
+      rec.act_impermeabilizarRasgo || '',             // AF 32  v2.9
     ];
 
     if (keyMap[key] !== undefined) {
@@ -262,7 +266,7 @@ var DEFS_CONFIG = [
   {label:'Marco perforado',             col:18, accion:'Reparar/sellar marco',        accionCol:26},
   {label:'Falta fijacion en marco',     col:19, accion:'Instalar fijacion',           accionCol:27},
   {label:'Cargar mortero en vano',      col:7,  accion:'Cargar mortero en vano',       accionCol:29},
-  {label:'Vano subdimensionado',        col:30, accion:'Cargar mortero en vano',       accionCol:29},
+  {label:'Rasgo sin impermeabilizar',   col:30, accion:'Impermeabilizar rasgo',       accionCol:31},
 ];
 
 // Función ejecutable manualmente desde el editor para regenerar hojas
@@ -323,10 +327,11 @@ function buildResumen(ss, data, ts) {
     else if (est==='pendiente')    b[2]++;
     else if (est==='noinstalada')  b[3]++;
     else if (est==='quitar')       b[4]++;
-    var defCols = [7,8,9,10,14,15,16,17,18,19];
+    var defCols = [7,8,9,10,14,15,16,17,18,19,30];
     for (var d = 0; d < defCols.length; d++) { if (row[defCols[d]]==='Si' || row[defCols[d]]==='S\u00ed') b[5]++; }
-    for (var a = 20; a <= 27; a++) {
-      var v = String(row[a]||'').toLowerCase();
+    var actCols = [20,21,22,23,24,25,26,27,29,31];
+    for (var ai = 0; ai < actCols.length; ai++) {
+      var v = String(row[actCols[ai]]||'').toLowerCase();
       if (v==='pending') b[6]++;
       else if (v==='done') b[7]++;
     }
@@ -551,7 +556,9 @@ function readAll(edifFilter) {
       act_instalarFijacion: row[27] || '',
       etapa:            row[28] || '',
       act_cargarMortero:    row[29] || '',
-      def_vanoAjustado:     sv(row[30] || ''),
+      // ---- v2.9 ----
+      sinImpermeabilizar:      sv(row[30] || ''),
+      act_impermeabilizarRasgo: row[31] || '',
     });
   }
 
