@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.10</title>
+<title>VentaControl v2.11</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -445,7 +445,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.10 — Configuration & Data
+   VentaControl v2.11 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -1068,7 +1068,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.10']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.11']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1190,7 +1190,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.10'),
+    topbar('VentaControl v2.11'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -2109,7 +2109,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.10']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.11']),
     ]),
   ]);
 }
@@ -2373,7 +2373,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.10`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.11`]),
   ]);
 }
 
@@ -2387,7 +2387,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.10 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.11 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3679,60 +3679,75 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture
-    h('div',{className:'card'},[
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}},[
-        h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['Fotos']),
-        h('label',{className:'btn btn-sm btn-ghost',style:{cursor:'pointer'}},[
-          '📷 Capturar',
-          h('input',{type:'file',accept:'image/*',capture:'environment',style:{display:'none'},
-            onChange:(e)=>{
-              const file=e.target.files[0];
-              if(!file)return;
-              const reader=new FileReader();
-              reader.onload=(ev)=>{
-                // Comprimir imagen antes de guardar (máx 800px, JPEG 0.65)
-                const img=new Image();
-                img.onload=()=>{
-                  const MAX=800;
-                  let W=img.width,H=img.height;
-                  if(W>MAX||H>MAX){const s=Math.min(MAX/W,MAX/H);W=Math.round(W*s);H=Math.round(H*s);}
-                  const canvas=document.createElement('canvas');
-                  canvas.width=W;canvas.height=H;
-                  canvas.getContext('2d').drawImage(img,0,0,W,H);
-                  const compressed=canvas.toDataURL('image/jpeg',0.65);
-                  w.fotos.push({data:compressed,ts:ts()});
-                  if(w.fotos.length>5)w.fotos=w.fotos.slice(-5);
-                  w.historial.unshift({t:ts(),cambio:'Foto agregada'});
-                  dirtyKeys.add(key);
-                  saveLocalNow();
-                  renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+    // Photo capture (v2.11: preview modal, comentario, gate editor, contador)
+    (()=>{
+      const MAX_FOTOS=5;
+      const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
+      return h('div',{className:'card'},[
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}},[
+          h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},[
+            'Fotos ',
+            h('span',{style:{color:'var(--tx-2)',fontWeight:'400',fontSize:'0.75rem'}},[`(${w.fotos.length}/${MAX_FOTOS})`])
+          ]),
+          isEditor()?h('label',{className:'btn btn-sm btn-ghost',style:{cursor:'pointer'}},[
+            '📷 Capturar',
+            h('input',{type:'file',accept:'image/*',capture:'environment',style:{display:'none'},
+              onChange:(e)=>{
+                const file=e.target.files[0];
+                if(!file)return;
+                const reader=new FileReader();
+                reader.onload=(ev)=>{
+                  const img=new Image();
+                  img.onload=()=>{
+                    try{
+                      // Comprimir: máx 1024px (mejor calidad para zoom), JPEG 0.7
+                      const MAX=1024;
+                      let W=img.width,H=img.height;
+                      if(W>MAX||H>MAX){const s=Math.min(MAX/W,MAX/H);W=Math.round(W*s);H=Math.round(H*s);}
+                      const canvas=document.createElement('canvas');
+                      canvas.width=W;canvas.height=H;
+                      canvas.getContext('2d').drawImage(img,0,0,W,H);
+                      const compressed=canvas.toDataURL('image/jpeg',0.7);
+                      w.fotos.push({data:compressed,ts:ts(),comentario:''});
+                      if(w.fotos.length>MAX_FOTOS){
+                        w.fotos=w.fotos.slice(-MAX_FOTOS);
+                        showSyncMsg('⚠ Reemplazada foto más antigua (límite '+MAX_FOTOS+')');
+                      }
+                      w.historial.unshift({t:ts(),cambio:'Foto agregada'});
+                      dirtyKeys.add(key);
+                      saveLocalNow();
+                      refresh();
+                    }catch(err){
+                      alert('Error procesando foto: '+err.message);
+                    }
+                  };
+                  img.onerror=()=>alert('No se pudo cargar la imagen');
+                  img.src=ev.target.result;
                 };
-                img.src=ev.target.result;
-              };
-              reader.readAsDataURL(file);
-            }
-          }),
+                reader.onerror=()=>alert('No se pudo leer el archivo');
+                reader.readAsDataURL(file);
+                e.target.value=''; // permite re-capturar misma foto
+              }
+            }),
+          ]):null,
         ]),
-      ]),
-      w.fotos.length?
-        h('div',{style:{display:'flex',gap:'6px',overflowX:'auto',paddingBottom:'6px'}},
-          w.fotos.map((f,i)=>
-            h('div',{style:{position:'relative',flexShrink:0}},[
-              h('img',{src:f.data,style:{width:'80px',height:'80px',objectFit:'cover',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)'}}),
-              h('button',{className:'btn-icon',style:{position:'absolute',top:'-4px',right:'-4px',background:'var(--ac-red)',color:'#fff',borderRadius:'50%',width:'18px',height:'18px',fontSize:'0.6rem',display:'flex',alignItems:'center',justifyContent:'center'},
-                onClick:()=>{
-                  w.fotos.splice(i,1);
-                  w.historial.unshift({t:ts(),cambio:'Foto eliminada'});
-                  saveLocal();
-                  renderWindowDetail(key,code,loc,subtitle,backView,backParams);
-                }
-              },['✗']),
-            ])
-          )
-        ):
-        h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',padding:'8px 0'}},['Sin fotos']),
-    ]),
+        w.fotos.length?
+          h('div',{style:{display:'flex',gap:'8px',overflowX:'auto',paddingBottom:'6px'}},
+            w.fotos.map((f,i)=>
+              h('div',{
+                style:{position:'relative',flexShrink:0,cursor:'pointer'},
+                onClick:()=>showPhotoPreview(key,i,refresh),
+              },[
+                h('img',{src:f.data,style:{width:'88px',height:'88px',objectFit:'cover',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)',display:'block'}}),
+                f.comentario?h('div',{style:{position:'absolute',bottom:'0',left:'0',right:'0',background:'rgba(0,0,0,0.6)',color:'#fff',fontSize:'0.6rem',padding:'2px 4px',borderRadius:'0 0 var(--radius-sm) var(--radius-sm)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},['💬 '+f.comentario]):null,
+              ].filter(Boolean))
+            )
+          ):
+          h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',padding:'8px 0'}},[
+            isEditor()?'Sin fotos. Toca 📷 Capturar para agregar.':'Sin fotos.'
+          ]),
+      ]);
+    })(),
 
     // History
     h('div',{className:'card'},[
@@ -4333,6 +4348,80 @@ function showSearchModal(){
   }
 }
 
+// Modal de preview de foto: full screen, comentario editable, eliminar (editor)
+function showPhotoPreview(winKey, idx, onUpdate){
+  const w=DATA.windows[winKey];
+  if(!w||!w.fotos||!w.fotos[idx])return;
+  const overlay=h('div',{
+    className:'overlay',
+    style:{background:'rgba(0,0,0,0.92)',padding:'0',alignItems:'flex-start',overflowY:'auto'},
+    onClick:closeOnBackdropClick,
+  },[]);
+
+  function draw(){
+    const f=w.fotos[idx];
+    if(!f){overlay.remove();return;}
+    // Preserve typed comment before redraw
+    const ta=overlay.querySelector('#photo-comment-ta');
+    if(ta)f.comentario=ta.value;
+    overlay.innerHTML='';
+    overlay.appendChild(h('div',{
+      style:{maxWidth:'min(95vw,720px)',width:'100%',margin:'auto',padding:'12px',display:'flex',flexDirection:'column',gap:'10px'}
+    },[
+      // Header con contador + cerrar
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',color:'#fff'}},[
+        h('div',{style:{fontSize:'0.8rem'}},[`Foto ${idx+1} de ${w.fotos.length} · ${f.ts}`]),
+        h('button',{className:'btn btn-sm',style:{background:'rgba(255,255,255,0.15)',color:'#fff',padding:'6px 12px'},onClick:()=>overlay.remove()},['✕ Cerrar']),
+      ]),
+      // Imagen full
+      h('img',{
+        src:f.data,
+        style:{width:'100%',height:'auto',maxHeight:'60vh',objectFit:'contain',borderRadius:'var(--radius-sm)',background:'#000'},
+        onClick:(e)=>e.stopPropagation(),
+      }),
+      // Navegación prev/next si hay más de una foto
+      w.fotos.length>1?h('div',{style:{display:'flex',gap:'8px',justifyContent:'center'}},[
+        h('button',{className:'btn btn-sm btn-ghost',style:{color:'#fff',background:'rgba(255,255,255,0.1)'},onClick:()=>{idx=(idx-1+w.fotos.length)%w.fotos.length;draw();}},['◀ Anterior']),
+        h('button',{className:'btn btn-sm btn-ghost',style:{color:'#fff',background:'rgba(255,255,255,0.1)'},onClick:()=>{idx=(idx+1)%w.fotos.length;draw();}},['Siguiente ▶']),
+      ]):null,
+      // Comentario editable (editor) o read-only (viewer)
+      h('div',{style:{background:'rgba(255,255,255,0.08)',borderRadius:'var(--radius-sm)',padding:'10px'}},[
+        h('div',{style:{fontSize:'0.78rem',color:'#cbd5e1',marginBottom:'4px',fontWeight:'600'}},['💬 Comentario:']),
+        isEditor()?h('textarea',{
+          id:'photo-comment-ta',
+          className:'obs-area',
+          style:{minHeight:'52px',background:'rgba(0,0,0,0.4)',color:'#fff',border:'1px solid rgba(255,255,255,0.2)',fontSize:'0.85rem'},
+          placeholder:'Nota sobre esta foto...',
+          onBlur:(e)=>{
+            const val=e.target.value.trim();
+            if(f.comentario!==val){
+              f.comentario=val;
+              dirtyKeys.add(winKey);
+              saveLocal();
+            }
+          },
+        },[f.comentario||'']):h('div',{style:{color:'#e2e8f0',fontSize:'0.85rem',minHeight:'20px'}},[f.comentario||'(sin comentario)']),
+      ]),
+      // Botón eliminar (solo editor)
+      isEditor()?h('button',{
+        className:'btn btn-sm',
+        style:{background:'var(--ac-red)',color:'#fff',width:'100%'},
+        onClick:()=>{
+          if(!confirm('¿Eliminar esta foto?\n\nNo se puede deshacer.'))return;
+          w.fotos.splice(idx,1);
+          w.historial.unshift({t:ts(),cambio:'Foto eliminada'});
+          dirtyKeys.add(winKey);
+          saveLocal();
+          overlay.remove();
+          if(onUpdate)onUpdate();
+        }
+      },['🗑 Eliminar foto']):null,
+    ].filter(Boolean)));
+  }
+  draw();
+  document.body.appendChild(overlay);
+}
+
 function showLegend(){
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'90vh',overflowY:'auto'}},[
@@ -4471,7 +4560,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.10',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.11',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -5095,7 +5184,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.10 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.11 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
