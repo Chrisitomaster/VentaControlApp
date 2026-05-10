@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.11</title>
+<title>VentaControl v2.12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -165,6 +165,18 @@ body{
 .bldg-jumper-sa-divider{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin:6px 0 2px;
   font-size:0.65rem;color:var(--tx-2);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
 .bldg-jumper-sa-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+/* PERSONA / Asignación chip */
+.assign-chip{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;
+  font-size:0.7rem;font-weight:600;cursor:pointer;border:1px solid currentColor;
+  background:transparent;color:var(--tx-2);transition:all 0.12s;flex-shrink:0;max-width:120px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.assign-chip.assigned{color:#fff;border-color:transparent;}
+.assign-chip:hover{opacity:0.85;}
+.assign-chip:active{transform:scale(0.97);}
+.persona-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-2);margin-bottom:6px;}
+.persona-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
 /* STATS ROW */
 .stats-row{display:flex;gap:var(--gap);flex-wrap:wrap;margin-bottom:var(--gap);}
 .stat-box{flex:1;min-width:80px;text-align:center;padding:10px 6px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-sm);}
@@ -445,7 +457,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.11 — Configuration & Data
+   VentaControl v2.12 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -668,7 +680,42 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
 /* ============================================
    DATA MODEL
    ============================================ */
-let DATA = {windows:{},buildings:{},meta:{version:'2.0',lastSync:null}};
+let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
+
+// ---- PERSONAS / Asignación de acciones (v2.12) ----
+const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
+function nextPersonaColor(){
+  const used=new Set((DATA.personas||[]).map(p=>p.color));
+  return PERSONA_COLORS.find(c=>!used.has(c))||PERSONA_COLORS[Math.floor(Math.random()*PERSONA_COLORS.length)];
+}
+function addPersona(nombre,rol){
+  if(!DATA.personas)DATA.personas=[];
+  const nm=String(nombre||'').trim();
+  if(!nm)return null;
+  // Evitar duplicados (case insensitive)
+  const exists=DATA.personas.find(p=>p.nombre.toLowerCase()===nm.toLowerCase());
+  if(exists)return exists;
+  const p={nombre:nm,rol:String(rol||'').trim(),color:nextPersonaColor()};
+  DATA.personas.push(p);
+  saveLocalNow();
+  return p;
+}
+function deletePersona(nombre){
+  if(!DATA.personas)return;
+  DATA.personas=DATA.personas.filter(p=>p.nombre!==nombre);
+  // Limpiar referencias en acciones
+  Object.values(DATA.windows).forEach(w=>{
+    if(!w||!w.acciones)return;
+    Object.values(w.acciones).forEach(a=>{
+      if(a&&a.assignedTo===nombre)delete a.assignedTo;
+    });
+  });
+  saveLocalNow();
+}
+function getPersona(nombre){
+  if(!DATA.personas)return null;
+  return DATA.personas.find(p=>p.nombre===nombre)||null;
+}
 // Track which window keys have been modified since last sync — persisted in localStorage
 let dirtyKeys = new Set();
 function saveDirtyKeys(){localStorage.setItem('vc2_dirty',JSON.stringify([...dirtyKeys]));}
@@ -1068,7 +1115,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.11']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.12']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1190,7 +1237,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.11'),
+    topbar('VentaControl v2.12'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -2109,7 +2156,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.11']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.12']),
     ]),
   ]);
 }
@@ -2373,7 +2420,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.11`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.12`]),
   ]);
 }
 
@@ -2387,7 +2434,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.11 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.12 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3657,7 +3704,24 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
           h('span',{className:'action-label',style:{fontSize:'0.88rem',flex:1}},[
             a.label,
             isSuggested?h('span',{style:{fontSize:'0.65rem',color:`var(--ac-${a.color})`,marginLeft:'6px',fontWeight:'600'}},['↑ sugerida']):null,
+            // Asignación visible debajo del label si tiene persona
+            act.active&&act.assignedTo?h('div',{style:{fontSize:'0.7rem',color:'var(--tx-2)',marginTop:'2px'}},[
+              '👤 ',h('span',{style:{color:(getPersona(act.assignedTo)?.color||'var(--tx-1)'),fontWeight:'600'}},[act.assignedTo])
+            ]):null,
           ].filter(Boolean)),
+          // Asignar chip (solo si activa y editor) — no auto-emergente, click explícito
+          (act.active&&isEditor())?(()=>{
+            const p=act.assignedTo?getPersona(act.assignedTo):null;
+            return h('button',{
+              className:'assign-chip'+(act.assignedTo?' assigned':''),
+              style:p?{background:p.color,borderColor:p.color}:{},
+              title:'Asignar persona',
+              onClick:(ev)=>{
+                ev.stopPropagation();
+                showAssignPopup(key,a.id,()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams));
+              }
+            },[act.assignedTo?'👤 '+act.assignedTo.split(' ')[0]:'👤 Asignar']);
+          })():null,
           // Status indicator
           act.active?h('div',{
             className:'action-check'+(act.done?' done':''),
@@ -3679,7 +3743,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.11: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.12: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4348,6 +4412,130 @@ function showSearchModal(){
   }
 }
 
+// Modal de asignación de persona a una acción
+function showAssignPopup(winKey, accionId, onUpdate){
+  const w=DATA.windows[winKey];
+  if(!w)return;
+  const act=w.acciones[accionId];
+  const accionDef=ACTIONS.find(a=>a.id===accionId);
+  if(!act||!accionDef)return;
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[]);
+
+  function draw(){
+    overlay.innerHTML='';
+    const personas=DATA.personas||[];
+    const current=act.assignedTo||null;
+    overlay.appendChild(h('div',{className:'modal',style:{maxHeight:'85vh',overflowY:'auto'}},[
+      h('div',{style:{marginBottom:'10px'}},[
+        h('div',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},['Asignar acción']),
+        h('div',{style:{fontWeight:'600',fontSize:'0.95rem'}},[accionDef.icon+' '+accionDef.label]),
+      ]),
+      // Lista personas
+      personas.length?h('div',{style:{display:'flex',flexDirection:'column',gap:'4px',marginBottom:'10px'}},
+        personas.map(p=>{
+          const isCurrent=p.nombre===current;
+          return h('button',{
+            className:'btn btn-ghost',
+            style:{justifyContent:'flex-start',gap:'10px',padding:'10px',background:isCurrent?p.color+'33':'var(--bg-2)',border:isCurrent?'2px solid '+p.color:'1px solid var(--border)'},
+            onClick:()=>{
+              if(isCurrent){
+                updateWindow(winKey,(ww)=>{delete ww.acciones[accionId].assignedTo;},null,`${accionDef.label}: desasignada`);
+              } else {
+                updateWindow(winKey,(ww)=>{ww.acciones[accionId].assignedTo=p.nombre;},null,`${accionDef.label}: asignada a ${p.nombre}`);
+              }
+              overlay.remove();
+              if(onUpdate)onUpdate();
+            }
+          },[
+            h('span',{className:'persona-dot',style:{background:p.color}}),
+            h('span',{style:{flex:1,fontSize:'0.88rem',fontWeight:isCurrent?'600':'400'}},[p.nombre]),
+            p.rol?h('span',{style:{fontSize:'0.7rem',color:'var(--tx-2)'}},[p.rol]):null,
+            isCurrent?h('span',{style:{fontSize:'0.85rem'}},['✓']):null,
+          ].filter(Boolean));
+        })
+      ):h('div',{style:{padding:'12px',color:'var(--tx-2)',fontSize:'0.85rem',textAlign:'center'}},['Sin personas. Agrega una abajo.']),
+      // Agregar nueva persona
+      h('div',{style:{borderTop:'1px solid var(--border)',paddingTop:'10px',marginTop:'4px'}},[
+        h('div',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'6px',fontWeight:'600'}},['+ Agregar persona']),
+        h('div',{style:{display:'flex',gap:'6px',flexDirection:'column'}},[
+          h('input',{id:'new-persona-nombre',type:'text',placeholder:'Nombre',
+            style:{padding:'8px 10px',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)',background:'var(--bg-2)',color:'var(--tx-1)',fontSize:'0.85rem'}}),
+          h('input',{id:'new-persona-rol',type:'text',placeholder:'Rol (opcional, ej: Vidriero)',
+            style:{padding:'8px 10px',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)',background:'var(--bg-2)',color:'var(--tx-1)',fontSize:'0.85rem'}}),
+          h('button',{className:'btn btn-sm btn-primary',onClick:()=>{
+            const nm=$('#new-persona-nombre',overlay)?.value||'';
+            const rol=$('#new-persona-rol',overlay)?.value||'';
+            if(!nm.trim())return;
+            addPersona(nm,rol);
+            draw();
+          }},['+ Agregar y asignar después']),
+        ]),
+      ]),
+      h('div',{style:{display:'flex',gap:'8px',marginTop:'12px'}},[
+        current?h('button',{className:'btn btn-sm btn-ghost',style:{flex:1,color:'var(--ac-red)'},onClick:()=>{
+          updateWindow(winKey,(ww)=>{delete ww.acciones[accionId].assignedTo;},null,`${accionDef.label}: desasignada`);
+          overlay.remove();
+          if(onUpdate)onUpdate();
+        }},['🗑 Quitar asignación']):null,
+        h('button',{className:'btn btn-sm btn-ghost',style:{flex:1},onClick:()=>overlay.remove()},['Cerrar']),
+      ].filter(Boolean)),
+    ]));
+  }
+  draw();
+  document.body.appendChild(overlay);
+}
+
+// Modal CRUD de personas (administración)
+function showPersonasManager(){
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[]);
+  function draw(){
+    overlay.innerHTML='';
+    const personas=DATA.personas||[];
+    overlay.appendChild(h('div',{className:'modal',style:{maxHeight:'85vh',overflowY:'auto'}},[
+      h('h3',{style:{marginBottom:'10px'}},['👥 Personas']),
+      h('p',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'10px'}},[
+        'Cuadrillas / encargados a quienes asignar acciones correctivas. Local en este dispositivo (no se sincroniza a Sheets).'
+      ]),
+      personas.length?h('div',{style:{display:'flex',flexDirection:'column',marginBottom:'12px'}},
+        personas.map(p=>h('div',{className:'persona-row'},[
+          h('span',{className:'persona-dot',style:{background:p.color}}),
+          h('div',{style:{flex:1}},[
+            h('div',{style:{fontWeight:'600',fontSize:'0.88rem'}},[p.nombre]),
+            p.rol?h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)'}},[p.rol]):null,
+          ].filter(Boolean)),
+          isEditor()?h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},
+            onClick:()=>{
+              if(!confirm(`¿Eliminar a "${p.nombre}"?\nSe quitará de todas las acciones asignadas.`))return;
+              deletePersona(p.nombre);
+              draw();
+            }
+          },['🗑']):null,
+        ].filter(Boolean)))
+      ):h('div',{style:{padding:'12px',color:'var(--tx-2)',fontSize:'0.85rem',textAlign:'center'}},['Sin personas registradas']),
+      isEditor()?h('div',{style:{borderTop:'1px solid var(--border)',paddingTop:'10px'}},[
+        h('div',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'6px',fontWeight:'600'}},['+ Agregar persona']),
+        h('div',{style:{display:'flex',gap:'6px',flexDirection:'column'}},[
+          h('input',{id:'pm-nombre',type:'text',placeholder:'Nombre',
+            style:{padding:'8px 10px',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)',background:'var(--bg-2)',color:'var(--tx-1)',fontSize:'0.85rem'}}),
+          h('input',{id:'pm-rol',type:'text',placeholder:'Rol (opcional)',
+            style:{padding:'8px 10px',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)',background:'var(--bg-2)',color:'var(--tx-1)',fontSize:'0.85rem'}}),
+          h('button',{className:'btn btn-sm btn-primary',onClick:()=>{
+            const nm=$('#pm-nombre',overlay)?.value||'';
+            const rol=$('#pm-rol',overlay)?.value||'';
+            if(!nm.trim())return;
+            addPersona(nm,rol);
+            draw();
+          }},['+ Agregar']),
+        ]),
+      ]):null,
+      h('div',{style:{height:'12px'}}),
+      h('button',{className:'btn btn-primary',style:{width:'100%'},onClick:()=>overlay.remove()},['Cerrar']),
+    ].filter(Boolean)));
+  }
+  draw();
+  document.body.appendChild(overlay);
+}
+
 // Modal de preview de foto: full screen, comentario editable, eliminar (editor)
 function showPhotoPreview(winKey, idx, onUpdate){
   const w=DATA.windows[winKey];
@@ -4493,6 +4681,7 @@ function showExportMenu(){
     h('div',{className:'modal'},[
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
+        h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showPersonasManager();}},['👥 Personas / cuadrillas']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showBackupsModal();}},['💾 Backups locales']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLogPanel();}},['🔍 Log de diagnóstico']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLegend();}},['📖 Leyenda de iconos']),
@@ -4560,7 +4749,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.11',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.12',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -5122,6 +5311,7 @@ function migrateV1(){
 
   // Init data
   initData();
+  if(!DATA.personas)DATA.personas=[];
 
   // Verify data integrity - ensure all windows exist
   let added=0;
@@ -5184,7 +5374,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.11 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.12 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
