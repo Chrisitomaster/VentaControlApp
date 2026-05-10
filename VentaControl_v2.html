@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.9</title>
+<title>VentaControl v2.10</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -146,6 +146,25 @@ body{
 .badge-purple{background:var(--ac-purple-soft);color:var(--ac-purple);}
 .badge-cyan{background:var(--ac-cyan-soft);color:var(--ac-cyan);}
 .badge-yellow{background:var(--ac-yellow-soft);color:var(--ac-yellow);}
+/* BLDG QUICK JUMPER (dashboard) */
+.bldg-jumper{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;}
+.bldg-jumper-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 4px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--bg-2);color:var(--tx-0);cursor:pointer;
+  font-family:var(--font-mono);font-weight:600;font-size:0.95rem;
+  transition:all 0.12s;user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.bldg-jumper-btn:active{transform:scale(0.95);}
+.bldg-jumper-btn .pct{font-size:0.62rem;font-weight:500;color:var(--tx-2);margin-top:1px;line-height:1;}
+.bldg-jumper-btn.complete{border-color:var(--ac-green);background:var(--ac-green-soft);color:var(--ac-green);}
+.bldg-jumper-btn.complete .pct{color:var(--ac-green);}
+.bldg-jumper-btn.partial{border-color:var(--ac-orange);background:var(--ac-orange-soft);color:var(--ac-orange);}
+.bldg-jumper-btn.partial .pct{color:var(--ac-orange);}
+.bldg-jumper-btn.has-issues{border-left-width:3px;border-left-color:var(--ac-red);}
+.bldg-jumper-sa-divider{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin:6px 0 2px;
+  font-size:0.65rem;color:var(--tx-2);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.bldg-jumper-sa-divider::after{content:'';flex:1;height:1px;background:var(--border);}
 /* STATS ROW */
 .stats-row{display:flex;gap:var(--gap);flex-wrap:wrap;margin-bottom:var(--gap);}
 .stat-box{flex:1;min-width:80px;text-align:center;padding:10px 6px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-sm);}
@@ -426,7 +445,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.9 — Configuration & Data
+   VentaControl v2.10 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -1049,7 +1068,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.9']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.10']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1171,7 +1190,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.9'),
+    topbar('VentaControl v2.10'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1194,6 +1213,31 @@ function renderDashboard(){
         return card;
       })
     ),
+
+    // Saltar a edificio — grid 34 botones agrupados por SA
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'10px',color:'var(--ac-blue)'}},['🏢 Saltar a Edificio']),
+      h('div',{className:'bldg-jumper'},
+        [1,2,3,4,5].flatMap(sa=>{
+          const[start,end]=SA_RANGES[sa];
+          const items=[h('div',{className:'bldg-jumper-sa-divider'},[SA_NAMES[sa]])];
+          for(let e=start;e<=end;e++){
+            const s=getBldgStats(e);
+            const cls=s.pctReal>=100?'complete':s.pctReal>0?'partial':'';
+            const issues=s.actionsPending||s.quitar?' has-issues':'';
+            items.push(h('button',{
+              className:'bldg-jumper-btn '+cls+issues,
+              title:`Edif. ${e} — ${s.instaladasNeto}/${s.total} (${s.pctReal}%)`,
+              onClick:()=>navigate('building',{edif:e})
+            },[
+              h('span',{},[String(e)]),
+              h('span',{className:'pct'},[s.pctReal+'%']),
+            ]));
+          }
+          return items;
+        })
+      ),
+    ]),
 
     // Acciones correctivas globales — auto-expandido
     renderLazyActionsCard('Acciones Correctivas — Proyecto',1,34,true,'dashboard',{}),
@@ -1559,8 +1603,11 @@ function showQuickEstado(key,code,deptoLabel,currentEstado,onDone,navView,navPar
   document.body.appendChild(overlay);
 }
 
-// Estado del filtro de acción en el mapa
+// Estado de filtros en el mapa (mutuamente exclusivos)
 let gridMapActionFilter=null;
+let gridMapEstadoFilter=null;
+let gridMapDefFilter=null;
+function gridMapClearFilters(){gridMapActionFilter=null;gridMapEstadoFilter=null;gridMapDefFilter=null;}
 
 function renderGridMap(){
   const edif=viewParams.edif;
@@ -1577,9 +1624,12 @@ function renderGridMap(){
     if(w&&w.acciones){
       primaryAct=ACTIONS.find(a=>w.acciones[a.id]?.active&&!w.acciones[a.id]?.done)||null;
     }
-    // Filtro activo: verificar si este tile pasa
+    // Filtros activos (mutuamente exclusivos)
     const hasFilterAction=gridMapActionFilter&&w&&w.acciones[gridMapActionFilter]?.active&&!w.acciones[gridMapActionFilter]?.done;
-    const filteredOut=gridMapActionFilter&&!hasFilterAction;
+    const hasFilterEstado=gridMapEstadoFilter&&estado===gridMapEstadoFilter;
+    const hasFilterDef=gridMapDefFilter&&w&&w.deficiencias[gridMapDefFilter];
+    const anyFilter=gridMapActionFilter||gridMapEstadoFilter||gridMapDefFilter;
+    const filteredOut=anyFilter&&!hasFilterAction&&!hasFilterEstado&&!hasFilterDef;
 
     const style={};
     if(hasFilterAction){
@@ -1590,7 +1640,19 @@ function renderGridMap(){
       style.borderColor=`var(--ac-${ac})`;
       style.color=`var(--ac-${ac})`;
       style.borderWidth='2px';
-    } else if(primaryAct&&!gridMapActionFilter){
+    } else if(hasFilterEstado){
+      // Highlight estado filtrado — borde más grueso
+      style.background=estadoBg[estado];
+      style.borderColor=estadoBorder[estado];
+      style.color=estadoText[estado];
+      style.borderWidth='3px';
+    } else if(hasFilterDef){
+      // Highlight deficiencia filtrada — borde rojo grueso
+      style.background='var(--ac-red-soft)';
+      style.borderColor='var(--ac-red)';
+      style.color='var(--ac-red)';
+      style.borderWidth='3px';
+    } else if(primaryAct&&!anyFilter){
       const ac=actionColorMap[primaryAct.id]||'blue';
       style.background=`linear-gradient(to right,${estadoBg[estado]} 50%,var(--ac-${ac}-soft) 50%)`;
       style.borderColor=`var(--ac-${ac})`;
@@ -1707,12 +1769,23 @@ function renderGridMap(){
     ]);
   });
 
+  // Conteos por estado y deficiencia (single pass)
+  const estadoCounts={};
+  const defCounts={};
+  ESTADOS.forEach(e=>{estadoCounts[e.id]=0;});
+  DEFICIENCIES.forEach(d=>{defCounts[d.id]=0;});
+  forEachWindowInBldg(edif, w=>{
+    if(!w)return;
+    if(estadoCounts[w.estado]!==undefined)estadoCounts[w.estado]++;
+    DEFICIENCIES.forEach(d=>{if(w.deficiencias[d.id])defCounts[d.id]++;});
+  });
+
   // Botones de filtro por acción correctiva
   const filterBtns=h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},[
     h('button',{
-      className:'btn btn-sm '+(gridMapActionFilter===null?'btn-primary':'btn-ghost'),
+      className:'btn btn-sm '+(!gridMapActionFilter&&!gridMapEstadoFilter&&!gridMapDefFilter?'btn-primary':'btn-ghost'),
       style:{fontSize:'0.72rem',padding:'5px 9px'},
-      onClick:()=>{gridMapActionFilter=null;renderGridMap();}
+      onClick:()=>{gridMapClearFilters();renderGridMap();}
     },['Todos']),
     ...ACTIONS.map(a=>{
       const isActive=gridMapActionFilter===a.id;
@@ -1723,10 +1796,39 @@ function renderGridMap(){
       return h('button',{
         className:'btn btn-sm '+(isActive?'btn-primary':'btn-ghost'),
         style:{fontSize:'0.72rem',padding:'5px 9px'},
-        onClick:()=>{gridMapActionFilter=isActive?null:a.id;renderGridMap();}
+        onClick:()=>{gridMapClearFilters();gridMapActionFilter=isActive?null:a.id;renderGridMap();}
       },[a.icon+' '+a.label.slice(0,12)+(cnt?' ('+cnt+')':'')]);
     }).filter(Boolean),
   ]);
+
+  // Botones de filtro por estado de ventana
+  const estadoFilterBtns=h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},[
+    ...ESTADOS.map(e=>{
+      const isActive=gridMapEstadoFilter===e.id;
+      const cnt=estadoCounts[e.id]||0;
+      if(!cnt&&!isActive)return null;
+      return h('button',{
+        className:'btn btn-sm '+(isActive?'btn-primary':'btn-ghost'),
+        style:{fontSize:'0.72rem',padding:'5px 9px'},
+        onClick:()=>{gridMapClearFilters();gridMapEstadoFilter=isActive?null:e.id;renderGridMap();}
+      },[e.sym+' '+e.label+(cnt?' ('+cnt+')':'')]);
+    }).filter(Boolean),
+  ]);
+
+  // Botones de filtro por deficiencia
+  const defFilterBtns=h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},[
+    ...DEFICIENCIES.map(d=>{
+      const isActive=gridMapDefFilter===d.id;
+      const cnt=defCounts[d.id]||0;
+      if(!cnt&&!isActive)return null;
+      return h('button',{
+        className:'btn btn-sm '+(isActive?'btn-primary':'btn-ghost'),
+        style:{fontSize:'0.72rem',padding:'5px 9px'},
+        onClick:()=>{gridMapClearFilters();gridMapDefFilter=isActive?null:d.id;renderGridMap();}
+      },[d.icon+' '+d.label.slice(0,18)+(cnt?' ('+cnt+')':'')]);
+    }).filter(Boolean),
+  ]);
+  const hasDefBtns=defFilterBtns.children.length>0;
 
   const el=h('div',{className:'fade-in'},[
     topbar(`Mapa — Edif. ${edif}`,'building',{edif}),
@@ -1739,13 +1841,23 @@ function renderGridMap(){
         s.quitar?h('span',{className:'badge badge-red',style:{fontSize:'0.78rem',padding:'5px 8px'}},[s.quitar+' quitar']):null,
         s.actionsPending?h('span',{className:'badge badge-orange',style:{fontSize:'0.78rem',padding:'5px 8px'}},[s.actionsPending+' acc']):null,
       ].filter(Boolean)),
-      // Filtros de acción
+      // Filtros — agrupados por categoría
       h('div',{style:{marginBottom:'8px'}},[
         h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['🔍 Filtrar por acción correctiva:']),
         filterBtns,
-      ]),
+        h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['📊 Filtrar por estado de ventana:']),
+        estadoFilterBtns,
+        hasDefBtns?h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['⚠ Filtrar por deficiencia:']):null,
+        hasDefBtns?defFilterBtns:null,
+      ].filter(Boolean)),
       gridMapActionFilter?h('div',{style:{padding:'4px 8px',background:'var(--ac-blue-soft)',borderRadius:'var(--radius-sm)',fontSize:'0.75rem',color:'var(--ac-blue)',marginBottom:'8px',fontWeight:'600'}},[
-        'Mostrando: '+(ACTIONS.find(a=>a.id===gridMapActionFilter)?.label||gridMapActionFilter)+' — toca un tile resaltado para ir al detalle'
+        'Mostrando: '+(ACTIONS.find(a=>a.id===gridMapActionFilter)?.label||gridMapActionFilter)+' — toca un tile resaltado'
+      ]):null,
+      gridMapEstadoFilter?h('div',{style:{padding:'4px 8px',background:'var(--ac-blue-soft)',borderRadius:'var(--radius-sm)',fontSize:'0.75rem',color:'var(--ac-blue)',marginBottom:'8px',fontWeight:'600'}},[
+        'Mostrando estado: '+(ESTADOS.find(e=>e.id===gridMapEstadoFilter)?.label||gridMapEstadoFilter)
+      ]):null,
+      gridMapDefFilter?h('div',{style:{padding:'4px 8px',background:'var(--ac-red-soft)',borderRadius:'var(--radius-sm)',fontSize:'0.75rem',color:'var(--ac-red)',marginBottom:'8px',fontWeight:'600'}},[
+        'Mostrando deficiencia: '+(DEFICIENCIES.find(d=>d.id===gridMapDefFilter)?.label||gridMapDefFilter)
       ]):null,
       legend,
       ...floorSections
@@ -1997,7 +2109,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.9']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.10']),
     ]),
   ]);
 }
@@ -2261,7 +2373,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.9`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.10`]),
   ]);
 }
 
@@ -2275,7 +2387,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.9 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.10 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -4292,6 +4404,7 @@ function showExportMenu(){
     h('div',{className:'modal'},[
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
+        h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showBackupsModal();}},['💾 Backups locales']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLogPanel();}},['🔍 Log de diagnóstico']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLegend();}},['📖 Leyenda de iconos']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showUrlConfig();}},['⚙️ Configurar URL Sync']),
@@ -4352,6 +4465,68 @@ function fetchWithTimeout(url,opts={},timeoutMs=30000){
   ]);
 }
 
+// ---- BACKUP SNAPSHOTS (auto al sync, manual restore) ----
+const BACKUP_PREFIX='vc2_bak_';
+const MAX_BACKUPS=3;
+function saveBackupSnapshot(){
+  try{
+    // Copia profunda sin fotos (ahorrar quota)
+    const safe={ts:ts(),version:'v2.10',data:JSON.parse(JSON.stringify(DATA))};
+    Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
+    // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
+    const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
+    while(keys.length>=MAX_BACKUPS) localStorage.removeItem(keys.shift());
+    localStorage.setItem(BACKUP_PREFIX+Date.now(),JSON.stringify(safe));
+    if(DEBUG)console.log('[VC] Backup snapshot guardado');
+  }catch(e){if(DEBUG)console.warn('[VC] Backup falló:',e.message);}
+}
+function listBackups(){
+  return Object.keys(localStorage)
+    .filter(k=>k.startsWith(BACKUP_PREFIX))
+    .sort().reverse()  // más reciente primero
+    .map(k=>{try{const v=JSON.parse(localStorage.getItem(k));return{key:k,ts:v.ts,version:v.version,size:localStorage.getItem(k).length};}catch(e){return null;}})
+    .filter(Boolean);
+}
+function restoreBackup(key){
+  if(!confirm('¿Restaurar este backup?\n\nSe sobreescribirán TODOS los datos locales actuales. Las fotos no se restauran (no se incluyen en backup por tamaño).\n\nNo se puede deshacer.'))return;
+  try{
+    const snap=JSON.parse(localStorage.getItem(key));
+    if(!snap||!snap.data)throw new Error('Backup corrupto');
+    DATA=snap.data;
+    saveLocalNow();
+    _searchIndex=null;
+    alert('Backup restaurado: '+snap.ts+'\n\nLa app se recargará.');
+    location.reload();
+  }catch(e){alert('Error restaurando: '+e.message);}
+}
+function showBackupsModal(){
+  const backups=listBackups();
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
+    h('div',{className:'modal',style:{maxHeight:'90vh',overflowY:'auto'}},[
+      h('h3',{style:{marginBottom:'8px'}},['💾 Backups locales']),
+      h('p',{style:{fontSize:'0.78rem',color:'var(--tx-2)',marginBottom:'12px'}},[
+        'Snapshots automáticos creados al sincronizar (últimos '+MAX_BACKUPS+'). No incluyen fotos.'
+      ]),
+      backups.length===0
+        ? h('p',{style:{padding:'12px 0',color:'var(--tx-2)',fontSize:'0.85rem',textAlign:'center'}},['Sin backups aún. Se crean automáticamente al hacer ⟳ Sync exitoso.'])
+        : h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},
+            backups.map(b=>h('div',{style:{padding:'10px',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-2)'}},[
+              h('div',{style:{fontSize:'0.85rem',fontWeight:'600',marginBottom:'2px'}},['🕒 '+b.ts]),
+              h('div',{style:{fontSize:'0.7rem',color:'var(--tx-2)',marginBottom:'8px'}},[b.version+' · '+(b.size/1024).toFixed(1)+' KB']),
+              h('button',{
+                className:'btn btn-sm btn-ghost',
+                style:{color:'var(--ac-orange)',width:'100%'},
+                onClick:()=>{overlay.remove();restoreBackup(b.key);}
+              },['↻ Restaurar este backup']),
+            ]))
+          ),
+      h('div',{style:{height:'12px'}}),
+      h('button',{className:'btn btn-primary',style:{width:'100%'},onClick:()=>overlay.remove()},['Cerrar']),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+}
+
 async function doSync(){
   if(syncing)return showSyncMsg('Ya sincronizando, espera...');
   if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
@@ -4400,6 +4575,7 @@ async function doSync(){
       saveLocalNow();
       showSyncMsg(`✓ ${totalUpdates} actualizados, ${totalInserts} nuevos · ${ts()}`);
     }
+    saveBackupSnapshot();  // backup auto post-sync
   }catch(err){
     showSyncMsg('⚠ '+err.message);
   }
@@ -4425,6 +4601,7 @@ async function doPullOnly(){
       mergeFromSheets(records);
       DATA.meta.lastSync=ts();
       saveLocalNow();
+      saveBackupSnapshot();  // backup auto post-pull completo
       logMsg('Pull: datos guardados en localStorage');
       showSyncMsg(`✓ ${records.length} registros descargados · ${ts()}`);
       render();
@@ -4918,7 +5095,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.9 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.10 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];

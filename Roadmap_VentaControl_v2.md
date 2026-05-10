@@ -61,15 +61,15 @@ VentaControl es una **PWA single-file** (vanilla JS, ~4,860 líneas en `VentaCon
 
 ## 3. Recomendaciones priorizadas
 
-### Tier 1 — Quick wins (alto valor, bajo esfuerzo)
+### Tier 1 — Quick wins (alto valor, bajo esfuerzo) — ✅ TODOS COMPLETADOS (v2.10)
 
-| # | Mejora | Por qué |
+| # | Mejora | Estado |
 |---|---|---|
-| 1 | **Búsqueda global ventana/depto** (modal input → match por código, depto, edif, key) | 4,740 ventanas, navegar 3-4 clicks por toque. Saltar directo. |
-| 2 | **Filtros adicionales GridMap** (por estado, por deficiencia, además del actual por acción) | Infra de filtro por acción ya existe. Extender ≈ 30 líneas. |
-| 3 | **Backup automático local** al sync exitoso (descarga JSON o guarda en IndexedDB) | localStorage = una limpieza de pestaña y pierde todo. PWA sin backup = riesgo. |
-| 4 | **Dark mode toggle visible** | Variables CSS de tema ya definidas. Falta solo el botón + `data-theme` attr. |
-| 5 | **Search en lista de 34 edificios** en dashboard | Scroll largo en mobile. |
+| 1 | Búsqueda global ventana/depto (botón 🔍 sync bar) | ✅ v2.9 commit `6aba3de` |
+| 2 | Filtros adicionales GridMap (estado + deficiencia, además de acción) | ✅ v2.10 |
+| 3 | Backup automático local al sync (3 snapshots rotativos sin fotos en localStorage, modal para restaurar) | ✅ v2.10 |
+| 4 | Dark mode toggle visible (ya existía: slider en topbar línea 1109) | ✅ pre-existente |
+| 5 | Quick-jumper 34 edificios en dashboard (grid 8col por SA, color por avance) | ✅ v2.10 |
 
 ### Tier 2 — Features alto valor (esfuerzo medio)
 
