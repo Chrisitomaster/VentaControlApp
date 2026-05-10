@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.12</title>
+<title>VentaControl v2.13</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -457,7 +457,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.12 — Configuration & Data
+   VentaControl v2.13 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -582,6 +582,28 @@ const SELLO_ESTADOS = [
   {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
 ];
 
+// EIFS scheduling helpers (v2.13)
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function eifsStatus(plan, real, done){
+  if(done){
+    if(plan&&real)return real<=plan?'on-time':'late-done';
+    return 'done-no-plan';
+  }
+  if(!plan)return 'no-plan';
+  return plan<todayISO()?'overdue':'scheduled';
+}
+function eifsStatusBadge(status){
+  const map={
+    'on-time':{sym:'✓',color:'green',label:'A tiempo'},
+    'late-done':{sym:'⏱',color:'orange',label:'Tarde pero hecho'},
+    'done-no-plan':{sym:'✓',color:'cyan',label:'Hecho sin plan'},
+    'no-plan':{sym:'○',color:'',label:'Sin planificar'},
+    'overdue':{sym:'⚠',color:'red',label:'Atrasado'},
+    'scheduled':{sym:'📅',color:'blue',label:'Planificado'},
+  };
+  return map[status]||map['no-plan'];
+}
+
 // Building construction stages — 3 EIFS phases with sub-items
 const EIFS_PHASES = [
   {id:1,label:'EIFS Fase 1 — Preparación',items:[
@@ -682,7 +704,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.12) ----
+// ---- PERSONAS / Asignación de acciones (v2.13) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -1115,7 +1137,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.12']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.13']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1237,7 +1259,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.12'),
+    topbar('VentaControl v2.13'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1419,15 +1441,32 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.13)
     h('div',{className:'card'},[
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}},[
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
         (()=>{
           const si=bData.stageItems||{};
+          const sp=bData.stagePlan||{};
+          const sr=bData.stageReal||{};
           const totalItems=EIFS_PHASES.reduce((s,p)=>s+p.items.length,0);
           const doneItems=Object.values(si).filter(Boolean).length;
-          return doneItems>0?h('span',{className:'badge badge-blue'},[`${doneItems}/${totalItems}`]):h('span',{className:'badge badge-orange'},['Sin iniciar']);
+          // Contar atrasados
+          const allItems=EIFS_PHASES.flatMap(p=>p.items);
+          let overdue=0,next=null,nextPlan=null;
+          allItems.forEach(it=>{
+            const status=eifsStatus(sp[it.id]||'',sr[it.id]||'',si[it.id]||false);
+            if(status==='overdue')overdue++;
+            if(status==='scheduled'){
+              const plan=sp[it.id];
+              if(!nextPlan||plan<nextPlan){nextPlan=plan;next=it;}
+            }
+          });
+          return h('div',{style:{display:'flex',gap:'4px',flexWrap:'wrap',justifyContent:'flex-end'}},[
+            doneItems>0?h('span',{className:'badge badge-blue',style:{fontSize:'0.7rem'}},[`${doneItems}/${totalItems}`]):h('span',{className:'badge badge-orange',style:{fontSize:'0.7rem'}},['Sin iniciar']),
+            overdue?h('span',{className:'badge badge-red',style:{fontSize:'0.7rem'}},[`⚠ ${overdue} atrasado${overdue>1?'s':''}`]):null,
+            next?h('span',{className:'badge badge-blue',style:{fontSize:'0.7rem'},title:next.label},[`📅 Próx: ${nextPlan}`]):null,
+          ].filter(Boolean));
         })(),
       ]),
       // Progress bar
@@ -1452,32 +1491,90 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items
+          // Sub-items con fechas plan/real (v2.13)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
+            const sp=bData.stagePlan||{};
+            const sr=bData.stageReal||{};
+            const plan=sp[it.id]||'';
+            const real=sr[it.id]||'';
+            const status=eifsStatus(plan,real,done);
+            const badge=eifsStatusBadge(status);
+            // Estilo del fondo según status
+            const bgMap={'on-time':'var(--ac-green-soft)','late-done':'var(--ac-orange-soft)','done-no-plan':'var(--ac-cyan-soft)','overdue':'var(--ac-red-soft)','scheduled':'var(--ac-blue-soft)','no-plan':'transparent'};
             return h('div',{
               style:{
-                display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px 8px 24px',
+                display:'flex',flexDirection:'column',gap:'4px',padding:'8px 12px 8px 24px',
                 borderTop:'1px solid var(--border)',
-                background:done?'var(--ac-green-soft)':'transparent',
-                cursor:isEditor()?'pointer':'default'
-              },
-              onClick:()=>{
-                if(!isEditor())return;
-                if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
-                if(!DATA.buildings[bKey(edif)].stageItems)DATA.buildings[bKey(edif)].stageItems={};
-                DATA.buildings[bKey(edif)].stageItems[it.id]=!done;
-                saveLocal();
-                renderBuilding();
+                background:bgMap[status]||'transparent',
               }
             },[
-              h('div',{style:{
-                width:'22px',height:'22px',borderRadius:'4px',display:'flex',alignItems:'center',justifyContent:'center',
-                fontSize:'0.75rem',fontWeight:'700',flexShrink:0,
-                background:done?'var(--ac-green)':'var(--bg-3)',
-                color:done?'#fff':'var(--tx-2)',border:done?'none':'1px solid var(--border)'
-              }},[done?'✓':'']),
-              h('div',{style:{flex:1,fontSize:'0.8rem',color:done?'var(--ac-green)':'var(--tx-1)'}},[it.label]),
+              // Fila 1: checkbox + label + status badge
+              h('div',{
+                style:{display:'flex',alignItems:'center',gap:'10px',cursor:isEditor()?'pointer':'default'},
+                onClick:()=>{
+                  if(!isEditor())return;
+                  if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
+                  const bd=DATA.buildings[bKey(edif)];
+                  if(!bd.stageItems)bd.stageItems={};
+                  if(!bd.stageReal)bd.stageReal={};
+                  const newDone=!done;
+                  bd.stageItems[it.id]=newDone;
+                  // Auto-set fecha real al marcar; limpiar al desmarcar
+                  if(newDone&&!bd.stageReal[it.id])bd.stageReal[it.id]=todayISO();
+                  else if(!newDone)delete bd.stageReal[it.id];
+                  saveLocal();
+                  renderBuilding();
+                }
+              },[
+                h('div',{style:{
+                  width:'22px',height:'22px',borderRadius:'4px',display:'flex',alignItems:'center',justifyContent:'center',
+                  fontSize:'0.75rem',fontWeight:'700',flexShrink:0,
+                  background:done?'var(--ac-green)':'var(--bg-3)',
+                  color:done?'#fff':'var(--tx-2)',border:done?'none':'1px solid var(--border)'
+                }},[done?'✓':'']),
+                h('div',{style:{flex:1,fontSize:'0.8rem',color:done?'var(--ac-green)':'var(--tx-1)'}},[it.label]),
+                badge.color?h('span',{className:'badge badge-'+badge.color,style:{fontSize:'0.65rem',padding:'2px 6px'},title:badge.label},[badge.sym+' '+badge.label]):null,
+              ].filter(Boolean)),
+              // Fila 2: inputs de fecha (solo editor o lectura)
+              h('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap',fontSize:'0.7rem',color:'var(--tx-2)',paddingLeft:'32px'},onClick:(ev)=>ev.stopPropagation()},[
+                h('label',{style:{display:'flex',alignItems:'center',gap:'4px'}},[
+                  '📅 Plan:',
+                  isEditor()?h('input',{type:'date',value:plan,
+                    style:{padding:'2px 4px',fontSize:'0.7rem',border:'1px solid var(--border)',borderRadius:'4px',background:'var(--bg-2)',color:'var(--tx-1)'},
+                    onChange:(e)=>{
+                      if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
+                      const bd=DATA.buildings[bKey(edif)];
+                      if(!bd.stagePlan)bd.stagePlan={};
+                      if(e.target.value)bd.stagePlan[it.id]=e.target.value;
+                      else delete bd.stagePlan[it.id];
+                      saveLocal();
+                      renderBuilding();
+                    }
+                  }):h('span',{style:{fontFamily:'var(--font-mono)'}},[plan||'—']),
+                ]),
+                h('label',{style:{display:'flex',alignItems:'center',gap:'4px'}},[
+                  '🏁 Real:',
+                  isEditor()?h('input',{type:'date',value:real,
+                    style:{padding:'2px 4px',fontSize:'0.7rem',border:'1px solid var(--border)',borderRadius:'4px',background:'var(--bg-2)',color:'var(--tx-1)'},
+                    onChange:(e)=>{
+                      if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
+                      const bd=DATA.buildings[bKey(edif)];
+                      if(!bd.stageReal)bd.stageReal={};
+                      if(e.target.value){
+                        bd.stageReal[it.id]=e.target.value;
+                        // Si setean fecha real, también marcar done
+                        if(!bd.stageItems)bd.stageItems={};
+                        bd.stageItems[it.id]=true;
+                      } else {
+                        delete bd.stageReal[it.id];
+                      }
+                      saveLocal();
+                      renderBuilding();
+                    }
+                  }):h('span',{style:{fontFamily:'var(--font-mono)'}},[real||'—']),
+                ]),
+              ]),
             ]);
           }),
         ]);
@@ -2156,7 +2253,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.12']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.13']),
     ]),
   ]);
 }
@@ -2420,7 +2517,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.12`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.13`]),
   ]);
 }
 
@@ -2434,7 +2531,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.12 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.13 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3743,7 +3840,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.12: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.13: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4749,7 +4846,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.12',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.13',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -5374,7 +5471,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.12 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.13 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
