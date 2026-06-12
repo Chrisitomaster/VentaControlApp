@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.13</title>
+<title>VentaControl v2.14</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -457,7 +457,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.13 — Configuration & Data
+   VentaControl v2.14 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -582,7 +582,7 @@ const SELLO_ESTADOS = [
   {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
 ];
 
-// EIFS scheduling helpers (v2.13)
+// EIFS scheduling helpers (v2.14)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -704,7 +704,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.13) ----
+// ---- PERSONAS / Asignación de acciones (v2.14) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -870,11 +870,9 @@ function newWindowRecord(){
 }
 
 let _saveTimer=null;
-function saveLocal(){
-  // Debounced: agrupa guardados seguidos en un solo write (evita bloquear el hilo en cada toque)
-  clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(saveLocalNow,400);
-}
+// IMPORTANTE: saveLocal antes era debounced 400ms — si tapaba rápido + recarga, perdía cambios.
+// Ahora persiste inmediato. Costo: ~5-20ms por tap. localStorage es atomico, sin race.
+function saveLocal(){ saveLocalNow(); }
 function saveLocalNow(){
   clearTimeout(_saveTimer);
   DATA.meta.lastSave=ts();
@@ -1137,7 +1135,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.13']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.14']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1259,7 +1257,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.13'),
+    topbar('VentaControl v2.14'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1441,7 +1439,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.13)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.14)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1491,7 +1489,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.13)
+          // Sub-items con fechas plan/real (v2.14)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -2253,7 +2251,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.13']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.14']),
     ]),
   ]);
 }
@@ -2517,7 +2515,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.13`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.14`]),
   ]);
 }
 
@@ -2531,7 +2529,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.13 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.14 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3840,7 +3838,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.13: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.14: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4436,8 +4434,13 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},onClick:doSync},['⟳ Sync']),
-    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',style:{padding:'8px 12px',fontSize:'0.85rem'},onClick:doPullOnly},['⬇ All']),
+    // ⬆ Push only: SUBE cambios sin descargar. Seguro contra pérdida.
+    h('button',{className:'btn btn-sm',style:{padding:'8px 12px',fontSize:'0.85rem',background:'var(--ac-green)',color:'#fff'},
+      title:'Solo subir cambios locales (sin descargar). Seguro.',
+      onClick:doPushOnly
+    },[(dirtyKeys.size>0?'⬆ Push ('+dirtyKeys.size+')':'⬆ Push')]),
+    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},title:'Push primero, luego Pull',onClick:doSync},['⟳ Sync']),
+    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',style:{padding:'8px 12px',fontSize:'0.85rem'},title:'Descargar TODO (con confirm si hay cambios sin subir)',onClick:doPullOnly},['⬇ All']),
     inBuilding&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'0.85rem',color:'var(--ac-cyan)'},
       onClick:()=>doPullSection(edif,inDept?depto:null)
     },['⬇ '+(inDept?depto:'E'+edif)]):null,
@@ -4846,7 +4849,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.13',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.14',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -4902,45 +4905,68 @@ function showBackupsModal(){
   document.body.appendChild(overlay);
 }
 
+// Push-only: solo SUBE cambios locales al Sheet. NUNCA descarga. Seguro contra pérdida de datos.
+async function doPushOnly(){
+  if(syncing)return showSyncMsg('Ya sincronizando, espera...');
+  if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
+  const payload=buildSyncPayload(true);
+  if(payload.length===0)return showSyncMsg('✓ Sin cambios locales para subir');
+  syncing=true;
+  saveBackupSnapshot();  // backup ANTES de cualquier operación de red
+  const btn=$('#sync-btn');
+  if(btn)btn.disabled=true;
+  try{
+    showSyncMsg(`⏳ Subiendo ${payload.length} cambios (PUSH ONLY)...`);
+    const CHUNK=100;
+    let tU=0,tI=0;
+    for(let i=0;i<payload.length;i+=CHUNK){
+      const chunk=payload.slice(i,i+CHUNK);
+      if(payload.length>CHUNK)showSyncMsg(`⏳ Subiendo lote ${Math.floor(i/CHUNK)+1}/${Math.ceil(payload.length/CHUNK)}...`);
+      const r=await fetchWithTimeout(APPS_SCRIPT_URL,{
+        method:'POST',headers:{'Content-Type':'text/plain'},redirect:'follow',
+        body:JSON.stringify({action:'sync',records:chunk})
+      },120000);
+      const res=await r.json();
+      if(res.status!=='ok')throw new Error(res.message||'Error del servidor');
+      tU+=(res.updates||0);tI+=(res.inserts||0);
+    }
+    dirtyKeys.clear();
+    saveDirtyKeys();
+    DATA.meta.lastSync=ts();
+    saveLocalNow();
+    showSyncMsg(`✓ PUSH: ${tU} actualizados, ${tI} nuevos · ${ts()}`);
+  }catch(err){
+    showSyncMsg('⚠ Push falló: '+err.message+' — dirty keys NO se borraron');
+  }
+  syncing=false;
+  if(btn)btn.disabled=false;
+}
+
+// Sync completo: PUSH primero, luego PULL. Si push falla, NO baja nada (protege datos locales).
 async function doSync(){
   if(syncing)return showSyncMsg('Ya sincronizando, espera...');
   if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
   syncing=true;
-  showSyncMsg('⏳ Descargando datos...');
+  saveBackupSnapshot();  // SIEMPRE backup ANTES de tocar nada
   const btn=$('#sync-btn');
   if(btn)btn.disabled=true;
 
   try{
-    // 1. Pull desde Sheets
-    const pullRes=await fetchWithTimeout(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'},45000);
-    const pullData=await pullRes.json();
-    if(pullData.status==='ok'&&(pullData.records||pullData.rows)){
-      mergeFromSheets(pullData.records||pullData.rows);
-      showSyncMsg('⏳ Datos recibidos. Enviando cambios...');
-    }
-
-    // 2. Push solo registros modificados (dirty)
-    const payload=buildSyncPayload(true); // true = dirty only
-    if(payload.length===0){
-      DATA.meta.lastSync=ts();
-      saveLocalNow();
-      showSyncMsg('✓ Sin cambios locales · '+ts());
-    } else {
-      showSyncMsg(`⏳ Enviando ${payload.length} registros...`);
-      // Enviar en lotes de 100 para no exceder timeout de Apps Script
+    // 1. PUSH primero — proteger cambios locales subiéndolos antes de pull
+    const payload=buildSyncPayload(true);
+    let totalUpdates=0,totalInserts=0;
+    if(payload.length>0){
+      showSyncMsg(`⏳ Subiendo ${payload.length} cambios locales primero...`);
       const CHUNK=100;
-      let totalUpdates=0,totalInserts=0;
       for(let i=0;i<payload.length;i+=CHUNK){
         const chunk=payload.slice(i,i+CHUNK);
-        if(payload.length>CHUNK) showSyncMsg(`⏳ Enviando lote ${Math.floor(i/CHUNK)+1}/${Math.ceil(payload.length/CHUNK)}...`);
+        if(payload.length>CHUNK)showSyncMsg(`⏳ Subiendo lote ${Math.floor(i/CHUNK)+1}/${Math.ceil(payload.length/CHUNK)}...`);
         const pushRes=await fetchWithTimeout(APPS_SCRIPT_URL,{
-          method:'POST',
-          headers:{'Content-Type':'text/plain'},
-          redirect:'follow',
+          method:'POST',headers:{'Content-Type':'text/plain'},redirect:'follow',
           body:JSON.stringify({action:'sync',records:chunk})
         },120000);
         const result=await pushRes.json();
-        if(result.status!=='ok') throw new Error(result.message||'Error del servidor');
+        if(result.status!=='ok')throw new Error('Push falló — '+(result.message||'')+' — datos locales intactos');
         totalUpdates+=(result.updates||0);
         totalInserts+=(result.inserts||0);
       }
@@ -4948,9 +4974,20 @@ async function doSync(){
       saveDirtyKeys();
       DATA.meta.lastSync=ts();
       saveLocalNow();
-      showSyncMsg(`✓ ${totalUpdates} actualizados, ${totalInserts} nuevos · ${ts()}`);
     }
-    saveBackupSnapshot();  // backup auto post-sync
+
+    // 2. PULL después — ahora seguro porque ya subimos
+    showSyncMsg('⏳ Descargando datos actualizados...');
+    const pullRes=await fetchWithTimeout(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'},45000);
+    const pullData=await pullRes.json();
+    if(pullData.status==='ok'&&(pullData.records||pullData.rows)){
+      mergeFromSheets(pullData.records||pullData.rows);
+      DATA.meta.lastSync=ts();
+      saveLocalNow();
+    }
+    showSyncMsg(payload.length>0
+      ? `✓ ${totalUpdates} actualizados, ${totalInserts} nuevos + pull · ${ts()}`
+      : `✓ Sin cambios locales · pull OK · ${ts()}`);
   }catch(err){
     showSyncMsg('⚠ '+err.message);
   }
@@ -4962,7 +4999,14 @@ async function doSync(){
 async function doPullOnly(){
   if(syncing)return showSyncMsg('Ya sincronizando, espera...');
   if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
+  // ⚠ AVISO si hay cambios locales sin subir
+  if(dirtyKeys.size>0){
+    if(!confirm(`⚠ Tienes ${dirtyKeys.size} ventanas con cambios locales sin subir.\n\nSi haces PULL ahora, esos cambios se PROTEGEN (mergeFromSheets salta dirty keys). PERO si la lista de dirty se perdió por algún bug previo, podrías sobrescribir datos.\n\nRecomendado: cancela, usa "⬆ Push only" primero para subir cambios.\n\n¿Continuar con PULL?`)){
+      return showSyncMsg('PULL cancelado por usuario');
+    }
+  }
   syncing=true;
+  saveBackupSnapshot();  // backup ANTES del pull (siempre)
   showSyncMsg('⬇ Descargando datos de Sheets...');
   const btn=$('#pull-btn');
   if(btn)btn.disabled=true;
@@ -4976,7 +5020,6 @@ async function doPullOnly(){
       mergeFromSheets(records);
       DATA.meta.lastSync=ts();
       saveLocalNow();
-      saveBackupSnapshot();  // backup auto post-pull completo
       logMsg('Pull: datos guardados en localStorage');
       showSyncMsg(`✓ ${records.length} registros descargados · ${ts()}`);
       render();
@@ -4994,7 +5037,15 @@ async function doPullOnly(){
 async function doPullSection(edif,depto){
   if(syncing)return showSyncMsg('Ya sincronizando, espera...');
   if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
+  // Aviso si hay cambios dirty del edificio que está bajando
+  const dirtyOfBldg=[...dirtyKeys].filter(k=>k.startsWith(String(edif)+'-')).length;
+  if(dirtyOfBldg>0){
+    if(!confirm(`⚠ Tienes ${dirtyOfBldg} cambios locales SIN SUBIR en Edif. ${edif}.\n\nEl pull los protege (skip dirty), pero recomendado: cancela y usa "⬆ Push only" primero.\n\n¿Continuar pull?`)){
+      return showSyncMsg('Pull sección cancelado');
+    }
+  }
   syncing=true;
+  saveBackupSnapshot();  // backup ANTES
   const label=depto?`Depto ${depto} (Edif. ${edif})`:`Edif. ${edif}`;
   showSyncMsg(`⬇ Descargando ${label}...`);
   logMsg(`Pull sección: ${label}`);
@@ -5471,7 +5522,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.13 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.14 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
