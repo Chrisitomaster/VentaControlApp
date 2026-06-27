@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.14</title>
+<title>VentaControl v2.15</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -457,7 +457,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.14 — Configuration & Data
+   VentaControl v2.15 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -582,7 +582,7 @@ const SELLO_ESTADOS = [
   {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
 ];
 
-// EIFS scheduling helpers (v2.14)
+// EIFS scheduling helpers (v2.15)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -704,7 +704,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.14) ----
+// ---- PERSONAS / Asignación de acciones (v2.15) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -1135,7 +1135,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.14']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.15']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1257,7 +1257,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.14'),
+    topbar('VentaControl v2.15'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1439,7 +1439,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.14)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.15)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1489,7 +1489,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.14)
+          // Sub-items con fechas plan/real (v2.15)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -2251,7 +2251,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.14']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.15']),
     ]),
   ]);
 }
@@ -2515,7 +2515,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.14`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.15`]),
   ]);
 }
 
@@ -2529,7 +2529,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.14 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.15 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3838,7 +3838,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.14: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.15: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4434,13 +4434,11 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Push only: SUBE cambios sin descargar. Seguro contra pérdida.
-    h('button',{className:'btn btn-sm',style:{padding:'8px 12px',fontSize:'0.85rem',background:'var(--ac-green)',color:'#fff'},
-      title:'Solo subir cambios locales (sin descargar). Seguro.',
+    // ⬆ Sync (v2.15): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
+      title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
-    },[(dirtyKeys.size>0?'⬆ Push ('+dirtyKeys.size+')':'⬆ Push')]),
-    h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},title:'Push primero, luego Pull',onClick:doSync},['⟳ Sync']),
-    h('button',{className:'btn btn-sm btn-ghost',id:'pull-btn',style:{padding:'8px 12px',fontSize:'0.85rem'},title:'Descargar TODO (con confirm si hay cambios sin subir)',onClick:doPullOnly},['⬇ All']),
+    },[(dirtyKeys.size>0?'⬆ Sync ('+dirtyKeys.size+')':'⬆ Sync')]),
     inBuilding&&edif?h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'0.85rem',color:'var(--ac-cyan)'},
       onClick:()=>doPullSection(edif,inDept?depto:null)
     },['⬇ '+(inDept?depto:'E'+edif)]):null,
@@ -4783,6 +4781,8 @@ function showExportMenu(){
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showPersonasManager();}},['👥 Personas / cuadrillas']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showBackupsModal();}},['💾 Backups locales']),
+        h('button',{className:'btn btn-ghost',style:{color:'var(--ac-orange)'},onClick:()=>{overlay.remove();doRestoreFromSheet();}},['⬇ Restaurar desde Sheet (riesgo)']),
+        h('button',{className:'btn btn-ghost',style:{color:'var(--ac-cyan)'},onClick:()=>{overlay.remove();doPullOnly();}},['⬇ All (descargar todo del Sheet)']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLogPanel();}},['🔍 Log de diagnóstico']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showLegend();}},['📖 Leyenda de iconos']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showUrlConfig();}},['⚙️ Configurar URL Sync']),
@@ -4849,7 +4849,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.14',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.15',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -4942,52 +4942,38 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync completo: PUSH primero, luego PULL. Si push falla, NO baja nada (protege datos locales).
-async function doSync(){
+// Sync principal (v2.15): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
+// Alias de doPushOnly para compat con botón existente.
+async function doSync(){ return doPushOnly(); }
+
+// Si querés bajar datos del sheet (cambiar dispositivo, recovery), usa
+// "⬇ Restaurar desde Sheet" en menú ⋮ → con doble confirm.
+async function doRestoreFromSheet(){
   if(syncing)return showSyncMsg('Ya sincronizando, espera...');
   if(!APPS_SCRIPT_URL)return showSyncMsg('⚠ Configura APPS_SCRIPT_URL primero');
+  // Doble confirm
+  const msg1=`⚠ RESTAURAR DESDE GOOGLE SHEET\n\nEsto descarga el contenido actual de la hoja y lo aplica encima de los datos locales.\n\nSi hay diferencias entre tu app y el sheet, tu app gana SOLO en las ventanas marcadas como dirty (con cambios sin subir): ${dirtyKeys.size} ventanas dirty.\n\nLas demás se sobrescriben con lo del sheet, aunque el sheet esté desactualizado.\n\n¿Continuar?`;
+  if(!confirm(msg1))return showSyncMsg('Restore cancelado');
+  if(dirtyKeys.size>0&&!confirm(`Tenés ${dirtyKeys.size} cambios SIN SUBIR. Subilos primero con "⬆ Push" para no perderlos.\n\n¿Restaurar de todas formas?`))return showSyncMsg('Restore cancelado');
   syncing=true;
-  saveBackupSnapshot();  // SIEMPRE backup ANTES de tocar nada
+  saveBackupSnapshot();
   const btn=$('#sync-btn');
   if(btn)btn.disabled=true;
-
   try{
-    // 1. PUSH primero — proteger cambios locales subiéndolos antes de pull
-    const payload=buildSyncPayload(true);
-    let totalUpdates=0,totalInserts=0;
-    if(payload.length>0){
-      showSyncMsg(`⏳ Subiendo ${payload.length} cambios locales primero...`);
-      const CHUNK=100;
-      for(let i=0;i<payload.length;i+=CHUNK){
-        const chunk=payload.slice(i,i+CHUNK);
-        if(payload.length>CHUNK)showSyncMsg(`⏳ Subiendo lote ${Math.floor(i/CHUNK)+1}/${Math.ceil(payload.length/CHUNK)}...`);
-        const pushRes=await fetchWithTimeout(APPS_SCRIPT_URL,{
-          method:'POST',headers:{'Content-Type':'text/plain'},redirect:'follow',
-          body:JSON.stringify({action:'sync',records:chunk})
-        },120000);
-        const result=await pushRes.json();
-        if(result.status!=='ok')throw new Error('Push falló — '+(result.message||'')+' — datos locales intactos');
-        totalUpdates+=(result.updates||0);
-        totalInserts+=(result.inserts||0);
-      }
-      dirtyKeys.clear();
-      saveDirtyKeys();
+    showSyncMsg('⬇ Descargando del sheet...');
+    const res=await fetchWithTimeout(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'},60000);
+    const data=await res.json();
+    if(data.status==='ok'&&(data.records||data.rows)){
+      const records=data.records||data.rows;
+      mergeFromSheets(records);
       DATA.meta.lastSync=ts();
       saveLocalNow();
+      showSyncMsg(`✓ Restaurado: ${records.length} registros · ${ts()}`);
+      render();
+    } else {
+      showSyncMsg('⚠ '+(data.message||'Sin datos en respuesta'));
     }
-
-    // 2. PULL después — ahora seguro porque ya subimos
-    showSyncMsg('⏳ Descargando datos actualizados...');
-    const pullRes=await fetchWithTimeout(APPS_SCRIPT_URL+'?action=read',{redirect:'follow'},45000);
-    const pullData=await pullRes.json();
-    if(pullData.status==='ok'&&(pullData.records||pullData.rows)){
-      mergeFromSheets(pullData.records||pullData.rows);
-      DATA.meta.lastSync=ts();
-      saveLocalNow();
-    }
-    showSyncMsg(payload.length>0
-      ? `✓ ${totalUpdates} actualizados, ${totalInserts} nuevos + pull · ${ts()}`
-      : `✓ Sin cambios locales · pull OK · ${ts()}`);
   }catch(err){
     showSyncMsg('⚠ '+err.message);
   }
@@ -5522,7 +5508,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.14 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.15 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
