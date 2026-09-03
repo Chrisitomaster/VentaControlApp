@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.15</title>
+<title>VentaControl v2.16</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -177,6 +177,30 @@ body{
 .assign-chip:active{transform:scale(0.97);}
 .persona-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-2);margin-bottom:6px;}
 .persona-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+/* STEPPER + CONTEO FÍSICO (inventario) */
+.stepper{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.stepper button{width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:var(--bg-2);
+  color:var(--tx-0);font-size:1.15rem;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;padding:0;}
+.stepper button:active{transform:scale(0.92);background:var(--bg-3);}
+.stepper button:disabled{opacity:0.3;cursor:default;}
+.stepper .qty{min-width:36px;text-align:center;font-family:var(--font-mono);font-weight:700;font-size:1.05rem;}
+.stepper .qty.zero{color:var(--tx-2);font-weight:400;}
+.conteo-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);}
+.conteo-row:last-child{border-bottom:none;}
+.conteo-code{font-family:var(--font-mono);font-weight:700;font-size:0.85rem;min-width:60px;}
+.conteo-loc{font-size:0.72rem;color:var(--tx-2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* TABLA INVENTARIO */
+.inv-table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+.inv-table th{text-align:right;padding:6px 4px;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.04em;
+  color:var(--tx-2);border-bottom:2px solid var(--border);white-space:nowrap;}
+.inv-table th:first-child{text-align:left;}
+.inv-table td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--font-mono);}
+.inv-table td:first-child{text-align:left;font-weight:700;}
+.inv-table tr.has-falta td{background:var(--ac-red-soft);}
+.inv-table .saldo-neg{color:var(--ac-red);font-weight:700;}
+.inv-table .saldo-ok{color:var(--ac-green);font-weight:700;}
+.inv-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 /* STATS ROW */
 .stats-row{display:flex;gap:var(--gap);flex-wrap:wrap;margin-bottom:var(--gap);}
 .stat-box{flex:1;min-width:80px;text-align:center;padding:10px 6px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-sm);}
@@ -457,7 +481,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.15 — Configuration & Data
+   VentaControl v2.16 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -534,6 +558,8 @@ const DEFICIENCIES = [
   {id:'marcoPerforado',    label:'Marco perforado',                    icon:'🔧'},
   {id:'faltaFijacion',     label:'Falta fijación en marco',             icon:'🔩'},
   {id:'sinImpermeabilizar',label:'Rasgo sin impermeabilizar',           icon:'🌧'},
+  {id:'faltaHojaCorredera',label:'Falta hoja corredera',                icon:'⬌'},
+  {id:'faltaHojaFija',     label:'Falta hoja fija',                     icon:'⬜'},
 ];
 
 const ACTIONS = [
@@ -547,7 +573,12 @@ const ACTIONS = [
   {id:'instalarFijacion',     label:'Instalar fijación',            icon:'🔩',color:'purple'},
   {id:'cargarMortero',        label:'Cargar mortero en rasgo',       icon:'🏗',color:'cyan'},
   {id:'impermeabilizarRasgo', label:'Impermeabilizar rasgo',         icon:'🛡',color:'yellow'},
+  {id:'reponerHoja',          label:'Reponer hoja faltante',         icon:'🪟',color:'purple'},
 ];
+
+// IDs derivados — usar SIEMPRE estos en migraciones y loops, nunca arrays hardcoded.
+const DEF_IDS    = DEFICIENCIES.map(d=>d.id);
+const ACTION_IDS = ACTIONS.map(a=>a.id);
 
 // Deficiency → Action mapping
 const DEF_ACTION_MAP = {
@@ -561,6 +592,8 @@ const DEF_ACTION_MAP = {
   marcoPerforado:'repararMarco',
   faltaFijacion:'instalarFijacion',
   sinImpermeabilizar:'impermeabilizarRasgo',
+  faltaHojaCorredera:'reponerHoja',
+  faltaHojaFija:'reponerHoja',
 };
 
 const ESTADOS = [
@@ -582,7 +615,7 @@ const SELLO_ESTADOS = [
   {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
 ];
 
-// EIFS scheduling helpers (v2.15)
+// EIFS scheduling helpers (v2.16)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -628,7 +661,7 @@ const WINDOW_COLOR_MAPS = {
   estadoBg:       {instalada:'var(--ac-green-soft)', pendiente:'var(--ac-orange-soft)', noInstalada:'var(--bg-2)',  quitar:'var(--ac-red-soft)', noInstalar:'var(--bg-2)',  sinVentana:'#f0f4f8'},
   estadoBorder:   {instalada:'var(--ac-green)',      pendiente:'var(--ac-orange)',      noInstalada:'var(--border)',quitar:'var(--ac-red)',      noInstalar:'var(--border)',sinVentana:'#94a3b8'},
   estadoText:     {instalada:'var(--ac-green)',      pendiente:'var(--ac-orange)',      noInstalada:'var(--tx-2)',  quitar:'var(--ac-red)',      noInstalar:'var(--tx-2)',  sinVentana:'#1e293b'},
-  actionColorMap: {pulir:'purple', aplomar:'blue', impermeabilizar:'cyan', sellarFrente:'blue', repararEIFS:'blue', reemplazarVidrio:'cyan', repararMarco:'cyan', instalarFijacion:'purple', cargarMortero:'cyan', impermeabilizarRasgo:'yellow'},
+  actionColorMap: {pulir:'purple', aplomar:'blue', impermeabilizar:'cyan', sellarFrente:'blue', repararEIFS:'blue', reemplazarVidrio:'cyan', repararMarco:'cyan', instalarFijacion:'purple', cargarMortero:'cyan', impermeabilizarRasgo:'yellow', reponerHoja:'purple'},
 };
 
 // Print layout — geometría espacial del edificio derivada del croquis del usuario.
@@ -704,7 +737,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.15) ----
+// ---- PERSONAS / Asignación de acciones (v2.16) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -712,6 +745,7 @@ function nextPersonaColor(){
 }
 function addPersona(nombre,rol){
   if(!DATA.personas)DATA.personas=[];
+  if(!DATA.inventario)DATA.inventario={recepciones:[],meta:{}};
   const nm=String(nombre||'').trim();
   if(!nm)return null;
   // Evitar duplicados (case insensitive)
@@ -807,6 +841,55 @@ function forEachWindowInBldg(edif, cb){
   for(let f=1;f<=5;f++) forEachWindowInFloor(edif, f, cb);
 }
 
+/* ============================================
+   INVENTARIO — catálogo de tipos y conteo físico en obra
+   ============================================ */
+// Códigos únicos de ventana que usa un edificio (según sus tipos de depto + comunes).
+function getBldgWindowCodes(edif){
+  const e=parseInt(edif), seen=new Map();
+  for(let f=1;f<=5;f++){
+    for(let p=0;p<4;p++) getDeptWindows(getDeptType(e,f,p)).forEach(([c,l])=>{if(!seen.has(c))seen.set(c,l);});
+    getCommonWindows(f).forEach(([c,l])=>{if(!seen.has(c))seen.set(c,l);});
+  }
+  return [...seen.entries()].map(([code,loc])=>({code,loc}));
+}
+// Catálogo global de todos los códigos del proyecto.
+let _allCodesCache=null;
+function getAllWindowCodes(){
+  if(_allCodesCache)return _allCodesCache;
+  const seen=new Map();
+  Object.values(WIN_DEF).forEach(arr=>arr.forEach(([c,l])=>{if(!seen.has(c))seen.set(c,l);}));
+  [...COMMON_WIN[1],...COMMON_WIN.other].forEach(([c,l])=>{if(!seen.has(c))seen.set(c,l);});
+  _allCodesCache=[...seen.entries()].map(([code,loc])=>({code,loc}));
+  return _allCodesCache;
+}
+// Conteo físico de ventanas en acopio por edificio (lazy init).
+function getConteoFisico(edif){
+  const e=parseInt(edif);
+  if(!DATA.buildings[bKey(e)])DATA.buildings[bKey(e)]={comment:'',accionesPendientes:{},stage:0};
+  const bd=DATA.buildings[bKey(e)];
+  if(!bd.conteoFisico)bd.conteoFisico={items:{},fecha:'',nota:''};
+  return bd.conteoFisico;
+}
+function setConteoItem(edif,code,qty){
+  const cf=getConteoFisico(edif);
+  const n=Math.max(0,parseInt(qty)||0);
+  if(n>0)cf.items[code]=n; else delete cf.items[code];
+  cf.fecha=todayISO();
+  saveLocalNow();
+}
+function conteoTotal(cf){ return Object.values((cf&&cf.items)||{}).reduce((s,n)=>s+n,0); }
+
+// Stepper táctil reutilizable: − qty +
+function stepper(qty, onChange, min=0){
+  const q=h('span',{className:'qty'+(qty?'':' zero')},[String(qty)]);
+  return h('div',{className:'stepper'},[
+    h('button',{type:'button',disabled:qty<=min,onClick:(e)=>{e.stopPropagation();onChange(Math.max(min,qty-1));}},['−']),
+    q,
+    h('button',{type:'button',onClick:(e)=>{e.stopPropagation();onChange(qty+1);}},['+']),
+  ]);
+}
+
 // Search index — construido lazy. Invalidar (=null) tras migrations que agreguen/quiten ventanas.
 let _searchIndex=null;
 function buildSearchIndex(){
@@ -859,8 +942,9 @@ function newWindowRecord(){
   return{
     estado:'noInstalada',
     estadoVano:'',
-    deficiencias:{separacion:false,descuadre:false,desaplomo:false,sinSellador:false,sinSelladorFrente:false,retornoMalla:false,mallaPulida:false,vidrioTrizado:false,marcoPerforado:false,faltaFijacion:false,sinImpermeabilizar:false},
-    acciones:{pulir:{active:false,done:false},impermeabilizar:{active:false,done:false},repararEIFS:{active:false,done:false},aplomar:{active:false,done:false},sellarFrente:{active:false,done:false},reemplazarVidrio:{active:false,done:false},repararMarco:{active:false,done:false},instalarFijacion:{active:false,done:false},cargarMortero:{active:false,done:false},impermeabilizarRasgo:{active:false,done:false}},
+    // Derivados de las constantes — agregar una deficiencia/acción ya no requiere tocar acá.
+    deficiencias:Object.fromEntries(DEF_IDS.map(id=>[id,false])),
+    acciones:Object.fromEntries(ACTION_IDS.map(id=>[id,{active:false,done:false}])),
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
     funcionalidad:0,
@@ -1135,7 +1219,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.15']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.16']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1177,6 +1261,7 @@ function render(){
     actionDetail:renderActionDetail,
     actionReport:renderActionReport,
     sealmap:renderSealMap,
+    inventario:renderInventario,
     print:renderPrint
   };
   (views[currentView]||renderDashboard)();
@@ -1257,7 +1342,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.15'),
+    topbar('VentaControl v2.16'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1280,6 +1365,25 @@ function renderDashboard(){
         return card;
       })
     ),
+
+    // Inventario — acceso directo (faltantes globales)
+    (()=>{
+      const {tot}=computeInventario(Object.keys(BUILDINGS).map(Number));
+      return h('div',{className:'card card-click',style:{borderLeft:'3px solid var(--ac-cyan)'},
+        onClick:()=>navigate('inventario',{})},[
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}},[
+          h('div',{style:{fontWeight:'600',fontSize:'0.9rem',color:'var(--ac-cyan)'}},['📦 Inventario de Ventanas']),
+          h('span',{style:{fontSize:'0.8rem',color:'var(--tx-2)'}},['ver →']),
+        ]),
+        h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginTop:'8px'}},[
+          tot.faltantes?h('span',{className:'badge badge-red',style:{fontSize:'0.72rem'}},[tot.faltantes+' faltan']):
+            h('span',{className:'badge badge-green',style:{fontSize:'0.72rem'}},['Sin faltantes']),
+          tot.faltaHoja?h('span',{className:'badge badge-purple',style:{fontSize:'0.72rem'}},[tot.faltaHoja+' falta hoja']):null,
+          tot.enAcopio?h('span',{className:'badge badge-blue',style:{fontSize:'0.72rem'}},[tot.enAcopio+' en acopio']):null,
+          tot.recibidas?h('span',{className:'badge badge-cyan',style:{fontSize:'0.72rem'}},[tot.recibidas+' recibidas']):null,
+        ].filter(Boolean)),
+      ]);
+    })(),
 
     // Saltar a edificio — grid 34 botones agrupados por SA
     h('div',{className:'card'},[
@@ -1439,7 +1543,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.15)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.16)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1489,7 +1593,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.15)
+          // Sub-items con fechas plan/real (v2.16)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -1579,8 +1683,54 @@ function renderBuilding(){
       }),
     ]),
 
+    // ── Conteo físico de ventanas en acopio (inventario terreno) ──
+    (()=>{
+      const cf=getConteoFisico(edif);
+      const codes=getBldgWindowCodes(edif);
+      const total=conteoTotal(cf);
+      const refresh=()=>renderBuilding();
+      return h('div',{className:'card'},[
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px',flexWrap:'wrap',gap:'6px'}},[
+          h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['📦 Ventanas en acopio']),
+          h('div',{style:{display:'flex',gap:'5px',alignItems:'center'}},[
+            h('span',{className:'badge '+(total?'badge-blue':'badge-orange'),style:{fontSize:'0.7rem'}},[total?total+' contadas':'Sin contar']),
+            cf.fecha?h('span',{style:{fontSize:'0.68rem',color:'var(--tx-2)'}},[cf.fecha]):null,
+          ].filter(Boolean)),
+        ]),
+        h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'8px'}},[
+          'Unidades físicas presentes en la torre, sin instalar. Se usa para el pedido a oficina técnica.'
+        ]),
+        isEditor()?h('div',{},codes.map(({code,loc})=>{
+          const qty=cf.items[code]||0;
+          return h('div',{className:'conteo-row'},[
+            h('span',{className:'conteo-code'},[code]),
+            h('span',{className:'conteo-loc'},[loc]),
+            stepper(qty,(n)=>{setConteoItem(edif,code,n);refresh();}),
+          ]);
+        })):h('div',{},codes.filter(({code})=>cf.items[code]).map(({code,loc})=>
+          h('div',{className:'conteo-row'},[
+            h('span',{className:'conteo-code'},[code]),
+            h('span',{className:'conteo-loc'},[loc]),
+            h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'700'}},[String(cf.items[code])]),
+          ])
+        )),
+        isEditor()?h('textarea',{
+          className:'obs-area',id:'conteo-nota',style:{marginTop:'8px',minHeight:'44px',fontSize:'0.8rem'},
+          placeholder:'Nota del conteo (ubicación del acopio, observaciones...)',
+          onBlur:(e)=>{const cf2=getConteoFisico(edif);if(cf2.nota!==e.target.value){cf2.nota=e.target.value;saveLocalNow();}}
+        }):(cf.nota?h('div',{style:{marginTop:'8px',fontSize:'0.78rem',color:'var(--tx-1)',fontStyle:'italic'}},['💬 '+cf.nota]):null),
+        (isEditor()&&total>0)?h('button',{className:'btn btn-sm btn-ghost',style:{marginTop:'8px',color:'var(--ac-red)'},
+          onClick:()=>{
+            if(!confirm('¿Poner en cero todo el conteo de este edificio?'))return;
+            const cf2=getConteoFisico(edif);cf2.items={};cf2.fecha=todayISO();saveLocalNow();refresh();
+          }
+        },['🗑 Reiniciar conteo']):null,
+      ].filter(Boolean));
+    })(),
+
     // Quick nav buttons row
     h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
+      h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-cyan)'},onClick:()=>navigate('inventario',{edif})},['📦 Inventario']),
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('sealmap',{edif})},['🔵 Mapa de sello']),
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('report',{edif})},['📄 Informe']),
       isEditor()?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']):null,
@@ -2251,7 +2401,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.15']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.16']),
     ]),
   ]);
 }
@@ -2515,7 +2665,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.15`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.16`]),
   ]);
 }
 
@@ -2529,7 +2679,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.15 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.16 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3838,7 +3988,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.15: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.16: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4425,6 +4575,341 @@ function renderBldgIssueMap(edif){
 /* ============================================
    SYNC BAR
    ============================================ */
+/* ============================================
+   VIEW: INVENTARIO — faltantes, acopio, recepciones y pedido
+   ============================================ */
+function getInventario(){
+  if(!DATA.inventario)DATA.inventario={recepciones:[],meta:{}};
+  if(!DATA.inventario.recepciones)DATA.inventario.recepciones=[];
+  if(!DATA.inventario.meta)DATA.inventario.meta={};
+  return DATA.inventario;
+}
+// scope: {tipo:'global'} | {tipo:'sa',sa:N} | {tipo:'bldg',edif:N}
+function scopeEdifs(scope){
+  if(!scope||scope.tipo==='global')return Object.keys(BUILDINGS).map(Number);
+  if(scope.tipo==='sa'){const[a,b]=SA_RANGES[scope.sa];const r=[];for(let e=a;e<=b;e++)r.push(e);return r;}
+  if(scope.tipo==='bldg')return [parseInt(scope.edif)];
+  return Object.keys(BUILDINGS).map(Number);
+}
+function scopeLabel(scope){
+  if(!scope||scope.tipo==='global')return 'Todo el proyecto';
+  if(scope.tipo==='sa')return SA_NAMES[scope.sa];
+  if(scope.tipo==='bldg')return 'Edif. '+scope.edif;
+  return 'Todo el proyecto';
+}
+
+// Agrega por código de ventana. Devuelve filas ordenadas + totales.
+function computeInventario(edifs){
+  const set=new Set(edifs.map(Number));
+  const byCode={};
+  const ensure=(code,loc)=>{
+    if(!byCode[code])byCode[code]={code,loc:loc||'',requeridas:0,instaladas:0,pendientes:0,
+      faltantes:0,aQuitar:0,faltaHoja:0,enAcopio:0,recibidas:0,saldo:0,detalle:[]};
+    if(loc&&!byCode[code].loc)byCode[code].loc=loc;
+    return byCode[code];
+  };
+  edifs.forEach(e=>{
+    forEachWindowInBldg(e,(w,key,ctx)=>{
+      const r=ensure(ctx.code,ctx.loc);
+      r.requeridas++;
+      if(!w)return;
+      if(w.estado==='instalada')r.instaladas++;
+      else if(w.estado==='quitar')r.aQuitar++;
+      else if(w.estado==='sinVentana'){r.faltantes++;r.detalle.push({edif:e,depto:ctx.depto,loc:ctx.loc});}
+      else r.pendientes++;
+      const d=w.deficiencias||{};
+      if(d.faltaHojaCorredera||d.faltaHojaFija)r.faltaHoja++;
+    });
+    const cf=(DATA.buildings[bKey(e)]||{}).conteoFisico;
+    if(cf&&cf.items)Object.entries(cf.items).forEach(([code,n])=>{ensure(code).enAcopio+=(n||0);});
+  });
+  // Recepciones: si el scope es acotado, solo cuentan las dirigidas a algún edificio del scope.
+  const global=set.size>=Object.keys(BUILDINGS).length;
+  getInventario().recepciones.forEach(rec=>{
+    const dest=rec.edifsDestino||[];
+    const aplica=global||dest.length===0||dest.some(e=>set.has(Number(e)));
+    if(!aplica)return;
+    Object.entries(rec.items||{}).forEach(([code,n])=>{if(byCode[code])byCode[code].recibidas+=(n||0);});
+  });
+  const rows=Object.values(byCode);
+  rows.forEach(r=>{r.saldo=r.enAcopio+r.recibidas-r.faltantes;});
+  rows.sort((a,b)=>(b.faltantes-a.faltantes)||a.code.localeCompare(b.code));
+  const tot=rows.reduce((t,r)=>({
+    faltantes:t.faltantes+r.faltantes, faltaHoja:t.faltaHoja+r.faltaHoja,
+    enAcopio:t.enAcopio+r.enAcopio, recibidas:t.recibidas+r.recibidas,
+    saldo:t.saldo+Math.min(0,r.saldo),
+  }),{faltantes:0,faltaHoja:0,enAcopio:0,recibidas:0,saldo:0});
+  return {rows,tot};
+}
+
+function renderInventario(){
+  const inv=getInventario();
+  const scope=inv.meta.scope||(viewParams.edif?{tipo:'bldg',edif:viewParams.edif}:{tipo:'global'});
+  const edifs=scopeEdifs(scope);
+  const {rows,tot}=computeInventario(edifs);
+  const setScope=(s)=>{inv.meta.scope=s;saveLocalNow();renderInventario();};
+  const chip=(label,s,active)=>h('button',{
+    className:'btn btn-sm '+(active?'btn-primary':'btn-ghost'),
+    style:{fontSize:'0.72rem',padding:'5px 9px'},onClick:()=>setScope(s)
+  },[label]);
+
+  const el=h('div',{className:'fade-in'},[
+    topbar('📦 Inventario de Ventanas', viewParams.edif?'building':'dashboard', viewParams.edif?{edif:viewParams.edif}:{}),
+
+    h('div',{className:'card'},[
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'5px'}},['Alcance:']),
+      h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},[
+        chip('Todo el proyecto',{tipo:'global'},scope.tipo==='global'),
+        ...[1,2,3,4,5].map(sa=>chip(SA_NAMES[sa],{tipo:'sa',sa},scope.tipo==='sa'&&scope.sa===sa)),
+        viewParams.edif?chip('Edif. '+viewParams.edif,{tipo:'bldg',edif:viewParams.edif},scope.tipo==='bldg'&&String(scope.edif)===String(viewParams.edif)):null,
+      ].filter(Boolean)),
+      h('div',{className:'stats-row'},[
+        statBox(String(tot.faltantes),'Faltan'),
+        statBox(String(tot.enAcopio),'En acopio'),
+        statBox(String(tot.recibidas),'Recibidas'),
+        statBox(String(Math.abs(tot.saldo)),'A pedir'),
+      ]),
+      tot.faltaHoja?h('div',{style:{padding:'6px 8px',background:'var(--ac-purple-soft)',color:'var(--ac-purple)',
+        borderRadius:'var(--radius-sm)',fontSize:'0.78rem',fontWeight:'600',marginBottom:'8px'}},
+        ['🪟 '+tot.faltaHoja+' ventana(s) instaladas con hoja faltante']):null,
+    ].filter(Boolean)),
+
+    // Tabla por tipo
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'8px'}},['Detalle por tipo — '+scopeLabel(scope)]),
+      h('div',{className:'inv-scroll'},[
+        h('table',{className:'inv-table'},[
+          h('thead',{},[h('tr',{},[
+            h('th',{},['Tipo']),h('th',{},['Req']),h('th',{},['Inst']),
+            h('th',{},['Falta']),h('th',{},['Hoja']),h('th',{},['Acopio']),
+            h('th',{},['Recib']),h('th',{},['Saldo']),
+          ])]),
+          h('tbody',{},rows.map(r=>h('tr',{className:r.faltantes?'has-falta':''},[
+            h('td',{title:r.loc},[r.code]),
+            h('td',{},[String(r.requeridas)]),
+            h('td',{},[String(r.instaladas)]),
+            h('td',{},[r.faltantes?String(r.faltantes):'·']),
+            h('td',{},[r.faltaHoja?String(r.faltaHoja):'·']),
+            h('td',{},[r.enAcopio?String(r.enAcopio):'·']),
+            h('td',{},[r.recibidas?String(r.recibidas):'·']),
+            h('td',{className:r.saldo<0?'saldo-neg':(r.faltantes?'saldo-ok':'')},[r.saldo<0?String(r.saldo):(r.faltantes?'✓':'·')]),
+          ]))),
+        ]),
+      ]),
+      h('div',{style:{fontSize:'0.68rem',color:'var(--tx-2)',marginTop:'8px',lineHeight:'1.5'}},[
+        'Falta = ventanas marcadas "Sin Ventana". Acopio = conteo físico por torre. Saldo = acopio + recibidas − faltan (negativo ⇒ pedir).'
+      ]),
+    ]),
+
+    // Acciones
+    h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
+      isEditor()?h('button',{className:'btn btn-sm btn-primary',onClick:()=>showRecepcionModal(null,()=>renderInventario())},['➕ Registrar cargamento']):null,
+      h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-cyan)'},onClick:()=>showPedidoModal(scope)},['📤 Pedido a oficina técnica']),
+    ].filter(Boolean)),
+
+    // Recepciones registradas
+    h('div',{className:'card'},[
+      h('div',{style:{fontWeight:'600',fontSize:'0.88rem',marginBottom:'8px'}},['Cargamentos recibidos']),
+      inv.recepciones.length?h('div',{style:{display:'flex',flexDirection:'column',gap:'6px'}},
+        inv.recepciones.slice().reverse().map(rec=>{
+          const total=Object.values(rec.items||{}).reduce((s,n)=>s+n,0);
+          return h('div',{style:{padding:'9px 10px',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-2)'}},[
+            h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}},[
+              h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['🚚 '+rec.fecha+(rec.guia?' · Guía '+rec.guia:'')]),
+              h('span',{className:'badge badge-green',style:{fontSize:'0.7rem'}},[total+' u.']),
+            ]),
+            (rec.edifsDestino&&rec.edifsDestino.length)?h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginTop:'3px'}},['Torres: '+rec.edifsDestino.join(', ')]):null,
+            h('div',{style:{fontSize:'0.72rem',color:'var(--tx-1)',marginTop:'3px',fontFamily:'var(--font-mono)'}},
+              [Object.entries(rec.items||{}).map(([c,n])=>c+'×'+n).join('  ')]),
+            rec.nota?h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginTop:'3px',fontStyle:'italic'}},['💬 '+rec.nota]):null,
+            isEditor()?h('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}},[
+              h('button',{className:'btn btn-sm btn-ghost',style:{fontSize:'0.72rem'},onClick:()=>showRecepcionModal(rec.id,()=>renderInventario())},['✏️ Editar']),
+              h('button',{className:'btn btn-sm btn-ghost',style:{fontSize:'0.72rem',color:'var(--ac-red)'},onClick:()=>{
+                if(!confirm('¿Eliminar este cargamento del registro?'))return;
+                const i2=getInventario();
+                i2.recepciones=i2.recepciones.filter(x=>x.id!==rec.id);
+                saveLocalNow();renderInventario();
+              }},['🗑']),
+            ]):null,
+          ].filter(Boolean));
+        })
+      ):h('div',{style:{fontSize:'0.82rem',color:'var(--tx-2)',padding:'8px 0'}},['Sin cargamentos registrados.']),
+    ]),
+
+    renderSyncBar(),
+  ].filter(Boolean));
+  app().innerHTML='';
+  app().appendChild(el);
+}
+
+// Modal de alta/edición de cargamento recibido
+function showRecepcionModal(recId,onDone){
+  const inv=getInventario();
+  const existing=recId?inv.recepciones.find(r=>r.id===recId):null;
+  const draft=existing
+    ? {id:existing.id,fecha:existing.fecha,guia:existing.guia||'',nota:existing.nota||'',
+       edifsDestino:(existing.edifsDestino||[]).slice(),items:Object.assign({},existing.items||{})}
+    : {id:'rec_'+Date.now(),fecha:todayISO(),guia:'',nota:'',edifsDestino:[],items:{}};
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[]);
+
+  function draw(){
+    // preservar inputs de texto antes del redraw
+    const g=overlay.querySelector('#rec-guia'); if(g)draft.guia=g.value;
+    const n=overlay.querySelector('#rec-nota'); if(n)draft.nota=n.value;
+    const t=overlay.querySelector('#rec-torres'); if(t)draft.edifsDestino=t.value.split(/[,\s]+/).map(s=>parseInt(s)).filter(x=>x>=1&&x<=34);
+    const f=overlay.querySelector('#rec-fecha'); if(f&&f.value)draft.fecha=f.value;
+    overlay.innerHTML='';
+    const total=Object.values(draft.items).reduce((s,q)=>s+q,0);
+    const inputStyle={padding:'8px 10px',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)',
+      background:'var(--bg-2)',color:'var(--tx-1)',fontSize:'0.85rem',width:'100%'};
+    overlay.appendChild(h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
+      h('h3',{style:{marginBottom:'10px'}},[existing?'✏️ Editar cargamento':'🚚 Registrar cargamento']),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'12px'}},[
+        h('label',{style:{fontSize:'0.75rem',color:'var(--tx-2)',fontWeight:'600'}},['Fecha de llegada']),
+        h('input',{id:'rec-fecha',type:'date',value:draft.fecha,style:inputStyle}),
+        h('label',{style:{fontSize:'0.75rem',color:'var(--tx-2)',fontWeight:'600'}},['Guía / remito (opcional)']),
+        h('input',{id:'rec-guia',type:'text',value:draft.guia,placeholder:'N° de guía de despacho',style:inputStyle}),
+        h('label',{style:{fontSize:'0.75rem',color:'var(--tx-2)',fontWeight:'600'}},['Torres destino (opcional, separadas por coma)']),
+        h('input',{id:'rec-torres',type:'text',value:draft.edifsDestino.join(', '),placeholder:'12, 13, 14',style:inputStyle}),
+      ]),
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['Unidades por tipo']),
+        h('span',{className:'badge '+(total?'badge-green':'badge-orange'),style:{fontSize:'0.7rem'}},[total+' u.']),
+      ]),
+      h('div',{style:{maxHeight:'40vh',overflowY:'auto',marginBottom:'12px'}},
+        getAllWindowCodes().map(({code,loc})=>{
+          const qty=draft.items[code]||0;
+          return h('div',{className:'conteo-row'},[
+            h('span',{className:'conteo-code'},[code]),
+            h('span',{className:'conteo-loc'},[loc]),
+            stepper(qty,(v)=>{if(v>0)draft.items[code]=v;else delete draft.items[code];draw();}),
+          ]);
+        })
+      ),
+      h('label',{style:{fontSize:'0.75rem',color:'var(--tx-2)',fontWeight:'600'}},['Nota (opcional)']),
+      h('textarea',{id:'rec-nota',className:'obs-area',style:{minHeight:'44px',fontSize:'0.8rem',marginBottom:'12px'},
+        placeholder:'Observaciones del cargamento...'},[draft.nota]),
+      h('div',{style:{display:'flex',gap:'8px'}},[
+        h('button',{className:'btn btn-sm btn-ghost',style:{flex:1},onClick:()=>overlay.remove()},['Cancelar']),
+        h('button',{className:'btn btn-sm btn-primary',style:{flex:1},onClick:()=>{
+          const g2=overlay.querySelector('#rec-guia'); if(g2)draft.guia=g2.value.trim();
+          const n2=overlay.querySelector('#rec-nota'); if(n2)draft.nota=n2.value.trim();
+          const t2=overlay.querySelector('#rec-torres'); if(t2)draft.edifsDestino=t2.value.split(/[,\s]+/).map(s=>parseInt(s)).filter(x=>x>=1&&x<=34);
+          const f2=overlay.querySelector('#rec-fecha'); if(f2&&f2.value)draft.fecha=f2.value;
+          if(Object.keys(draft.items).length===0)return alert('Agregá al menos una unidad antes de guardar.');
+          const i2=getInventario();
+          const idx=i2.recepciones.findIndex(r=>r.id===draft.id);
+          if(idx>=0)i2.recepciones[idx]=draft; else i2.recepciones.push(draft);
+          saveLocalNow();
+          overlay.remove();
+          if(onDone)onDone();
+        }},['💾 Guardar']),
+      ]),
+    ]));
+  }
+  draw();
+  document.body.appendChild(overlay);
+}
+
+// Texto del pedido para oficina técnica
+function generatePedidoText(scope){
+  const edifs=scopeEdifs(scope);
+  const {rows,tot}=computeInventario(edifs);
+  const L=[];
+  L.push('PEDIDO DE VENTANAS — Condominio Alberto Fuchslocher');
+  L.push('Generado: '+ts()+' · Alcance: '+scopeLabel(scope));
+  L.push('='.repeat(52));
+  L.push('');
+  const conFalta=rows.filter(r=>r.faltantes>0);
+  L.push('RESUMEN POR TIPO');
+  if(!conFalta.length)L.push('  Sin ventanas faltantes registradas.');
+  else{
+    conFalta.forEach(r=>{
+      const pad=(r.code+'          ').slice(0,10);
+      L.push('  '+pad+String(r.faltantes).padStart(3)+' faltan · '+String(r.enAcopio).padStart(3)+' acopio · '+
+        String(r.recibidas).padStart(3)+' recib · saldo '+(r.saldo<0?String(r.saldo):'OK'));
+    });
+    const aPedir=conFalta.reduce((s,r)=>s+Math.max(0,-r.saldo),0);
+    L.push('');
+    L.push('  TOTAL A PEDIR: '+aPedir+' unidades');
+  }
+  L.push('');
+  if(tot.faltaHoja>0){
+    let hc=0,hf=0;
+    edifs.forEach(e=>forEachWindowInBldg(e,(w)=>{
+      if(!w||!w.deficiencias)return;
+      if(w.deficiencias.faltaHojaCorredera)hc++;
+      if(w.deficiencias.faltaHojaFija)hf++;
+    }));
+    L.push('FALTA HOJA (ventana instalada, hoja faltante)');
+    L.push('  Hoja corredera: '+hc+' · Hoja fija: '+hf);
+    L.push('');
+  }
+  if(conFalta.length){
+    L.push('DETALLE POR TORRE Y DEPTO');
+    const det=[];
+    conFalta.forEach(r=>r.detalle.forEach(d=>det.push({...d,code:r.code})));
+    det.sort((a,b)=>(a.edif-b.edif)||String(a.depto).localeCompare(String(b.depto))||a.code.localeCompare(b.code));
+    det.forEach(d=>L.push('  Torre '+d.edif+' — '+d.depto+' — '+d.code+(d.loc?' ('+d.loc+')':'')));
+    L.push('');
+    L.push('  Total vanos sin ventana: '+det.length);
+  }
+  L.push('');
+  L.push('='.repeat(52));
+  L.push('VentaControl v2.16');
+  return L.join('\n');
+}
+
+function exportPedidoCSV(scope){
+  const edifs=scopeEdifs(scope);
+  const {rows}=computeInventario(edifs);
+  const headers=['tipo','recinto','requeridas','instaladas','faltan','falta_hoja','en_acopio','recibidas','saldo'];
+  let csv=headers.join(',')+'\n';
+  rows.forEach(r=>{
+    const vals=[r.code,r.loc,r.requeridas,r.instaladas,r.faltantes,r.faltaHoja,r.enAcopio,r.recibidas,r.saldo];
+    csv+=vals.map(v=>{let s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(',')+'\n';
+  });
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='Pedido_Ventanas_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();URL.revokeObjectURL(url);
+}
+
+function showPedidoModal(scope){
+  const texto=generatePedidoText(scope);
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
+    h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
+      h('h3',{style:{marginBottom:'8px'}},['📤 Pedido a oficina técnica']),
+      h('div',{style:{fontSize:'0.75rem',color:'var(--tx-2)',marginBottom:'8px'}},[scopeLabel(scope)]),
+      h('textarea',{id:'pedido-area',className:'obs-area',readOnly:true,
+        style:{minHeight:'320px',fontSize:'0.68rem',fontFamily:'var(--font-mono)',whiteSpace:'pre'}},[]),
+      h('div',{style:{display:'flex',gap:'6px',marginTop:'10px',flexWrap:'wrap'}},[
+        h('button',{id:'btn-copy-pedido',className:'btn btn-sm btn-primary',onClick:(e)=>{
+          navigator.clipboard?.writeText(texto).then(()=>{
+            const b=e.target;b.textContent='✓ Copiado';setTimeout(()=>{b.textContent='📋 Copiar';},2000);
+          }).catch(()=>alert('No se pudo copiar. Seleccioná el texto manualmente.'));
+        }},['📋 Copiar']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:()=>{
+          if(navigator.share)navigator.share({title:'Pedido de ventanas',text:texto}).catch(()=>{});
+          else alert('Compartir no disponible en este navegador. Usá Copiar.');
+        }},['📤 Compartir']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:()=>{
+          const blob=new Blob([texto],{type:'text/plain;charset=utf-8'});
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement('a');
+          a.href=url;a.download='Pedido_Ventanas_'+new Date().toISOString().slice(0,10)+'.txt';
+          a.click();URL.revokeObjectURL(url);
+        }},['⬇ .txt']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:()=>exportPedidoCSV(scope)},['⬇ CSV']),
+        h('button',{className:'btn btn-sm btn-ghost',onClick:()=>overlay.remove()},['Cerrar']),
+      ]),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+  setTimeout(()=>{const ta=$('#pedido-area',overlay);if(ta)ta.value=texto;},50);
+}
+
 function renderSyncBar(){
   const inBuilding=currentView==='building'||currentView==='dept'||currentView==='window'||currentView==='common';
   const inDept=currentView==='dept'||currentView==='window';
@@ -4434,7 +4919,7 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Sync (v2.15): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    // ⬆ Sync (v2.16): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
       title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
@@ -4779,6 +5264,7 @@ function showExportMenu(){
     h('div',{className:'modal'},[
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
+        h('button',{className:'btn btn-ghost',style:{color:'var(--ac-cyan)'},onClick:()=>{overlay.remove();navigate('inventario',{});}},['📦 Inventario de ventanas']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showPersonasManager();}},['👥 Personas / cuadrillas']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showBackupsModal();}},['💾 Backups locales']),
         h('button',{className:'btn btn-ghost',style:{color:'var(--ac-orange)'},onClick:()=>{overlay.remove();doRestoreFromSheet();}},['⬇ Restaurar desde Sheet (riesgo)']),
@@ -4849,7 +5335,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.15',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.16',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -4942,7 +5428,7 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync principal (v2.15): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// Sync principal (v2.16): SOLO PUSH. Antes hacía pull automático que sobrescribía
 // datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
 // Alias de doPushOnly para compat con botón existente.
 async function doSync(){ return doPushOnly(); }
@@ -5118,6 +5604,8 @@ function buildSyncPayload(dirtyOnly=false){
       marcoPerforado:w.deficiencias.marcoPerforado?1:0,
       faltaFijacion:w.deficiencias.faltaFijacion?1:0,
       sinImpermeabilizar:w.deficiencias.sinImpermeabilizar?1:0,
+      faltaHojaCorredera:w.deficiencias.faltaHojaCorredera?1:0,
+      faltaHojaFija:w.deficiencias.faltaHojaFija?1:0,
       vano:w.estadoVano||'',
       obs:w.observaciones||'',
       act_pulir:w.acciones.pulir?.active?(w.acciones.pulir.done?'done':'pending'):'',
@@ -5130,6 +5618,7 @@ function buildSyncPayload(dirtyOnly=false){
       act_instalarFijacion:w.acciones.instalarFijacion?.active?(w.acciones.instalarFijacion.done?'done':'pending'):'',
       act_cargarMortero:w.acciones.cargarMortero?.active?(w.acciones.cargarMortero.done?'done':'pending'):'',
       act_impermeabilizarRasgo:w.acciones.impermeabilizarRasgo?.active?(w.acciones.impermeabilizarRasgo.done?'done':'pending'):'',
+      act_reponerHoja:w.acciones.reponerHoja?.active?(w.acciones.reponerHoja.done?'done':'pending'):'',
       etapa:(DATA.buildings[bKey(parseInt(edif))]||{}).stage||'',
     });
   }
@@ -5273,9 +5762,11 @@ function mergeFromSheets(rows){
       marcoPerforado:pd(r,'marcoPerforado','def_marcoPerforado'),
       faltaFijacion:pd(r,'faltaFijacion','def_faltaFijacion'),
       sinImpermeabilizar:pd(r,'sinImpermeabilizar','def_sinImpermeabilizar'),
+      faltaHojaCorredera:pd(r,'faltaHojaCorredera','def_faltaHojaCorredera'),
+      faltaHojaFija:pd(r,'faltaHojaFija','def_faltaHojaFija'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero','impermeabilizarRasgo'].forEach(a=>{
+    ACTION_IDS.forEach(a=>{
       if(!w.acciones[a])w.acciones[a]={active:false,done:false};
       const val=r['act_'+a];
       if(val==='done'){w.acciones[a].active=true;w.acciones[a].done=true;}
@@ -5446,6 +5937,7 @@ function migrateV1(){
   // Init data
   initData();
   if(!DATA.personas)DATA.personas=[];
+  if(!DATA.inventario)DATA.inventario={recepciones:[],meta:{}};
 
   // Verify data integrity - ensure all windows exist
   let added=0;
@@ -5464,14 +5956,14 @@ function migrateV1(){
           const w=DATA.windows[key];
           if(!w.acciones)w.acciones={};
           // Ensure all action fields exist
-          ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero','impermeabilizarRasgo'].forEach(a=>{
+          ACTION_IDS.forEach(a=>{
             if(!w.acciones[a])w.acciones[a]={active:false,done:false};
           });
           if(!w.historial)w.historial=[];
           if(!w.fotos)w.fotos=[];
           if(!w.deficiencias)w.deficiencias={};
           // Ensure all deficiency fields exist (handles migration from older records)
-          ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion','sinImpermeabilizar'].forEach(f=>{
+          DEF_IDS.forEach(f=>{
             if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
           });
           if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
@@ -5487,13 +5979,13 @@ function migrateV1(){
         if(!DATA.windows[key]){DATA.windows[key]=newWindowRecord();added++;}
         const w=DATA.windows[key];
         if(!w.acciones)w.acciones={};
-        ['pulir','impermeabilizar','repararEIFS','aplomar','sellarFrente','reemplazarVidrio','repararMarco','instalarFijacion','cargarMortero','impermeabilizarRasgo'].forEach(a=>{
+        ACTION_IDS.forEach(a=>{
           if(!w.acciones[a])w.acciones[a]={active:false,done:false};
         });
         if(!w.historial)w.historial=[];
         if(!w.fotos)w.fotos=[];
         if(!w.deficiencias)w.deficiencias={};
-        ['separacion','descuadre','desaplomo','sinSellador','sinSelladorFrente','retornoMalla','mallaPulida','vidrioTrizado','marcoPerforado','faltaFijacion','sinImpermeabilizar'].forEach(f=>{
+        DEF_IDS.forEach(f=>{
           if(w.deficiencias[f]===undefined)w.deficiencias[f]=false;
         });
         if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
@@ -5508,7 +6000,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.15 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.16 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
