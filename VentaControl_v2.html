@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.17</title>
+<title>VentaControl v2.18</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -333,7 +333,9 @@ body{
 .grid-map-col{display:flex;flex-direction:column;gap:3px;}
 .grid-map-col-hdr{font-size:0.65rem;font-weight:700;text-align:center;padding:4px 2px;background:var(--bg-2);border-radius:4px;color:var(--tx-1);font-family:var(--font-mono);margin-bottom:2px;}
 .grid-map-col.ec-col .grid-map-col-hdr{background:var(--ac-blue-soft);color:var(--ac-blue);border:1px solid var(--ac-blue);}
-.win-tile{min-height:50px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:4px 5px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+.win-tile{position:relative;min-height:50px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:4px 5px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+/* Marca de comentario en el tile del mapa */
+.win-tile-note{position:absolute;top:1px;right:2px;font-size:0.6rem;line-height:1;pointer-events:none;opacity:0.9;}
 .win-tile:active{opacity:0.6;}
 .grid-map-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--tx-1);}
@@ -481,7 +483,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.17 — Configuration & Data
+   VentaControl v2.18 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -560,7 +562,7 @@ const DEFICIENCIES = [
   {id:'sinImpermeabilizar',label:'Rasgo sin impermeabilizar',           icon:'🌧'},
   {id:'faltaHojaCorredera',label:'Falta hoja corredera',                icon:'⬌'},
   {id:'faltaHojaFija',     label:'Falta hoja fija',                     icon:'⬜'},
-  // ---- Daños críticos (v2.17) ----
+  // ---- Daños críticos (v2.18) ----
   {id:'termopanelTrizado', label:'Termopanel trizado/fracturado',       icon:'💥', critico:true},
   {id:'pvcRoto',           label:'PVC roto',                            icon:'🧱', critico:true},
   {id:'filtracionAgua',    label:'Filtración (prueba estanqueidad)',    icon:'🌊', critico:true},
@@ -607,7 +609,7 @@ const DEF_ACTION_MAP = {
   filtracionAgua:'sellarFiltracion',
 };
 
-/* ---- HOJAS DE VENTANA (v2.17) ----
+/* ---- HOJAS DE VENTANA (v2.18) ----
    Estado de hoja corredera y hoja fija + medida de la corredera.
    La medida se releva en terreno (no hay regla por tipo). */
 const HOJA_ESTADOS = [
@@ -641,7 +643,7 @@ const SELLO_ESTADOS = [
   {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
 ];
 
-// EIFS scheduling helpers (v2.17)
+// EIFS scheduling helpers (v2.18)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -763,7 +765,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.17) ----
+// ---- PERSONAS / Asignación de acciones (v2.18) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -1003,7 +1005,7 @@ function newWindowRecord(){
     acciones:Object.fromEntries(ACTION_IDS.map(id=>[id,{active:false,done:false}])),
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
-    // Hojas de la ventana (v2.17). medida: '' | '130' | '128.5' (relevada en terreno)
+    // Hojas de la ventana (v2.18). medida: '' | '130' | '128.5' (relevada en terreno)
     hojas:{corredera:'',fija:'',medida:'',comentario:''},
     funcionalidad:0,
     historial:[],
@@ -1277,7 +1279,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.17']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.18']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1401,7 +1403,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.17'),
+    topbar('VentaControl v2.18'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1602,7 +1604,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.17)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.18)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1652,7 +1654,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.17)
+          // Sub-items con fechas plan/real (v2.18)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -2020,6 +2022,14 @@ function renderGridMap(){
     el.className='win-tile';
     Object.assign(el.style,style);
     el.textContent=code;
+    // Marca 💬 si la ventana tiene observaciones cargadas en su perfil
+    if(w&&w.observaciones&&String(w.observaciones).trim()){
+      const nota=document.createElement('span');
+      nota.className='win-tile-note';
+      nota.textContent='💬';
+      nota.title=String(w.observaciones).slice(0,120);
+      el.appendChild(nota);
+    }
 
     let pressTimer=null;
     let longFired=false;
@@ -2078,6 +2088,10 @@ function renderGridMap(){
         border:'1px solid var(--ac-purple)'
       }},[]),
       'Con acción correctiva'
+    ]),
+    h('div',{className:'legend-item'},[
+      h('span',{style:{fontSize:'0.7rem'}},['💬']),
+      'Con observaciones'
     ]),
   ]);
 
@@ -2461,7 +2475,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.17']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.18']),
     ]),
   ]);
 }
@@ -2725,7 +2739,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.17`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.18`]),
   ]);
 }
 
@@ -2739,7 +2753,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.17 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.18 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3885,7 +3899,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ].filter(Boolean)):null,
     ].filter(Boolean)),
 
-    // ── Hojas de la ventana (corredera / fija / medida) — v2.17 ──
+    // ── Hojas de la ventana (corredera / fija / medida) — v2.18 ──
     (()=>{
       const hj=getHojas(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4103,7 +4117,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.17: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.18: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -5136,7 +5150,7 @@ function showDanosReporte(lista){
   });
   L.push('');
   L.push('='.repeat(56));
-  L.push('VentaControl v2.17');
+  L.push('VentaControl v2.18');
   const texto=L.join('\n');
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
@@ -5323,7 +5337,7 @@ function generatePedidoText(scope){
   }
   L.push('');
   L.push('='.repeat(52));
-  L.push('VentaControl v2.17');
+  L.push('VentaControl v2.18');
   return L.join('\n');
 }
 
@@ -5386,7 +5400,7 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Sync (v2.17): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    // ⬆ Sync (v2.18): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
       title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
@@ -5804,7 +5818,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.17',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.18',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -5897,7 +5911,7 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync principal (v2.17): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// Sync principal (v2.18): SOLO PUSH. Antes hacía pull automático que sobrescribía
 // datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
 // Alias de doPushOnly para compat con botón existente.
 async function doSync(){ return doPushOnly(); }
@@ -6245,7 +6259,7 @@ function mergeFromSheets(rows){
       filtracionAgua:pd(r,'filtracionAgua','def_filtracionAgua'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    // Hojas (v2.17)
+    // Hojas (v2.18)
     if(r.hoja_corredera!==undefined||r.hoja_fija!==undefined||r.hoja_medida!==undefined){
       const hj=getHojas(w);
       if(r.hoja_corredera!==undefined&&r.hoja_corredera!=='')hj.corredera=String(r.hoja_corredera);
@@ -6490,7 +6504,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.17 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.18 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
