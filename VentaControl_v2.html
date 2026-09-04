@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.18</title>
+<title>VentaControl v2.19</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -483,7 +483,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.18 — Configuration & Data
+   VentaControl v2.19 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -538,9 +538,15 @@ BLDG_RAW.forEach(([e,tipo,sa,p1,p25])=>{
 // ---- WINDOW DEFINITIONS PER DEPT TYPE ----
 const WIN_DEF = {
   A:[['V1-Izq','Dorm 1 Izq'],['V1-Der','Dorm 1 Der'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
-  B:[['V2','Dormitorio 1'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
+  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.19)
+  B:[['V2','Dormitorio 1'],['V1_D2-B','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
   MR:[['V5_1','Dorm MR 1'],['V5_2','Dorm MR 2'],['V5_3','Dorm MR 3'],['V5a','Logia MR'],['V6_1','Dorm 2 MR'],['V6_2','Dorm 2 MR'],['V7','Estar-Comedor MR']]
 };
+
+// Nombre largo por código, para perfil, informes y exportaciones.
+// El tile del mapa y las tablas compactas siguen usando el código corto.
+const WIN_ALIAS = {'V1_D2-B':'V1_D2 Depto. B'};
+function winFullName(code){ return WIN_ALIAS[code] || code; }
 
 const COMMON_WIN = {
   1:[['PV1','Mampara Acceso'],['PV2','Mampara Trasera']],
@@ -562,7 +568,7 @@ const DEFICIENCIES = [
   {id:'sinImpermeabilizar',label:'Rasgo sin impermeabilizar',           icon:'🌧'},
   {id:'faltaHojaCorredera',label:'Falta hoja corredera',                icon:'⬌'},
   {id:'faltaHojaFija',     label:'Falta hoja fija',                     icon:'⬜'},
-  // ---- Daños críticos (v2.18) ----
+  // ---- Daños críticos (v2.19) ----
   {id:'termopanelTrizado', label:'Termopanel trizado/fracturado',       icon:'💥', critico:true},
   {id:'pvcRoto',           label:'PVC roto',                            icon:'🧱', critico:true},
   {id:'filtracionAgua',    label:'Filtración (prueba estanqueidad)',    icon:'🌊', critico:true},
@@ -609,7 +615,7 @@ const DEF_ACTION_MAP = {
   filtracionAgua:'sellarFiltracion',
 };
 
-/* ---- HOJAS DE VENTANA (v2.18) ----
+/* ---- HOJAS DE VENTANA (v2.19) ----
    Estado de hoja corredera y hoja fija + medida de la corredera.
    La medida se releva en terreno (no hay regla por tipo). */
 const HOJA_ESTADOS = [
@@ -622,7 +628,7 @@ const HOJA_MEDIDAS = [
   {id:'128.5', label:'128,5 cm'},
 ];
 // Recintos donde la medida de corredera es relevante (dormitorios y logias).
-const CODES_CON_MEDIDA = ['V1-Izq','V1-Der','V1_D2','V1_D3','V1a','V2','V5_1','V5_2','V5_3','V5a','V6_1','V6_2'];
+const CODES_CON_MEDIDA = ['V1-Izq','V1-Der','V1_D2','V1_D2-B','V1_D3','V1a','V2','V5_1','V5_2','V5_3','V5a','V6_1','V6_2'];
 
 const ESTADOS = [
   {id:'instalada',   label:'Instalada',    sym:'✓', cls:'sel-instalada'},
@@ -643,7 +649,7 @@ const SELLO_ESTADOS = [
   {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
 ];
 
-// EIFS scheduling helpers (v2.18)
+// EIFS scheduling helpers (v2.19)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -765,7 +771,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.18) ----
+// ---- PERSONAS / Asignación de acciones (v2.19) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -938,6 +944,59 @@ function setHoja(key,campo,valor,label){
 // ¿Este código de ventana lleva medida de corredera relevante?
 function codeUsaMedida(code){ return CODES_CON_MEDIDA.includes(code); }
 
+/* ---- MIGRACIÓN v2.19: V1_D2 → V1_D2-B en departamentos tipo B ----
+   La ventana del dormitorio 2 de los deptos tipo B va en el dilatado y lleva
+   pilar, así que pasa a tener código propio. Mueve la ficha completa
+   conservando estado, deficiencias, acciones, hojas, sello, fotos e historial.
+   Idempotente: si la ficha nueva ya existe, descarta la vieja sin pisar nada. */
+function windowTieneDatos(w){
+  if(!w)return false;
+  if(w.estado&&w.estado!=='noInstalada')return true;
+  if(w.estadoVano)return true;
+  if(String(w.observaciones||'').trim())return true;
+  if(w.deficiencias&&Object.values(w.deficiencias).some(Boolean))return true;
+  if(w.acciones&&Object.values(w.acciones).some(a=>a&&(a.active||a.done)))return true;
+  if(w.hojas&&(w.hojas.corredera||w.hojas.fija||w.hojas.medida||String(w.hojas.comentario||'').trim()))return true;
+  if(w.selloExterior&&w.selloExterior.estado&&w.selloExterior.estado!=='sinSellar')return true;
+  if(w.funcionalidad)return true;
+  if(w.fotos&&w.fotos.length)return true;
+  return false;
+}
+function migrateV1D2B(){
+  let movidas=0,descartadas=0,marcadas=0;
+  for(const edif of Object.keys(BUILDINGS)){
+    const e=parseInt(edif);
+    for(let f=1;f<=5;f++){
+      for(let p=0;p<4;p++){
+        if(getDeptType(e,f,p)!=='B')continue;
+        const dn=deptNum(f,p);
+        const oldK=wKey(e,dn,'V1_D2');
+        const newK=wKey(e,dn,'V1_D2-B');
+        const oldW=DATA.windows[oldK];
+        if(!oldW)continue;
+        if(!DATA.windows[newK]){
+          DATA.windows[newK]=oldW;   // se lleva la ficha entera
+          movidas++;
+          // Solo forzamos la subida de las que tienen algo cargado.
+          if(windowTieneDatos(oldW)){dirtyKeys.add(newK);marcadas++;}
+        } else {
+          descartadas++;             // ya migrada antes: la vieja es residuo
+        }
+        delete DATA.windows[oldK];
+        if(dirtyKeys.has(oldK))dirtyKeys.delete(oldK);
+      }
+    }
+  }
+  if(movidas||descartadas){
+    _searchIndex=null;
+    DATA.meta.migV1D2B=true;
+    saveLocalNow();
+    saveDirtyKeys();
+    logMsg(`Migración V1_D2→V1_D2-B: ${movidas} fichas movidas, ${marcadas} marcadas para sync, ${descartadas} residuos descartados`);
+  }
+  return {movidas,descartadas,marcadas};
+}
+
 // Stepper táctil reutilizable: − qty +
 function stepper(qty, onChange, min=0){
   const q=h('span',{className:'qty'+(qty?'':' zero')},[String(qty)]);
@@ -1005,7 +1064,7 @@ function newWindowRecord(){
     acciones:Object.fromEntries(ACTION_IDS.map(id=>[id,{active:false,done:false}])),
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
-    // Hojas de la ventana (v2.18). medida: '' | '130' | '128.5' (relevada en terreno)
+    // Hojas de la ventana (v2.19). medida: '' | '130' | '128.5' (relevada en terreno)
     hojas:{corredera:'',fija:'',medida:'',comentario:''},
     funcionalidad:0,
     historial:[],
@@ -1279,7 +1338,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.18']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.19']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1403,7 +1462,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.18'),
+    topbar('VentaControl v2.19'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1604,7 +1663,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.18)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.19)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1654,7 +1713,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.18)
+          // Sub-items con fechas plan/real (v2.19)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -2475,7 +2534,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.18']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.19']),
     ]),
   ]);
 }
@@ -2739,7 +2798,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.18`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.19`]),
   ]);
 }
 
@@ -2753,7 +2812,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.18 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.19 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3776,7 +3835,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
   const _nextWin=_curIdx<_sibWins.length-1?_sibWins[_curIdx+1]:null;
 
   const el=h('div',{className:'fade-in'},[
-    topbar(`${code} · ${loc}`,backView,backParams),
+    topbar(`${winFullName(code)} · ${loc}`,backView,backParams),
     h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}},[
       h('div',{style:{fontSize:'0.8rem',color:'var(--tx-2)',flex:1}},[subtitle]),
       (()=>{
@@ -3899,7 +3958,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ].filter(Boolean)):null,
     ].filter(Boolean)),
 
-    // ── Hojas de la ventana (corredera / fija / medida) — v2.18 ──
+    // ── Hojas de la ventana (corredera / fija / medida) — v2.19 ──
     (()=>{
       const hj=getHojas(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4117,7 +4176,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.18: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.19: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4828,7 +4887,7 @@ function renderInventario(){
             h('th',{},['Recib']),h('th',{},['Saldo']),
           ])]),
           h('tbody',{},rows.map(r=>h('tr',{className:r.faltantes?'has-falta':''},[
-            h('td',{title:r.loc},[r.code]),
+            h('td',{title:winFullName(r.code)+' · '+r.loc},[r.code]),
             h('td',{},[String(r.requeridas)]),
             h('td',{},[String(r.instaladas)]),
             h('td',{},[r.faltantes?String(r.faltantes):'·']),
@@ -4878,7 +4937,7 @@ function renderInventario(){
               h('th',{},['⬌ falta']),h('th',{},['⬌ dañ']),h('th',{},['⬜ falta']),h('th',{},['130']),h('th',{},['128,5']),
             ])]),
             h('tbody',{},conHojas.map(r=>h('tr',{className:(r.hojas.correderaFalta||r.hojas.fijaFalta)?'has-falta':''},[
-              h('td',{title:r.loc},[r.code]),
+              h('td',{title:winFullName(r.code)+' · '+r.loc},[r.code]),
               h('td',{},[String(r.orient.Derecha||0)]),
               h('td',{},[String(r.orient.Izquierda||0)]),
               h('td',{},[r.hojas.correderaFalta?String(r.hojas.correderaFalta):'·']),
@@ -5143,14 +5202,14 @@ function showDanosReporte(lista){
   lista.forEach(r=>{
     if(r.edif!==torreActual){torreActual=r.edif;L.push('');L.push('  TORRE '+r.edif);}
     const dl=r.danos.map(id=>(DEFICIENCIES.find(d=>d.id===id)||{}).label||id).join(', ');
-    L.push('    '+String(r.depto).padEnd(6)+r.code.padEnd(9)+(r.loc||'').padEnd(16)+
+    L.push('    '+String(r.depto).padEnd(6)+winFullName(r.code).padEnd(16)+(r.loc||'').padEnd(16)+
       r.orient.padEnd(11)+(r.medida?(r.medida==='128.5'?'128,5cm':r.medida+'cm'):'sin medir').padEnd(10));
     L.push('      → '+dl);
     if(r.obs)L.push('      obs: '+r.obs);
   });
   L.push('');
   L.push('='.repeat(56));
-  L.push('VentaControl v2.18');
+  L.push('VentaControl v2.19');
   const texto=L.join('\n');
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
@@ -5306,7 +5365,7 @@ function generatePedidoText(scope){
   if(!conFalta.length)L.push('  Sin ventanas faltantes registradas.');
   else{
     conFalta.forEach(r=>{
-      const pad=(r.code+'          ').slice(0,10);
+      const pad=(winFullName(r.code)+'                ').slice(0,16);
       L.push('  '+pad+String(r.faltantes).padStart(3)+' faltan · '+String(r.enAcopio).padStart(3)+' acopio · '+
         String(r.recibidas).padStart(3)+' recib · saldo '+(r.saldo<0?String(r.saldo):'OK'));
     });
@@ -5331,13 +5390,13 @@ function generatePedidoText(scope){
     const det=[];
     conFalta.forEach(r=>r.detalle.forEach(d=>det.push({...d,code:r.code})));
     det.sort((a,b)=>(a.edif-b.edif)||String(a.depto).localeCompare(String(b.depto))||a.code.localeCompare(b.code));
-    det.forEach(d=>L.push('  Torre '+d.edif+' — '+d.depto+' — '+d.code+(d.loc?' ('+d.loc+')':'')));
+    det.forEach(d=>L.push('  Torre '+d.edif+' — '+d.depto+' — '+winFullName(d.code)+(d.loc?' ('+d.loc+')':'')));
     L.push('');
     L.push('  Total vanos sin ventana: '+det.length);
   }
   L.push('');
   L.push('='.repeat(52));
-  L.push('VentaControl v2.18');
+  L.push('VentaControl v2.19');
   return L.join('\n');
 }
 
@@ -5400,7 +5459,7 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Sync (v2.18): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    // ⬆ Sync (v2.19): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
       title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
@@ -5818,7 +5877,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.18',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.19',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -5911,7 +5970,7 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync principal (v2.18): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// Sync principal (v2.19): SOLO PUSH. Antes hacía pull automático que sobrescribía
 // datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
 // Alias de doPushOnly para compat con botón existente.
 async function doSync(){ return doPushOnly(); }
@@ -6199,7 +6258,17 @@ function mergeFromSheets(rows){
     }
     if(!depto){skipped++;return;}
 
-    const key=r.key||`${edif}-${depto}-${elem}`;
+    // Legacy v2.19: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
+    // Sin esto, las filas viejas del Sheet crearían registros fantasma.
+    let elemNorm=elem;
+    if(elem==='V1_D2'&&!String(depto).startsWith('EC')){
+      const dn=parseInt(depto);
+      if(!isNaN(dn)){
+        const f=Math.floor(dn/100), pi=(dn%100)-1;
+        if(f>=1&&f<=5&&pi>=0&&pi<4&&BUILDINGS[parseInt(edif)]&&getDeptType(parseInt(edif),f,pi)==='B')elemNorm='V1_D2-B';
+      }
+    }
+    const key=r.key||`${edif}-${depto}-${elemNorm}`;
     const exists=!!DATA.windows[key];
 
     // CRITICAL: Skip keys with unsaved local changes — local wins over remote
@@ -6259,7 +6328,7 @@ function mergeFromSheets(rows){
       filtracionAgua:pd(r,'filtracionAgua','def_filtracionAgua'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    // Hojas (v2.18)
+    // Hojas (v2.19)
     if(r.hoja_corredera!==undefined||r.hoja_fija!==undefined||r.hoja_medida!==undefined){
       const hj=getHojas(w);
       if(r.hoja_corredera!==undefined&&r.hoja_corredera!=='')hj.corredera=String(r.hoja_corredera);
@@ -6441,6 +6510,11 @@ function migrateV1(){
   if(!DATA.personas)DATA.personas=[];
   if(!DATA.inventario)DATA.inventario={recepciones:[],meta:{}};
 
+  // IMPORTANTE: debe correr ANTES del bloque de integridad. Si no, el loop de
+  // integridad crearía fichas vacías con el código nuevo y dejaría huérfanas
+  // las viejas con todos los datos cargados.
+  migrateV1D2B();
+
   // Verify data integrity - ensure all windows exist
   let added=0;
   for(const[edif,cfg] of Object.entries(BUILDINGS)){
@@ -6504,7 +6578,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.18 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.19 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
