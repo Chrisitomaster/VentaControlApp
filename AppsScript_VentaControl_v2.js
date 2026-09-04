@@ -12,7 +12,8 @@
 
 var SHEET_NAME = 'REGISTRO';
 
-// Columnas actuales (A-N = 1-14) + v2 (O-X = 15-24) + v2.2 (Y-AD = 25-30) + v2.9 (AE-AF = 31-32)
+// Columnas: A-N (1-14) + v2 (O-X 15-24) + v2.2 (Y-AD 25-30) + v2.9 (AE-AF 31-32)
+//           + v2.17 hojas y daños (AG-AP 33-42) + v2.21 func (AQ 43) + v2.22 reposición (AR-AU 44-47)
 var HEADERS = [
   'Edificio',            // A  1
   'Piso',                // B  2
@@ -49,6 +50,26 @@ var HEADERS = [
   // ---- Columnas v2.9 ----
   'Sin Impermeabilizar', // AE 31  (deficiencia: rasgo no impermeabilizado)
   'Acc. Imperm. Rasgo',  // AF 32  (acción: impermeabilizar rasgo)
+  // ---- Columnas v2.17: hojas y daños críticos ----
+  'Falta Hoja Corredera',// AG 33
+  'Falta Hoja Fija',     // AH 34
+  'Acc. Reponer Hoja',   // AI 35
+  'Termopanel Trizado',  // AJ 36
+  'PVC Roto',            // AK 37
+  'Filtración Agua',     // AL 38
+  'Acc. Reparar PVC',    // AM 39
+  'Acc. Sellar Filtrac', // AN 40
+  'Hoja Corredera',      // AO 41  (tiene / falta / danada)
+  'Hoja Fija',           // AP 42  (tiene / falta / danada)
+  'Medida Corredera',    // AQ 43  (130 / 128.5)
+  'Coment. Hojas',       // AR 44
+  // ---- Columna v2.21 ----
+  'Funcionam. Deficiente',// AS 45
+  // ---- Columnas v2.22: reposición al proveedor ----
+  'Reposición Estado',   // AT 46  (porRetirar / enviada / recibida)
+  'Repo. Retirada',      // AU 47  (fecha de retiro de obra)
+  'Repo. Volvió',        // AV 48  (fecha de retorno)
+  'Repo. Detalle',       // AW 49
 ];
 
 function setup() {
@@ -72,7 +93,8 @@ function setup() {
   var lastRow = Math.max(sheet.getLastRow(), 2);
   sheet.getRange(1, 1, lastRow, HEADERS.length).createFilter();
 
-  var widths = [65,45,75,70,80,150,100,110,80,120,130,110,240,140,90,130,130,90,100,90,110,130,120,90,120,120,120,120,130,130,130,130];
+  var widths = [65,45,75,70,80,150,100,110,80,120,130,110,240,140,90,130,130,90,100,90,110,130,120,90,120,120,120,120,130,130,130,130,
+                130,110,120,120,90,110,120,120,110,100,120,180,130,120,110,110,180];
   for (var i = 0; i < widths.length; i++) {
     sheet.setColumnWidth(i + 1, widths[i] || 100);
   }
@@ -201,6 +223,26 @@ function syncData(records) {
       rec.act_cargarMortero || '',
       yesNo(rec.sinImpermeabilizar),                  // AE 31  v2.9
       rec.act_impermeabilizarRasgo || '',             // AF 32  v2.9
+      // ---- v2.17 ----
+      yesNo(rec.faltaHojaCorredera),                  // AG 33
+      yesNo(rec.faltaHojaFija),                       // AH 34
+      rec.act_reponerHoja || '',                      // AI 35
+      yesNo(rec.termopanelTrizado),                   // AJ 36
+      yesNo(rec.pvcRoto),                             // AK 37
+      yesNo(rec.filtracionAgua),                      // AL 38
+      rec.act_repararPVC || '',                       // AM 39
+      rec.act_sellarFiltracion || '',                 // AN 40
+      rec.hoja_corredera || '',                       // AO 41
+      rec.hoja_fija || '',                            // AP 42
+      rec.hoja_medida || '',                          // AQ 43
+      rec.hoja_comentario || '',                      // AR 44
+      // ---- v2.21 ----
+      yesNo(rec.funcionamientoDeficiente),            // AS 45
+      // ---- v2.22 ----
+      rec.repo_estado || '',                          // AT 46
+      rec.repo_fechaRetiro || '',                     // AU 47
+      rec.repo_fechaRetorno || '',                    // AV 48
+      rec.repo_comentario || '',                      // AW 49
     ];
 
     if (keyMap[key] !== undefined) {
@@ -267,13 +309,19 @@ var DEFS_CONFIG = [
   {label:'Falta fijacion en marco',     col:19, accion:'Instalar fijacion',           accionCol:27},
   {label:'Cargar mortero en vano',      col:7,  accion:'Cargar mortero en vano',       accionCol:29},
   {label:'Rasgo sin impermeabilizar',   col:30, accion:'Impermeabilizar rasgo',       accionCol:31},
+  {label:'Falta hoja corredera',        col:32, accion:'Reponer hoja faltante',       accionCol:34},
+  {label:'Falta hoja fija',             col:33, accion:'Reponer hoja faltante',       accionCol:34},
+  {label:'Termopanel trizado',          col:35, accion:'Reemplazar vidrio',           accionCol:25},
+  {label:'PVC roto',                    col:36, accion:'Reparar/reemplazar PVC',      accionCol:38},
+  {label:'Filtracion (estanqueidad)',   col:37, accion:'Sellar filtracion',           accionCol:39},
+  {label:'Funcionamiento deficiente',   col:44, accion:'Revisar funcionamiento',      accionCol:-1},
 ];
 
 // Función ejecutable manualmente desde el editor para regenerar hojas
 function runSummaries() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   updateAllSummaries(ss);
-  SpreadsheetApp.getUi().alert('Hojas RESUMEN, PENDIENTES y DEFICIENCIAS actualizadas.');
+  SpreadsheetApp.getUi().alert('Hojas RESUMEN, PENDIENTES, DEFICIENCIAS y REPOSICIONES actualizadas.');
 }
 
 // Lee datos una sola vez y actualiza las 3 hojas
@@ -303,6 +351,9 @@ function updateAllSummaries(ss) {
   try { buildDeficiencias(ss, data, ts); }
   catch(e) { Logger.log('ERROR buildDeficiencias: ' + e + ' | stack: ' + (e.stack||'')); }
 
+  try { buildReposiciones(ss, data, ts); }
+  catch(e) { Logger.log('ERROR buildReposiciones: ' + e + ' | stack: ' + (e.stack||'')); }
+
   SpreadsheetApp.flush();
   Logger.log('updateAllSummaries: completado');
 }
@@ -327,9 +378,9 @@ function buildResumen(ss, data, ts) {
     else if (est==='pendiente')    b[2]++;
     else if (est==='noinstalada')  b[3]++;
     else if (est==='quitar')       b[4]++;
-    var defCols = [7,8,9,10,14,15,16,17,18,19,30];
+    var defCols = [7,8,9,10,14,15,16,17,18,19,30,32,33,35,36,37,44];
     for (var d = 0; d < defCols.length; d++) { if (row[defCols[d]]==='Si' || row[defCols[d]]==='S\u00ed') b[5]++; }
-    var actCols = [20,21,22,23,24,25,26,27,29,31];
+    var actCols = [20,21,22,23,24,25,26,27,29,31,34,38,39];
     for (var ai = 0; ai < actCols.length; ai++) {
       var v = String(row[actCols[ai]]||'').toLowerCase();
       if (v==='pending') b[6]++;
@@ -508,6 +559,74 @@ function buildDeficiencias(ss, data, ts) {
 }
 
 // ----------------------------------------------------------------
+// HOJA REPOSICIONES: ventanas enviadas al proveedor y su estado (v2.22)
+function buildReposiciones(ss, data, ts) {
+  var sheet = ss.getSheetByName('REPOSICIONES');
+  if (!sheet) sheet = ss.insertSheet('REPOSICIONES');
+  sheet.clearContents();
+
+  var LABELS = {porRetirar:'Por retirar', enviada:'En el proveedor', recibida:'Repuesta en obra'};
+  var ORDEN  = ['porRetirar','enviada','recibida'];
+
+  var filas = [];
+  for (var i = 0; i < data.length; i++) {
+    var est = String(data[i][45] || '').trim();
+    if (!est) continue;
+    filas.push(data[i]);
+  }
+
+  var out = [];
+  out.push(['REPOSICIONES DE VENTANAS - Condominio Alberto Fuchslocher','','','','','','','','','']);
+  out.push(['Actualizado: ' + ts,'','','','','','','','','']);
+  out.push(['','','','','','','','','','']);
+
+  var conteo = {porRetirar:0, enviada:0, recibida:0};
+  for (var i = 0; i < filas.length; i++) {
+    var e = String(filas[i][45] || '').trim();
+    if (conteo[e] !== undefined) conteo[e]++;
+  }
+  out.push(['RESUMEN','','','','','','','','','']);
+  for (var k = 0; k < ORDEN.length; k++) {
+    out.push([LABELS[ORDEN[k]], conteo[ORDEN[k]] || 0,'','','','','','','','']);
+  }
+  out.push(['TOTAL', filas.length,'','','','','','','','']);
+  out.push(['','','','','','','','','','']);
+
+  var headerRows = [];
+  out.push(['#','Torre','Piso','N Depto','Elemento','Recinto','Estado Repo.','Retirada','Volvio','Detalle']);
+  headerRows.push(out.length);
+
+  filas.sort(function(a,b){
+    var oa = ORDEN.indexOf(String(a[45]||'').trim());
+    var ob = ORDEN.indexOf(String(b[45]||'').trim());
+    if (oa !== ob) return oa - ob;
+    var d = parseInt(a[0]) - parseInt(b[0]);
+    if (d) return d;
+    return String(a[2]) > String(b[2]) ? 1 : -1;
+  });
+
+  for (var i = 0; i < filas.length; i++) {
+    var r = filas[i];
+    var e = String(r[45]||'').trim();
+    out.push([i+1, r[0], r[1], r[2], r[4]||'', r[5]||'',
+              LABELS[e] || e, r[46]||'', r[47]||'', r[48]||'']);
+  }
+  if (!filas.length) out.push(['Sin ventanas en reposicion','','','','','','','','','']);
+
+  sheet.getRange(1, 1, out.length, 10).setValues(out);
+  sheet.getRange(1,1).setFontSize(12).setFontWeight('bold').setFontColor('#B9770E');
+  sheet.getRange(2,1).setFontSize(9).setFontColor('#888888');
+  sheet.getRange(4,1).setFontWeight('bold');
+  for (var hi = 0; hi < headerRows.length; hi++) {
+    sheet.getRange(headerRows[hi], 1, 1, 10)
+      .setFontWeight('bold').setBackground('#B9770E').setFontColor('#FFFFFF');
+  }
+  sheet.setFrozenRows(headerRows.length ? headerRows[0] : 1);
+  for (var c = 1; c <= 10; c++) sheet.autoResizeColumn(c);
+  Logger.log('buildReposiciones: OK, ' + filas.length + ' ventanas');
+}
+
+// ----------------------------------------------------------------
 function readAll(edifFilter) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
@@ -524,6 +643,15 @@ function readAll(edifFilter) {
     if (edifFilter && String(row[0]).trim() !== edifFilter) continue;
 
     function sv(v) { return (v === 'Sí' || v === 'Si') ? 1 : 0; }
+    // Sheets puede devolver un Date en columnas con formato fecha; la app
+    // espera siempre 'YYYY-MM-DD'.
+    function fechaStr(v) {
+      if (!v) return '';
+      if (Object.prototype.toString.call(v) === '[object Date]') {
+        return Utilities.formatDate(v, 'America/Santiago', 'yyyy-MM-dd');
+      }
+      return String(v);
+    }
 
     records.push({
       edif:             row[0],
@@ -559,6 +687,26 @@ function readAll(edifFilter) {
       // ---- v2.9 ----
       sinImpermeabilizar:      sv(row[30] || ''),
       act_impermeabilizarRasgo: row[31] || '',
+      // ---- v2.17 ----
+      faltaHojaCorredera:      sv(row[32] || ''),
+      faltaHojaFija:           sv(row[33] || ''),
+      act_reponerHoja:            row[34] || '',
+      termopanelTrizado:       sv(row[35] || ''),
+      pvcRoto:                 sv(row[36] || ''),
+      filtracionAgua:          sv(row[37] || ''),
+      act_repararPVC:             row[38] || '',
+      act_sellarFiltracion:       row[39] || '',
+      hoja_corredera:             row[40] || '',
+      hoja_fija:                  row[41] || '',
+      hoja_medida:                row[42] || '',
+      hoja_comentario:            row[43] || '',
+      // ---- v2.21 ----
+      funcionamientoDeficiente: sv(row[44] || ''),
+      // ---- v2.22 ----
+      repo_estado:                row[45] || '',
+      repo_fechaRetiro:      fechaStr(row[46]),
+      repo_fechaRetorno:     fechaStr(row[47]),
+      repo_comentario:            row[48] || '',
     });
   }
 
