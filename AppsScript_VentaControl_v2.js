@@ -77,6 +77,14 @@ function setup() {
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
 
+  // La hoja puede tener menos columnas fisicas que HEADERS (arranca en 26).
+  // Sin esto, getRange se cae con "Those columns are out of bounds".
+  var faltan = HEADERS.length - sheet.getMaxColumns();
+  if (faltan > 0) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), faltan);
+    Logger.log('Se agregaron ' + faltan + ' columnas a la hoja.');
+  }
+
   // Solo sobreescribe la fila de cabecera — datos existentes se conservan
   sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   sheet.getRange(1, 1, 1, HEADERS.length)
