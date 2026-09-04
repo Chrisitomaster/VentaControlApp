@@ -107,8 +107,11 @@ function setup() {
     sheet.setColumnWidth(i + 1, widths[i] || 100);
   }
 
-  // Generar hojas de resumen si ya hay datos
-  updateAllSummaries(ss);
+  // Generar hojas de resumen si ya hay datos. Si el servicio se satura, la
+  // cabecera y las columnas ya quedaron aplicadas: se puede reintentar solo
+  // esta parte con runSummaries().
+  try { updateAllSummaries(ss); }
+  catch (e) { Logger.log('Resumenes no generados (' + e + '). Ejecuta runSummaries por separado.'); }
 
   Logger.log('Setup OK. Hojas de resumen creadas. Ahora actualiza (o crea) la implementación como App Web.');
 }
@@ -160,6 +163,14 @@ function handleRequest(e) {
 function jsonOut(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ----------------------------------------------------------------
+// Fija anchos sin medir el contenido. autoResizeColumn() obliga a Sheets a
+// recorrer todas las filas por columna; con 6.000+ filas y 4 hojas de
+// resumen eso agota el servicio y termina en "Spreadsheets timed out".
+function setWidths(sheet, widths) {
+  for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
 }
 
 // ----------------------------------------------------------------
@@ -350,17 +361,20 @@ function updateAllSummaries(ss) {
   var ts = Utilities.formatDate(new Date(), 'America/Santiago', 'yyyy-MM-dd HH:mm');
   Logger.log('updateAllSummaries: procesando ' + data.length + ' filas');
 
-  try { buildResumen(ss, data, ts); }
+  // REPOSICIONES va primero: es la mas liviana y asi no queda al final de
+  // la cola si el servicio se pone lento.
+  try { buildReposiciones(ss, data, ts); SpreadsheetApp.flush(); }
+  catch(e) { Logger.log('ERROR buildReposiciones: ' + e + ' | stack: ' + (e.stack||'')); }
+
+  try { buildResumen(ss, data, ts); SpreadsheetApp.flush(); }
   catch(e) { Logger.log('ERROR buildResumen: ' + e + ' | stack: ' + (e.stack||'')); }
 
-  try { buildPendientes(ss, data, ts); }
+  try { buildPendientes(ss, data, ts); SpreadsheetApp.flush(); }
   catch(e) { Logger.log('ERROR buildPendientes: ' + e + ' | stack: ' + (e.stack||'')); }
 
-  try { buildDeficiencias(ss, data, ts); }
+  try { buildDeficiencias(ss, data, ts); SpreadsheetApp.flush(); }
   catch(e) { Logger.log('ERROR buildDeficiencias: ' + e + ' | stack: ' + (e.stack||'')); }
 
-  try { buildReposiciones(ss, data, ts); }
-  catch(e) { Logger.log('ERROR buildReposiciones: ' + e + ' | stack: ' + (e.stack||'')); }
 
   SpreadsheetApp.flush();
   Logger.log('updateAllSummaries: completado');
@@ -425,7 +439,7 @@ function buildResumen(ss, data, ts) {
     sheet.getRange(5+keys.length,1,1,10).setFontWeight('bold').setBackground('#2471A3').setFontColor('#FFFFFF');
   }
   sheet.setFrozenRows(4);
-  for (var c = 1; c <= 10; c++) sheet.autoResizeColumn(c);
+  setWidths(sheet, [70,70,90,90,110,70,90,120,90,80]);
   Logger.log('buildResumen: OK, ' + keys.length + ' torres');
 }
 
@@ -470,7 +484,7 @@ function buildPendientes(ss, data, ts) {
   sheet.getRange(3,1).setFontWeight('bold').setFontColor('#922B21');
   sheet.getRange(5,1,1,10).setFontWeight('bold').setBackground('#922B21').setFontColor('#FFFFFF');
   sheet.setFrozenRows(5);
-  for (var c = 1; c <= 10; c++) sheet.autoResizeColumn(c);
+  setWidths(sheet, [45,60,50,80,80,140,120,100,120,260]);
   Logger.log('buildPendientes: OK, ' + pending.length + ' ventanas pendientes');
 }
 
@@ -562,7 +576,7 @@ function buildDeficiencias(ss, data, ts) {
     sheet.getRange(subHdrRows[si], 1, 1, NCOLS)
       .setFontWeight('bold').setBackground('#566573').setFontColor('#FFFFFF');
   }
-  for (var c = 1; c <= NCOLS; c++) sheet.autoResizeColumn(c);
+  setWidths(sheet, [45,60,50,80,80,140,120,100,110,180,110,260]);
   Logger.log('buildDeficiencias: OK, ' + headerRows.length + ' tipos con datos');
 }
 
@@ -630,7 +644,7 @@ function buildReposiciones(ss, data, ts) {
       .setFontWeight('bold').setBackground('#B9770E').setFontColor('#FFFFFF');
   }
   sheet.setFrozenRows(headerRows.length ? headerRows[0] : 1);
-  for (var c = 1; c <= 10; c++) sheet.autoResizeColumn(c);
+  setWidths(sheet, [45,60,50,80,110,140,130,110,110,280]);
   Logger.log('buildReposiciones: OK, ' + filas.length + ' ventanas');
 }
 
