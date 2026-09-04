@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.26</title>
+<title>VentaControl v2.27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -494,7 +494,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.26 — Configuration & Data
+   VentaControl v2.27 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -549,7 +549,7 @@ BLDG_RAW.forEach(([e,tipo,sa,p1,p25])=>{
 // ---- WINDOW DEFINITIONS PER DEPT TYPE ----
 const WIN_DEF = {
   A:[['V1-Izq','Dorm 1 Izq'],['V1-Der','Dorm 1 Der'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
-  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.26)
+  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.27)
   B:[['V2','Dormitorio 1'],['V1_D2-B','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
   MR:[['V5_1','Dorm MR 1'],['V5_2','Dorm MR 2'],['V5_3','Dorm MR 3'],['V5a','Logia MR'],['V6_1','Dorm 2 MR'],['V6_2','Dorm 2 MR'],['V7','Estar-Comedor MR']]
 };
@@ -580,7 +580,7 @@ const DEFICIENCIES = [
   {id:'faltaHojaCorredera',label:'Falta hoja corredera',                icon:'⬌'},
   {id:'faltaHojaFija',     label:'Falta hoja fija',                     icon:'⬜'},
   {id:'funcionamientoDeficiente', label:'Funcionamiento deficiente',    icon:'⚙'},
-  // ---- Daños críticos (v2.26) ----
+  // ---- Daños críticos (v2.27) ----
   {id:'termopanelTrizado', label:'Termopanel trizado/fracturado',       icon:'💥', critico:true},
   {id:'pvcRoto',           label:'PVC roto',                            icon:'🧱', critico:true},
   {id:'filtracionAgua',    label:'Filtración (prueba estanqueidad)',    icon:'🌊', critico:true},
@@ -627,7 +627,7 @@ const DEF_ACTION_MAP = {
   filtracionAgua:'sellarFiltracion',
 };
 
-/* ---- HOJAS DE VENTANA (v2.26) ----
+/* ---- HOJAS DE VENTANA (v2.27) ----
    Estado de hoja corredera y hoja fija + medida de la corredera.
    La medida se releva en terreno (no hay regla por tipo). */
 const HOJA_ESTADOS = [
@@ -635,7 +635,7 @@ const HOJA_ESTADOS = [
   {id:'falta',  label:'Falta',   sym:'✗', color:'red'},
   {id:'danada', label:'Dañada',  sym:'⚠', color:'orange'},
 ];
-/* ---- REPOSICIÓN (v2.26) ----
+/* ---- REPOSICIÓN (v2.27) ----
    Ciclo de la ventana que se manda al proveedor: está en obra y hay que
    retirarla → se la llevaron (pendiente de volver) → volvió a obra. */
 const REPO_ESTADOS = [
@@ -665,7 +665,7 @@ const VANO_OPTS = ['OK','Sobredimensionado','Subdimensionado'];
 
 // Exterior seal states
 
-// EIFS scheduling helpers (v2.26)
+// EIFS scheduling helpers (v2.27)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -787,7 +787,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.26) ----
+// ---- PERSONAS / Asignación de acciones (v2.27) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -1021,7 +1021,7 @@ function defsDeVentana(w){
   return out;
 }
 
-/* ---- MIGRACIÓN v2.26: V1_D2 → V1_D2-B en departamentos tipo B ----
+/* ---- MIGRACIÓN v2.27: V1_D2 → V1_D2-B en departamentos tipo B ----
    La ventana del dormitorio 2 de los deptos tipo B va en el dilatado y lleva
    pilar, así que pasa a tener código propio. Mueve la ficha completa
    conservando estado, deficiencias, acciones, hojas, sello, fotos e historial.
@@ -1039,7 +1039,7 @@ function windowTieneDatos(w){
   if(w.fotos&&w.fotos.length)return true;
   return false;
 }
-/* ---- MIGRACION v2.26: rating de funcionalidad 1-5 -> deficiencia ----
+/* ---- MIGRACION v2.27: rating de funcionalidad 1-5 -> deficiencia ----
    El rating se saco de la interfaz. Las ventanas calificadas 1 o 2 (muy
    deficiente / deficiente) pasan a tener la deficiencia
    'funcionamientoDeficiente'; de 3 a 5 se consideran aceptables y se
@@ -1181,9 +1181,9 @@ function newWindowRecord(){
     acciones:Object.fromEntries(ACTION_IDS.map(id=>[id,{active:false,done:false}])),
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
-    // Hojas de la ventana (v2.26). medida: '' | '130' | '128.5' (relevada en terreno)
+    // Hojas de la ventana (v2.27). medida: '' | '130' | '128.5' (relevada en terreno)
     hojas:{corredera:'',fija:'',medida:'',comentario:''},
-    // Reposición (v2.26): estado, fechas de retiro/retorno y comentario
+    // Reposición (v2.27): estado, fechas de retiro/retorno y comentario
     reposicion:{estado:'',fechaRetiro:'',fechaRetorno:'',comentario:''},
     funcionalidad:0,
     historial:[],
@@ -1195,7 +1195,7 @@ let _saveTimer=null;
 // IMPORTANTE: saveLocal antes era debounced 400ms — si tapaba rápido + recarga, perdía cambios.
 // Ahora persiste inmediato. Costo: ~5-20ms por tap. localStorage es atomico, sin race.
 function saveLocal(){ saveLocalNow(); }
-/* ---- FORMATO DE GUARDADO COMPACTO (v2.26) ----
+/* ---- FORMATO DE GUARDADO COMPACTO (v2.27) ----
    El formato anterior escribía cada ficha entera, incluidos los valores por
    defecto: 13 acciones en {active:false,done:false} y 17 deficiencias en
    false suman 978 bytes por ventana. Con 4.732 ventanas eso da ~6 MB, por
@@ -1563,7 +1563,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.26']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.27']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1687,7 +1687,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.26'),
+    topbar('VentaControl v2.27'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1888,7 +1888,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.26)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.27)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1938,7 +1938,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.26)
+          // Sub-items con fechas plan/real (v2.27)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -2675,7 +2675,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.26']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.27']),
     ]),
   ]);
 }
@@ -2939,7 +2939,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.26`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.27`]),
   ]);
 }
 
@@ -2953,7 +2953,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.26 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.27 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3769,7 +3769,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ].filter(Boolean)):null,
     ].filter(Boolean)),
 
-    // ── Reposición al proveedor — v2.26 ──
+    // ── Reposición al proveedor — v2.27 ──
     (()=>{
       const rp=getRepo(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -3813,7 +3813,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       ].filter(Boolean));
     })(),
 
-    // ── Hojas de la ventana (corredera / fija / medida) — v2.26 ──
+    // ── Hojas de la ventana (corredera / fija / medida) — v2.27 ──
     (()=>{
       const hj=getHojas(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -3964,7 +3964,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.26: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.27: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4212,7 +4212,7 @@ function applyBulkStatus(scope,params,newEstado){
   saveLocalNow();
 }
 
-/* ---- CAMBIO MASIVO CONDICIONAL (v2.26) ----
+/* ---- CAMBIO MASIVO CONDICIONAL (v2.27) ----
    Cambia de estado sólo las ventanas que hoy están en ciertos estados, en
    vez de pisar todo el alcance. El caso que lo motivó: marcar como
    "Sin Ventana" todo lo que todavía no está instalado. */
@@ -4834,7 +4834,6 @@ function renderInventario(){
         h('table',{className:'inv-table'},[
           h('thead',{},[h('tr',{},[
             h('th',{},['Tipo']),h('th',{},['Req']),h('th',{},['Inst']),
-            h('th',{title:'Vanos que faltan instalar = Req − Inst'},['x Inst']),
             h('th',{title:'La ventana está en obra pero todavía no se instaló'},['Pend']),
             h('th',{title:'Marcadas "Sin Ventana": no hay unidad física, esto es lo que se pide'},['S/Vent']),
             h('th',{title:'Marcadas para quitar'},['Quit']),
@@ -4842,20 +4841,16 @@ function renderInventario(){
             h('th',{},['Recib']),h('th',{},['Saldo']),
           ])]),
           h('tbody',{},rows.map(r=>{
-            // Dos lecturas distintas que antes se confundían:
-            //  - porInstalar: todo lo que falta instalar (Req − Inst)
-            //  - faltantes:   solo las que no tienen unidad física (a pedir)
-            const porInstalar=r.requeridas-r.instaladas;
+            // Las cuatro categorías de estado suman el total de vanos.
             const suma=r.instaladas+r.pendientes+r.faltantes+r.aQuitar;
             const cuadra=(suma===r.requeridas);
             return h('tr',{className:r.faltantes?'has-falta':''},[
               h('td',{title:winFullName(r.code)+' · '+r.loc},[r.code]),
               h('td',{className:cuadra?'':'saldo-neg',
-                title:cuadra?'':'No cuadra: '+r.instaladas+'+'+r.pendientes+'+'+r.faltantes+'+'+r.aQuitar+' = '+suma},
+                title:cuadra?'Faltan instalar '+(r.requeridas-r.instaladas)
+                  :'No cuadra: '+r.instaladas+'+'+r.pendientes+'+'+r.faltantes+'+'+r.aQuitar+' = '+suma},
                 [String(r.requeridas)+(cuadra?'':' ⚠')]),
               h('td',{},[String(r.instaladas)]),
-              h('td',{style:{fontWeight:'700'},title:'Faltan instalar '+porInstalar+' de '+r.requeridas},
-                [porInstalar?String(porInstalar):'·']),
               h('td',{},[r.pendientes?String(r.pendientes):'·']),
               h('td',{},[r.faltantes?String(r.faltantes):'·']),
               h('td',{},[r.aQuitar?String(r.aQuitar):'·']),
@@ -4868,7 +4863,7 @@ function renderInventario(){
         ]),
       ]),
       h('div',{style:{fontSize:'0.68rem',color:'var(--tx-2)',marginTop:'8px',lineHeight:'1.55'}},[
-        h('b',{},['x Inst']),' = faltan instalar (Req − Inst). Se desglosa en Pend + S/Vent + Quit.',
+        'Cada fila cierra: ',h('b',{},['Req = Inst + Pend + S/Vent + Quit']),'.',
         h('br',{}),
         h('b',{},['Pend']),' = la ventana está en obra, todavía no se instaló. No se pide.',
         h('br',{}),
@@ -5223,7 +5218,7 @@ function showDanosReporte(lista){
   });
   L.push('');
   L.push('='.repeat(56));
-  L.push('VentaControl v2.26');
+  L.push('VentaControl v2.27');
   const texto=L.join('\n');
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
@@ -5452,7 +5447,7 @@ function generatePedidoText(scope){
   }
   L.push('');
   L.push('='.repeat(52));
-  L.push('VentaControl v2.26');
+  L.push('VentaControl v2.27');
   return L.join('\n');
 }
 
@@ -5504,7 +5499,7 @@ function generateReposicionesText(edifs,etiqueta){
     });
   });
   L.push('='.repeat(56));
-  L.push('VentaControl v2.26');
+  L.push('VentaControl v2.27');
   return L.join('\n');
 }
 
@@ -5825,7 +5820,7 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Sync (v2.26): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    // ⬆ Sync (v2.27): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
       title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
@@ -6246,7 +6241,7 @@ function saveBackupSnapshot(){
   try{
     // Snapshot en formato compacto y sin fotos: comparte cupo con el registro
     // principal, así que tiene que ocupar lo mínimo.
-    const safe={ts:ts(),version:'v2.26',compact:true,data:packData(true)};
+    const safe={ts:ts(),version:'v2.27',compact:true,data:packData(true)};
     const keys=Object.keys(localStorage).filter(k=>k.indexOf(BACKUP_PREFIX)===0).sort();
     while(keys.length>=MAX_BACKUPS) localStorage.removeItem(keys.shift());
     localStorage.setItem(BACKUP_PREFIX+Date.now(),JSON.stringify(safe));
@@ -6344,7 +6339,7 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync principal (v2.26): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// Sync principal (v2.27): SOLO PUSH. Antes hacía pull automático que sobrescribía
 // datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
 // Alias de doPushOnly para compat con botón existente.
 async function doSync(){ return doPushOnly(); }
@@ -6637,7 +6632,7 @@ function mergeFromSheets(rows){
     }
     if(!depto){skipped++;return;}
 
-    // Legacy v2.26: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
+    // Legacy v2.27: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
     // Sin esto, las filas viejas del Sheet crearían registros fantasma.
     let elemNorm=elem;
     if(elem==='V1_D2'&&!String(depto).startsWith('EC')){
@@ -6708,7 +6703,7 @@ function mergeFromSheets(rows){
       filtracionAgua:pd(r,'filtracionAgua','def_filtracionAgua'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    // Hojas (v2.26)
+    // Hojas (v2.27)
     if(r.hoja_corredera!==undefined||r.hoja_fija!==undefined||r.hoja_medida!==undefined){
       const hj=getHojas(w);
       if(r.hoja_corredera!==undefined&&r.hoja_corredera!=='')hj.corredera=String(r.hoja_corredera);
@@ -6717,7 +6712,7 @@ function mergeFromSheets(rows){
       if(r.hoja_comentario!==undefined&&r.hoja_comentario!=='')hj.comentario=String(r.hoja_comentario);
       syncHojasToDef(w);
     }
-    // Reposición (v2.26)
+    // Reposición (v2.27)
     if(r.repo_estado!==undefined||r.repo_fechaRetiro!==undefined){
       const rp=getRepo(w);
       if(r.repo_estado!==undefined&&r.repo_estado!=='')rp.estado=String(r.repo_estado);
@@ -6970,7 +6965,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.26 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.27 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
