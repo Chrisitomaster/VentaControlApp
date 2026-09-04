@@ -1,6 +1,6 @@
 // VentaControl Service Worker
 // Estrategia: network-first para el HTML (siempre actualizado), cache-first para el resto
-const CACHE = 'ventacontrol-v2.25';
+const CACHE = 'ventacontrol-v2.26';
 const HTML_URL = './VentaControl_v2.html';
 
 self.addEventListener('install', e => {
