@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.19</title>
+<title>VentaControl v2.20</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -483,7 +483,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.19 — Configuration & Data
+   VentaControl v2.20 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -538,7 +538,7 @@ BLDG_RAW.forEach(([e,tipo,sa,p1,p25])=>{
 // ---- WINDOW DEFINITIONS PER DEPT TYPE ----
 const WIN_DEF = {
   A:[['V1-Izq','Dorm 1 Izq'],['V1-Der','Dorm 1 Der'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
-  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.19)
+  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.20)
   B:[['V2','Dormitorio 1'],['V1_D2-B','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
   MR:[['V5_1','Dorm MR 1'],['V5_2','Dorm MR 2'],['V5_3','Dorm MR 3'],['V5a','Logia MR'],['V6_1','Dorm 2 MR'],['V6_2','Dorm 2 MR'],['V7','Estar-Comedor MR']]
 };
@@ -568,7 +568,7 @@ const DEFICIENCIES = [
   {id:'sinImpermeabilizar',label:'Rasgo sin impermeabilizar',           icon:'🌧'},
   {id:'faltaHojaCorredera',label:'Falta hoja corredera',                icon:'⬌'},
   {id:'faltaHojaFija',     label:'Falta hoja fija',                     icon:'⬜'},
-  // ---- Daños críticos (v2.19) ----
+  // ---- Daños críticos (v2.20) ----
   {id:'termopanelTrizado', label:'Termopanel trizado/fracturado',       icon:'💥', critico:true},
   {id:'pvcRoto',           label:'PVC roto',                            icon:'🧱', critico:true},
   {id:'filtracionAgua',    label:'Filtración (prueba estanqueidad)',    icon:'🌊', critico:true},
@@ -615,7 +615,7 @@ const DEF_ACTION_MAP = {
   filtracionAgua:'sellarFiltracion',
 };
 
-/* ---- HOJAS DE VENTANA (v2.19) ----
+/* ---- HOJAS DE VENTANA (v2.20) ----
    Estado de hoja corredera y hoja fija + medida de la corredera.
    La medida se releva en terreno (no hay regla por tipo). */
 const HOJA_ESTADOS = [
@@ -649,7 +649,7 @@ const SELLO_ESTADOS = [
   {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
 ];
 
-// EIFS scheduling helpers (v2.19)
+// EIFS scheduling helpers (v2.20)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -771,7 +771,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.19) ----
+// ---- PERSONAS / Asignación de acciones (v2.20) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -944,7 +944,7 @@ function setHoja(key,campo,valor,label){
 // ¿Este código de ventana lleva medida de corredera relevante?
 function codeUsaMedida(code){ return CODES_CON_MEDIDA.includes(code); }
 
-/* ---- MIGRACIÓN v2.19: V1_D2 → V1_D2-B en departamentos tipo B ----
+/* ---- MIGRACIÓN v2.20: V1_D2 → V1_D2-B en departamentos tipo B ----
    La ventana del dormitorio 2 de los deptos tipo B va en el dilatado y lleva
    pilar, así que pasa a tener código propio. Mueve la ficha completa
    conservando estado, deficiencias, acciones, hojas, sello, fotos e historial.
@@ -998,13 +998,24 @@ function migrateV1D2B(){
 }
 
 // Stepper táctil reutilizable: − qty +
+// Stepper auto-actualizable: se repinta solo, sin redibujar el contenedor.
+// Antes cada toque llamaba a un re-render completo y el scroll de la lista
+// saltaba al tope, cortando la carga cuando estabas en las filas de abajo.
 function stepper(qty, onChange, min=0){
-  const q=h('span',{className:'qty'+(qty?'':' zero')},[String(qty)]);
-  return h('div',{className:'stepper'},[
-    h('button',{type:'button',disabled:qty<=min,onClick:(e)=>{e.stopPropagation();onChange(Math.max(min,qty-1));}},['−']),
-    q,
-    h('button',{type:'button',onClick:(e)=>{e.stopPropagation();onChange(qty+1);}},['+']),
-  ]);
+  let cur=qty;
+  const q=h('span',{className:'qty'+(cur?'':' zero')},[String(cur)]);
+  const dec=h('button',{type:'button',disabled:cur<=min},['−']);
+  const inc=h('button',{type:'button'},['+']);
+  function apply(v){
+    cur=Math.max(min,v);
+    q.textContent=String(cur);
+    q.className='qty'+(cur?'':' zero');
+    dec.disabled=cur<=min;
+    onChange(cur);
+  }
+  dec.onclick=(e)=>{e.stopPropagation();apply(cur-1);};
+  inc.onclick=(e)=>{e.stopPropagation();apply(cur+1);};
+  return h('div',{className:'stepper'},[dec,q,inc]);
 }
 
 // Search index — construido lazy. Invalidar (=null) tras migrations que agreguen/quiten ventanas.
@@ -1064,7 +1075,7 @@ function newWindowRecord(){
     acciones:Object.fromEntries(ACTION_IDS.map(id=>[id,{active:false,done:false}])),
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
-    // Hojas de la ventana (v2.19). medida: '' | '130' | '128.5' (relevada en terreno)
+    // Hojas de la ventana (v2.20). medida: '' | '130' | '128.5' (relevada en terreno)
     hojas:{corredera:'',fija:'',medida:'',comentario:''},
     funcionalidad:0,
     historial:[],
@@ -1338,7 +1349,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.19']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.20']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1462,7 +1473,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.19'),
+    topbar('VentaControl v2.20'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1663,7 +1674,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.19)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.20)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1713,7 +1724,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.19)
+          // Sub-items con fechas plan/real (v2.20)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -1808,14 +1819,20 @@ function renderBuilding(){
       const cf=getConteoFisico(edif);
       const codes=getBldgWindowCodes(edif);
       const total=conteoTotal(cf);
-      const refresh=()=>renderBuilding();
+      // Badge y fecha se actualizan in-place; NO se re-renderiza la vista al
+      // tocar un stepper, para no perder la posición de scroll.
+      const badgeTotal=h('span',{className:'badge '+(total?'badge-blue':'badge-orange'),style:{fontSize:'0.7rem'}},[total?total+' contadas':'Sin contar']);
+      const spanFecha=h('span',{style:{fontSize:'0.68rem',color:'var(--tx-2)'}},[cf.fecha||'']);
+      const refreshBadge=()=>{
+        const t=conteoTotal(getConteoFisico(edif));
+        badgeTotal.textContent=t?t+' contadas':'Sin contar';
+        badgeTotal.className='badge '+(t?'badge-blue':'badge-orange');
+        spanFecha.textContent=getConteoFisico(edif).fecha||'';
+      };
       return h('div',{className:'card'},[
         h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px',flexWrap:'wrap',gap:'6px'}},[
           h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['📦 Ventanas en acopio']),
-          h('div',{style:{display:'flex',gap:'5px',alignItems:'center'}},[
-            h('span',{className:'badge '+(total?'badge-blue':'badge-orange'),style:{fontSize:'0.7rem'}},[total?total+' contadas':'Sin contar']),
-            cf.fecha?h('span',{style:{fontSize:'0.68rem',color:'var(--tx-2)'}},[cf.fecha]):null,
-          ].filter(Boolean)),
+          h('div',{style:{display:'flex',gap:'5px',alignItems:'center'}},[badgeTotal,spanFecha]),
         ]),
         h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'8px'}},[
           'Unidades físicas presentes en la torre, sin instalar. Se usa para el pedido a oficina técnica.'
@@ -1825,7 +1842,7 @@ function renderBuilding(){
           return h('div',{className:'conteo-row'},[
             h('span',{className:'conteo-code'},[code]),
             h('span',{className:'conteo-loc'},[loc]),
-            stepper(qty,(n)=>{setConteoItem(edif,code,n);refresh();}),
+            stepper(qty,(n)=>{setConteoItem(edif,code,n);refreshBadge();}),
           ]);
         })):h('div',{},codes.filter(({code})=>cf.items[code]).map(({code,loc})=>
           h('div',{className:'conteo-row'},[
@@ -1842,7 +1859,7 @@ function renderBuilding(){
         (isEditor()&&total>0)?h('button',{className:'btn btn-sm btn-ghost',style:{marginTop:'8px',color:'var(--ac-red)'},
           onClick:()=>{
             if(!confirm('¿Poner en cero todo el conteo de este edificio?'))return;
-            const cf2=getConteoFisico(edif);cf2.items={};cf2.fecha=todayISO();saveLocalNow();refresh();
+            const cf2=getConteoFisico(edif);cf2.items={};cf2.fecha=todayISO();saveLocalNow();renderBuilding();
           }
         },['🗑 Reiniciar conteo']):null,
       ].filter(Boolean));
@@ -2534,7 +2551,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.19']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.20']),
     ]),
   ]);
 }
@@ -2798,7 +2815,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.19`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.20`]),
   ]);
 }
 
@@ -2812,7 +2829,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.19 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.20 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3958,7 +3975,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ].filter(Boolean)):null,
     ].filter(Boolean)),
 
-    // ── Hojas de la ventana (corredera / fija / medida) — v2.19 ──
+    // ── Hojas de la ventana (corredera / fija / medida) — v2.20 ──
     (()=>{
       const hj=getHojas(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4176,7 +4193,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.19: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.20: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -5209,7 +5226,7 @@ function showDanosReporte(lista){
   });
   L.push('');
   L.push('='.repeat(56));
-  L.push('VentaControl v2.19');
+  L.push('VentaControl v2.20');
   const texto=L.join('\n');
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
@@ -5261,6 +5278,22 @@ function showRecepcionModal(recId,onDone){
   // modo: 'guia' = cargar lo que dice la guía de despacho · 'contar' = contar en obra
   let modo=(existing&&Object.keys(draft.esperado).length)?'contar':'guia';
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[]);
+  // Referencias a los badges de totales, para actualizarlos sin redibujar.
+  let badgeGuia=null,badgeContado=null,badgeDif=null;
+  function refreshTotales(){
+    const t=Object.values(draft.items).reduce((s,q)=>s+q,0);
+    const te=Object.values(draft.esperado).reduce((s,q)=>s+q,0);
+    if(badgeGuia)badgeGuia.textContent='Guía: '+te;
+    if(badgeContado){
+      badgeContado.textContent='Contado: '+t;
+      badgeContado.className='badge '+(t?'badge-green':'badge-orange');
+    }
+    if(badgeDif){
+      const hay=te>0&&t!==te;
+      badgeDif.hidden=!hay;
+      if(hay)badgeDif.textContent=(t-te>0?'+':'')+(t-te);
+    }
+  }
 
   function draw(){
     // preservar inputs de texto antes del redraw
@@ -5292,14 +5325,19 @@ function showRecepcionModal(recId,onDone){
           style:{flex:1,justifyContent:'center',fontSize:'0.78rem'},
           onClick:()=>{modo='contar';draw();}},['2️⃣ Contar en obra']),
       ]),
-      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px',gap:'6px',flexWrap:'wrap'}},[
-        h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},[modo==='guia'?'Según guía de despacho':'Contado al descargar']),
-        h('div',{style:{display:'flex',gap:'4px'}},[
-          h('span',{className:'badge badge-blue',style:{fontSize:'0.7rem'}},['Guía: '+totalEsp]),
-          h('span',{className:'badge '+(total?'badge-green':'badge-orange'),style:{fontSize:'0.7rem'}},['Contado: '+total]),
-          (totalEsp>0&&total!==totalEsp)?h('span',{className:'badge badge-red',style:{fontSize:'0.7rem'}},[(total-totalEsp>0?'+':'')+(total-totalEsp)]):null,
-        ].filter(Boolean)),
-      ]),
+      // Badges de totales: se actualizan in-place al tocar un stepper, sin
+      // redibujar el modal (si no, la lista salta al tope y se corta la carga).
+      (()=>{
+        badgeGuia=h('span',{className:'badge badge-blue',style:{fontSize:'0.7rem'}},['Guía: '+totalEsp]);
+        badgeContado=h('span',{className:'badge '+(total?'badge-green':'badge-orange'),style:{fontSize:'0.7rem'}},['Contado: '+total]);
+        badgeDif=h('span',{className:'badge badge-red',style:{fontSize:'0.7rem'}},['']);
+        badgeDif.hidden=!(totalEsp>0&&total!==totalEsp);
+        if(!badgeDif.hidden)badgeDif.textContent=(total-totalEsp>0?'+':'')+(total-totalEsp);
+        return h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px',gap:'6px',flexWrap:'wrap'}},[
+          h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},[modo==='guia'?'Según guía de despacho':'Contado al descargar']),
+          h('div',{style:{display:'flex',gap:'4px'}},[badgeGuia,badgeContado,badgeDif]),
+        ]);
+      })(),
       modo==='contar'&&totalEsp===0?h('div',{style:{fontSize:'0.72rem',color:'var(--ac-orange)',marginBottom:'6px'}},
         ['Sin guía cargada — se registra solo lo contado.']):null,
       h('div',{style:{maxHeight:'40vh',overflowY:'auto',marginBottom:'12px'}},
@@ -5308,17 +5346,22 @@ function showRecepcionModal(recId,onDone){
           const got=draft.items[code]||0;
           // En modo contar, ocultar tipos que no vienen en la guía (si hay guía cargada)
           if(modo==='contar'&&totalEsp>0&&esp===0&&got===0)return null;
-          const dif=got-esp;
           const mostrarDif=modo==='contar'&&esp>0;
+          const celdaDif=h('span',{style:{fontSize:'0.7rem',fontFamily:'var(--font-mono)',minWidth:'54px',textAlign:'right',fontWeight:'700'}},['']);
+          const pintarDif=()=>{
+            if(!mostrarDif)return;
+            const g=draft.items[code]||0, e2=draft.esperado[code]||0;
+            celdaDif.textContent=(g===e2)?('✓ '+e2):(g+'/'+e2);
+            celdaDif.style.color=(g===e2)?'var(--ac-green)':'var(--ac-red)';
+          };
+          pintarDif();
           return h('div',{className:'conteo-row'},[
             h('span',{className:'conteo-code'},[code]),
             h('span',{className:'conteo-loc'},[loc]),
-            mostrarDif?h('span',{style:{fontSize:'0.7rem',fontFamily:'var(--font-mono)',minWidth:'54px',textAlign:'right',
-              color:dif===0?'var(--ac-green)':'var(--ac-red)',fontWeight:'700'}},
-              [dif===0?'✓ '+esp:got+'/'+esp]):null,
+            mostrarDif?celdaDif:null,
             modo==='guia'
-              ? stepper(esp,(v)=>{if(v>0)draft.esperado[code]=v;else delete draft.esperado[code];draw();})
-              : stepper(got,(v)=>{if(v>0)draft.items[code]=v;else delete draft.items[code];draw();}),
+              ? stepper(esp,(v)=>{if(v>0)draft.esperado[code]=v;else delete draft.esperado[code];refreshTotales();})
+              : stepper(got,(v)=>{if(v>0)draft.items[code]=v;else delete draft.items[code];pintarDif();refreshTotales();}),
           ].filter(Boolean));
         }).filter(Boolean)
       ),
@@ -5396,7 +5439,7 @@ function generatePedidoText(scope){
   }
   L.push('');
   L.push('='.repeat(52));
-  L.push('VentaControl v2.19');
+  L.push('VentaControl v2.20');
   return L.join('\n');
 }
 
@@ -5459,7 +5502,7 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Sync (v2.19): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    // ⬆ Sync (v2.20): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
       title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
@@ -5877,7 +5920,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.19',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.20',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -5970,7 +6013,7 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync principal (v2.19): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// Sync principal (v2.20): SOLO PUSH. Antes hacía pull automático que sobrescribía
 // datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
 // Alias de doPushOnly para compat con botón existente.
 async function doSync(){ return doPushOnly(); }
@@ -6258,7 +6301,7 @@ function mergeFromSheets(rows){
     }
     if(!depto){skipped++;return;}
 
-    // Legacy v2.19: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
+    // Legacy v2.20: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
     // Sin esto, las filas viejas del Sheet crearían registros fantasma.
     let elemNorm=elem;
     if(elem==='V1_D2'&&!String(depto).startsWith('EC')){
@@ -6328,7 +6371,7 @@ function mergeFromSheets(rows){
       filtracionAgua:pd(r,'filtracionAgua','def_filtracionAgua'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    // Hojas (v2.19)
+    // Hojas (v2.20)
     if(r.hoja_corredera!==undefined||r.hoja_fija!==undefined||r.hoja_medida!==undefined){
       const hj=getHojas(w);
       if(r.hoja_corredera!==undefined&&r.hoja_corredera!=='')hj.corredera=String(r.hoja_corredera);
@@ -6578,7 +6621,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.19 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.20 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
