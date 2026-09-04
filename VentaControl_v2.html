@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.20</title>
+<title>VentaControl v2.21</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -336,6 +336,10 @@ body{
 .win-tile{position:relative;min-height:50px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--font-mono);border:1px solid transparent;padding:4px 5px;text-align:center;line-height:1.2;transition:opacity 0.12s;overflow:hidden;word-break:break-all;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
 /* Marca de comentario en el tile del mapa */
 .win-tile-note{position:absolute;top:1px;right:2px;font-size:0.6rem;line-height:1;pointer-events:none;opacity:0.9;}
+/* Franja de criticidad: una banda por deficiencia activa */
+.win-tile-defs{position:absolute;left:0;right:0;bottom:0;height:7px;border-radius:0 0 5px 5px;pointer-events:none;}
+.win-tile-defcount{position:absolute;left:2px;bottom:8px;font-size:0.55rem;font-weight:700;line-height:1.4;
+  color:var(--ac-red);background:var(--bg-1);border-radius:6px;padding:0 3px;pointer-events:none;opacity:0.95;}
 .win-tile:active{opacity:0.6;}
 .grid-map-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--tx-1);}
@@ -483,7 +487,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.20 — Configuration & Data
+   VentaControl v2.21 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -538,7 +542,7 @@ BLDG_RAW.forEach(([e,tipo,sa,p1,p25])=>{
 // ---- WINDOW DEFINITIONS PER DEPT TYPE ----
 const WIN_DEF = {
   A:[['V1-Izq','Dorm 1 Izq'],['V1-Der','Dorm 1 Der'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
-  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.20)
+  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.21)
   B:[['V2','Dormitorio 1'],['V1_D2-B','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
   MR:[['V5_1','Dorm MR 1'],['V5_2','Dorm MR 2'],['V5_3','Dorm MR 3'],['V5a','Logia MR'],['V6_1','Dorm 2 MR'],['V6_2','Dorm 2 MR'],['V7','Estar-Comedor MR']]
 };
@@ -568,7 +572,8 @@ const DEFICIENCIES = [
   {id:'sinImpermeabilizar',label:'Rasgo sin impermeabilizar',           icon:'🌧'},
   {id:'faltaHojaCorredera',label:'Falta hoja corredera',                icon:'⬌'},
   {id:'faltaHojaFija',     label:'Falta hoja fija',                     icon:'⬜'},
-  // ---- Daños críticos (v2.20) ----
+  {id:'funcionamientoDeficiente', label:'Funcionamiento deficiente',    icon:'⚙'},
+  // ---- Daños críticos (v2.21) ----
   {id:'termopanelTrizado', label:'Termopanel trizado/fracturado',       icon:'💥', critico:true},
   {id:'pvcRoto',           label:'PVC roto',                            icon:'🧱', critico:true},
   {id:'filtracionAgua',    label:'Filtración (prueba estanqueidad)',    icon:'🌊', critico:true},
@@ -615,7 +620,7 @@ const DEF_ACTION_MAP = {
   filtracionAgua:'sellarFiltracion',
 };
 
-/* ---- HOJAS DE VENTANA (v2.20) ----
+/* ---- HOJAS DE VENTANA (v2.21) ----
    Estado de hoja corredera y hoja fija + medida de la corredera.
    La medida se releva en terreno (no hay regla por tipo). */
 const HOJA_ESTADOS = [
@@ -642,14 +647,8 @@ const ESTADOS = [
 const VANO_OPTS = ['OK','Sobredimensionado','Subdimensionado'];
 
 // Exterior seal states
-const SELLO_ESTADOS = [
-  {id:'sellado',   label:'Sellado',          sym:'✓'},
-  {id:'pendiente', label:'Pendiente',         sym:'◷'},
-  {id:'sinSellar', label:'Sin Sellar',        sym:'✗'},
-  {id:'deficiente',label:'Sello Deficiente',  sym:'⚠'},
-];
 
-// EIFS scheduling helpers (v2.20)
+// EIFS scheduling helpers (v2.21)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function eifsStatus(plan, real, done){
   if(done){
@@ -771,7 +770,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.20) ----
+// ---- PERSONAS / Asignación de acciones (v2.21) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -780,6 +779,7 @@ function nextPersonaColor(){
 function addPersona(nombre,rol){
   if(!DATA.personas)DATA.personas=[];
   if(!DATA.inventario)DATA.inventario={recepciones:[],meta:{}};
+  if(!DATA.bodega)DATA.bodega={items:[]};
   const nm=String(nombre||'').trim();
   if(!nm)return null;
   // Evitar duplicados (case insensitive)
@@ -944,7 +944,25 @@ function setHoja(key,campo,valor,label){
 // ¿Este código de ventana lleva medida de corredera relevante?
 function codeUsaMedida(code){ return CODES_CON_MEDIDA.includes(code); }
 
-/* ---- MIGRACIÓN v2.20: V1_D2 → V1_D2-B en departamentos tipo B ----
+// Deficiencias activas de una ventana, con el color que le corresponde a cada
+// una. Las marcadas como críticas van siempre en rojo; el resto toma el color
+// de su acción correctiva. Alimenta la franja de criticidad del mapa.
+function defsDeVentana(w){
+  if(!w||!w.deficiencias)return [];
+  const out=[];
+  DEFICIENCIES.forEach(d=>{
+    if(!w.deficiencias[d.id])return;
+    if(d.critico){ out.push({id:d.id,label:d.label,color:'var(--ac-red)',critico:true}); return; }
+    const act=DEF_ACTION_MAP[d.id];
+    const c=(act&&WINDOW_COLOR_MAPS.actionColorMap[act])||'blue';
+    out.push({id:d.id,label:d.label,color:'var(--ac-'+c+')',critico:false});
+  });
+  // Las críticas primero, para que salten a la vista en la franja
+  out.sort((a,b)=>(b.critico?1:0)-(a.critico?1:0));
+  return out;
+}
+
+/* ---- MIGRACIÓN v2.21: V1_D2 → V1_D2-B en departamentos tipo B ----
    La ventana del dormitorio 2 de los deptos tipo B va en el dilatado y lleva
    pilar, así que pasa a tener código propio. Mueve la ficha completa
    conservando estado, deficiencias, acciones, hojas, sello, fotos e historial.
@@ -962,6 +980,30 @@ function windowTieneDatos(w){
   if(w.fotos&&w.fotos.length)return true;
   return false;
 }
+/* ---- MIGRACION v2.21: rating de funcionalidad 1-5 -> deficiencia ----
+   El rating se saco de la interfaz. Las ventanas calificadas 1 o 2 (muy
+   deficiente / deficiente) pasan a tener la deficiencia
+   'funcionamientoDeficiente'; de 3 a 5 se consideran aceptables y se
+   descartan. El campo se conserva en la ficha por compatibilidad. */
+function migrateFuncionalidad(){
+  if(DATA.meta.migFuncDef)return {convertidas:0};
+  let convertidas=0;
+  Object.entries(DATA.windows).forEach(function(e){
+    var k=e[0], w=e[1];
+    if(!w||!w.deficiencias)return;
+    var f=w.funcionalidad;
+    if(typeof f==='number'&&f>=1&&f<=2&&!w.deficiencias.funcionamientoDeficiente){
+      w.deficiencias.funcionamientoDeficiente=true;
+      dirtyKeys.add(k);
+      convertidas++;
+    }
+  });
+  DATA.meta.migFuncDef=true;
+  if(convertidas){saveLocalNow();saveDirtyKeys();}
+  logMsg('Migracion funcionalidad->deficiencia: '+convertidas+' ventanas marcadas');
+  return {convertidas:convertidas};
+}
+
 function migrateV1D2B(){
   let movidas=0,descartadas=0,marcadas=0;
   for(const edif of Object.keys(BUILDINGS)){
@@ -1075,7 +1117,7 @@ function newWindowRecord(){
     acciones:Object.fromEntries(ACTION_IDS.map(id=>[id,{active:false,done:false}])),
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
-    // Hojas de la ventana (v2.20). medida: '' | '130' | '128.5' (relevada en terreno)
+    // Hojas de la ventana (v2.21). medida: '' | '130' | '128.5' (relevada en terreno)
     hojas:{corredera:'',fija:'',medida:'',comentario:''},
     funcionalidad:0,
     historial:[],
@@ -1349,7 +1391,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.20']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.21']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1390,8 +1432,8 @@ function render(){
     common:renderCommon,
     actionDetail:renderActionDetail,
     actionReport:renderActionReport,
-    sealmap:renderSealMap,
     inventario:renderInventario,
+    bodega:renderBodega,
     danos:renderDanos,
     print:renderPrint
   };
@@ -1473,7 +1515,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.20'),
+    topbar('VentaControl v2.21'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1674,7 +1716,7 @@ function renderBuilding(){
       ]);
     })(),
 
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.20)
+    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.21)
     h('div',{className:'card'},[
       h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
         h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
@@ -1724,7 +1766,7 @@ function renderBuilding(){
             h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
               [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
           ]),
-          // Sub-items con fechas plan/real (v2.20)
+          // Sub-items con fechas plan/real (v2.21)
           ...phase.items.map(it=>{
             const done=si[it.id]||false;
             const sp=bData.stagePlan||{};
@@ -1869,7 +1911,6 @@ function renderBuilding(){
     h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
       h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-cyan)'},onClick:()=>navigate('inventario',{edif})},['📦 Inventario']),
       h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>navigate('danos',{edif})},['💥 Daños críticos']),
-      h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('sealmap',{edif})},['🔵 Mapa de sello']),
       h('button',{className:'btn btn-sm btn-ghost',onClick:()=>navigate('report',{edif})},['📄 Informe']),
       isEditor()?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>showBulkModal('building',{edif})},['⚡ Cambio masivo']):null,
       isEditor()?h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>confirmClearBuilding(edif)},['🗑 Limpiar edificio']):null,
@@ -2098,6 +2139,26 @@ function renderGridMap(){
     el.className='win-tile';
     Object.assign(el.style,style);
     el.textContent=code;
+    // Franja inferior: una banda de color por deficiencia activa.
+    // Más bandas = ventana más crítica. Las críticas van en rojo.
+    const defs=defsDeVentana(w);
+    if(defs.length){
+      const banda=document.createElement('span');
+      banda.className='win-tile-defs';
+      const paso=100/defs.length;
+      banda.style.background='linear-gradient(to right,'+defs.map((d,i)=>
+        d.color+' '+(i*paso).toFixed(2)+'% '+((i+1)*paso).toFixed(2)+'%').join(',')+')';
+      banda.title=defs.map(d=>d.label).join(' · ');
+      el.appendChild(banda);
+      if(defs.length>=2){
+        const cnt=document.createElement('span');
+        cnt.className='win-tile-defcount';
+        cnt.textContent=String(defs.length);
+        cnt.title=defs.length+' inconformidades';
+        el.appendChild(cnt);
+      }
+      if(defs.some(d=>d.critico))el.style.borderColor='var(--ac-red)';
+    }
     // Marca 💬 si la ventana tiene observaciones cargadas en su perfil
     if(w&&w.observaciones&&String(w.observaciones).trim()){
       const nota=document.createElement('span');
@@ -2168,6 +2229,11 @@ function renderGridMap(){
     h('div',{className:'legend-item'},[
       h('span',{style:{fontSize:'0.7rem'}},['💬']),
       'Con observaciones'
+    ]),
+    h('div',{className:'legend-item'},[
+      h('span',{style:{width:'22px',height:'7px',borderRadius:'2px',flexShrink:0,
+        background:'linear-gradient(to right,var(--ac-red) 0% 34%,var(--ac-purple) 34% 67%,var(--ac-cyan) 67% 100%)'}},[]),
+      'Franja inferior: una banda por inconformidad (rojo = daño crítico)'
     ]),
   ]);
 
@@ -2398,121 +2464,6 @@ function showMmPicker(currentMm,label,onConfirm){
 }
 
 /* ============================================
-   SELLO POPUP
-   ============================================ */
-function showSelloPopup(key,code,deptoLabel,onDone){
-  const w=DATA.windows[key];
-  if(!w)return;
-  if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
-
-  const state={
-    estado:w.selloExterior.estado||'sinSellar',
-    grado:w.selloExterior.grado||0,
-    comentario:w.selloExterior.comentario||''
-  };
-
-  const selloColors={
-    sellado:  {bg:'var(--ac-green-soft)',  bdr:'var(--ac-green)',  txt:'var(--ac-green)'},
-    pendiente:{bg:'var(--ac-orange-soft)', bdr:'var(--ac-orange)', txt:'var(--ac-orange)'},
-    sinSellar:{bg:'var(--bg-2)',           bdr:'var(--border)',    txt:'var(--tx-1)'},
-    deficiente:{bg:'var(--ac-red-soft)',   bdr:'var(--ac-red)',    txt:'var(--ac-red)'},
-  };
-
-  const overlay=document.createElement('div');
-  overlay.className='overlay';
-  closeOverlayOnBackdrop(overlay);
-
-  function draw(){
-    // Preserve typed comment before redraw
-    const ta=overlay.querySelector('#sello-ta');
-    if(ta)state.comentario=ta.value;
-    overlay.innerHTML='';
-
-    const modal=h('div',{className:'modal'},[
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}},[
-        h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'700',fontSize:'0.9rem'}},[code]),
-        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[deptoLabel]),
-      ]),
-
-      // Estado
-      h('div',{style:{fontWeight:'600',fontSize:'0.8rem',marginBottom:'8px'}},['Estado del Sello']),
-      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'14px'}},
-        SELLO_ESTADOS.map(st=>{
-          const sel=state.estado===st.id;
-          const c=selloColors[st.id];
-          return h('div',{
-            style:{
-              padding:'10px 8px',textAlign:'center',cursor:'pointer',
-              borderRadius:'var(--radius-sm)',fontSize:'0.85rem',
-              border:'2px solid '+(sel?c.bdr:'var(--border)'),
-              background:sel?c.bg:'var(--bg-2)',
-              color:sel?c.txt:'var(--tx-1)',fontWeight:sel?'700':'400',
-              transition:'all 0.12s',userSelect:'none',
-            },
-            onClick:()=>{state.estado=st.id;if(st.id!=='deficiente')state.grado=0;draw();}
-          },[st.sym+' '+st.label]);
-        })
-      ),
-
-      // Grado (solo deficiente)
-      state.estado==='deficiente'?h('div',{style:{marginBottom:'14px'}},[
-        h('div',{style:{fontWeight:'600',fontSize:'0.8rem',marginBottom:'8px',color:'var(--ac-red)'}},[
-          'Grado de Deficiencia'+(state.grado?' — '+state.grado+'/5':'')
-        ]),
-        h('div',{style:{display:'flex',gap:'6px'}},
-          [1,2,3,4,5].map(g=>h('div',{
-            style:{
-              flex:1,height:'40px',borderRadius:'6px',display:'flex',alignItems:'center',
-              justifyContent:'center',cursor:'pointer',fontWeight:'700',fontSize:'0.95rem',
-              border:'2px solid '+(state.grado===g?'var(--ac-red)':'var(--border)'),
-              background:state.grado===g?'var(--ac-red)':'var(--bg-2)',
-              color:state.grado===g?'#fff':'var(--tx-1)',
-              userSelect:'none',
-            },
-            onClick:()=>{state.grado=g;draw();}
-          },[String(g)])
-          )
-        ),
-      ]):null,
-
-      // Comentario
-      h('div',{style:{marginBottom:'14px'}},[
-        h('div',{style:{fontWeight:'600',fontSize:'0.8rem',marginBottom:'6px'}},['Comentario']),
-        h('textarea',{
-          id:'sello-ta',className:'obs-area',
-          style:{minHeight:'56px'},
-          placeholder:'Observación sobre el sello...',
-        },[state.comentario]),
-      ]),
-
-      // Botones
-      h('div',{style:{display:'flex',gap:'8px'}},[
-        h('button',{className:'btn btn-primary',style:{flex:1},onClick:()=>{
-          const ta2=overlay.querySelector('#sello-ta');
-          if(ta2)state.comentario=ta2.value;
-          w.selloExterior={
-            estado:state.estado,
-            grado:state.estado==='deficiente'?state.grado:0,
-            comentario:state.comentario.trim()
-          };
-          saveLocal();
-          overlay.remove();
-          onDone();
-        }},['Guardar']),
-        h('button',{className:'btn btn-ghost',onClick:()=>overlay.remove()},['Cancelar']),
-      ]),
-    ].filter(Boolean));
-
-    overlay.appendChild(modal);
-    // Restaurar texto del textarea tras redibujado
-    setTimeout(()=>{const ta3=overlay.querySelector('#sello-ta');if(ta3)ta3.value=state.comentario;},0);
-  }
-
-  draw();
-  document.body.appendChild(overlay);
-}
-
-/* ============================================
    VIEW: PRINT — vista imprimible por edificio (A4)
    ============================================ */
 function renderPrint(){
@@ -2551,7 +2502,7 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.20']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.21']),
     ]),
   ]);
 }
@@ -2815,7 +2766,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.20`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.21`]),
   ]);
 }
 
@@ -2829,7 +2780,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.20 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.21 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -2895,281 +2846,6 @@ function renderPrintControls(e, pos){
 }
 
 /* ============================================
-   VIEW: SEAL MAP — exterior seal status grid
-   ============================================ */
-function renderSealMap(){
-  const edif=viewParams.edif;
-  const e=parseInt(edif);
-
-  const selloColors={
-    sellado:  {bg:'var(--ac-green-soft)',  bdr:'var(--ac-green)',  txt:'var(--ac-green)'},
-    pendiente:{bg:'var(--ac-orange-soft)', bdr:'var(--ac-orange)', txt:'var(--ac-orange)'},
-    sinSellar:{bg:'var(--bg-2)',           bdr:'var(--border)',    txt:'var(--tx-2)'},
-    deficiente:{bg:'var(--ac-red-soft)',   bdr:'var(--ac-red)',    txt:'var(--ac-red)'},
-  };
-
-  // Get selloExterior estado for a window key
-  function getSelloEstado(key){
-    const w=DATA.windows[key];
-    if(!w)return null;
-    return w.selloExterior;
-  }
-
-  // Global counts
-  let cSellado=0,cPendiente=0,cSinSellar=0,cDeficiente=0;
-  forEachWindowInBldg(e, (_w, key)=>{
-    const se=getSelloEstado(key);
-    if(!se)return;
-    if(se.estado==='sellado')cSellado++;
-    else if(se.estado==='pendiente')cPendiente++;
-    else if(se.estado==='deficiente')cDeficiente++;
-    else cSinSellar++;
-  });
-
-  // Build a single cell TD with touch events
-  function sealCell(key,code,deptoLabel){
-    const w=DATA.windows[key];
-    const td=document.createElement('td');
-    td.style.cssText='text-align:center;padding:2px 3px;border-bottom:1px solid var(--border);';
-
-    if(!w){
-      td.textContent='—';
-      td.style.color='var(--tx-2)';
-      return td;
-    }
-    const se=w.selloExterior;
-    const c=selloColors[se.estado]||selloColors.sinSellar;
-
-    const inner=document.createElement('div');
-    inner.style.cssText=`
-      width:40px;height:40px;border-radius:6px;display:flex;align-items:center;
-      justify-content:center;margin:0 auto;background:${c.bg};
-      border:2px solid ${c.bdr};font-size:${se.estado==='deficiente'?'0.75rem':'1rem'};
-      font-weight:700;color:${c.txt};user-select:none;-webkit-user-select:none;
-      -webkit-touch-callout:none;cursor:${isEditor()?'pointer':'default'};
-      position:relative;
-    `;
-    let sym=se.estado==='sellado'?'✓':se.estado==='pendiente'?'◷':se.estado==='deficiente'?(se.grado?se.grado+'⚠':'⚠'):'·';
-    inner.textContent=sym;
-    td.appendChild(inner);
-
-    if(!isEditor())return td;
-
-    // Long-press → full popup, short tap → cycle sellado↔sinSellar
-    let pressTimer=null,longFired=false,touchHandled=false,scrolled=false,startX=0,startY=0;
-
-    inner.addEventListener('touchstart',(ev)=>{
-      longFired=false;touchHandled=false;scrolled=false;
-      startX=ev.touches[0].clientX;startY=ev.touches[0].clientY;
-      pressTimer=setTimeout(()=>{
-        if(scrolled)return;
-        longFired=true;touchHandled=true;
-        navigator.vibrate&&navigator.vibrate(50);
-        showSelloPopup(key,code,deptoLabel,()=>renderSealMap());
-      },450);
-    },{passive:true});
-
-    inner.addEventListener('touchmove',(ev)=>{
-      if(Math.abs(ev.touches[0].clientX-startX)>10||Math.abs(ev.touches[0].clientY-startY)>10){
-        scrolled=true;clearTimeout(pressTimer);
-      }
-    },{passive:true});
-
-    inner.addEventListener('touchend',()=>{
-      clearTimeout(pressTimer);
-      if(!longFired&&!scrolled){
-        touchHandled=true;
-        // Quick tap: cycle sellado ↔ sinSellar
-        w.selloExterior.estado=se.estado==='sellado'?'sinSellar':'sellado';
-        if(w.selloExterior.estado!=='deficiente')w.selloExterior.grado=0;
-        saveLocal();renderSealMap();
-      }
-    },{passive:true});
-
-    inner.addEventListener('contextmenu',(ev)=>ev.preventDefault());
-
-    inner.addEventListener('click',()=>{
-      if(!touchHandled&&!scrolled){
-        showSelloPopup(key,code,deptoLabel,()=>renderSealMap());
-      }
-      touchHandled=false;longFired=false;scrolled=false;
-    });
-
-    return td;
-  }
-
-  // Build section counts for a set of (key,code) pairs
-  function secCounts(pairs){
-    let done=0,total=0;
-    pairs.forEach(({key})=>{
-      const se=getSelloEstado(key);
-      if(se){total++;if(se.estado==='sellado')done++;}
-    });
-    return{done,total,pct:total?Math.round(done/total*100):0};
-  }
-
-  // Render a depto position section (handles mixed types — MR piso 1, A/B pisos 2-5)
-  function posSection(posIdx,posLabel){
-    // Collect codes per floor (type may differ between floor 1 and floors 2-5)
-    const floorCodes={};
-    for(let f=1;f<=5;f++){
-      floorCodes[f]=getDeptWindows(getDeptType(e,f,posIdx)).map(([c])=>c);
-    }
-    // All unique codes in appearance order (floor 1 first, then new ones from upper floors)
-    const allCodes=[],seen=new Set();
-    for(let f=1;f<=5;f++) floorCodes[f].forEach(c=>{if(!seen.has(c)){seen.add(c);allCodes.push(c);}});
-    if(!allCodes.length)return null;
-
-    // Detect mixed-type position (e.g. MR on floor 1, A/B on floors 2-5)
-    const tipo1=getDeptType(e,1,posIdx);
-    const tipo25=getDeptType(e,2,posIdx);
-    const isMixed=tipo1!==tipo25;
-
-    // Collect pairs for counts — only floors where that code actually exists
-    const allPairs=[];
-    allCodes.forEach(code=>{
-      for(let f=1;f<=5;f++){
-        if(floorCodes[f].includes(code))allPairs.push({key:wKey(e,deptNum(f,posIdx),code),code});
-      }
-    });
-    const{done,total,pct}=secCounts(allPairs);
-    const complete=done===total&&total>0;
-
-    const CELL_STYLE='padding:4px 8px;font-family:var(--font-mono);font-weight:600;font-size:0.78rem;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg-1);';
-    const EMPTY_STYLE='text-align:center;padding:2px 3px;border-bottom:1px solid var(--border);background:var(--bg-0);';
-
-    const tbody=document.createElement('tbody');
-
-    // Optional separator row between floor-1-only codes and upper-floor codes
-    let addedSep=false;
-    allCodes.forEach(code=>{
-      const onlyFloor1=floorCodes[1].includes(code)&&![2,3,4,5].some(f=>floorCodes[f].includes(code));
-      const onlyUpper=!floorCodes[1].includes(code);
-      // Insert separator row when transitioning from floor-1-only to upper-only (mixed type)
-      if(isMixed&&!addedSep&&onlyUpper){
-        addedSep=true;
-        const sepTr=document.createElement('tr');
-        const sepTd=document.createElement('td');
-        sepTd.colSpan=6;
-        sepTd.style.cssText='padding:3px 8px;font-size:0.7rem;color:var(--tx-2);background:var(--bg-2);border-bottom:1px solid var(--border);font-style:italic;';
-        sepTd.textContent=`↓ Pisos 2-5 (Tipo ${tipo25})`;
-        sepTr.appendChild(sepTd);
-        tbody.appendChild(sepTr);
-      }
-
-      const tr=document.createElement('tr');
-      const tdCode=document.createElement('td');
-      tdCode.style.cssText=CELL_STYLE;
-      tdCode.textContent=code;
-      tr.appendChild(tdCode);
-
-      for(let f=1;f<=5;f++){
-        if(floorCodes[f].includes(code)){
-          tr.appendChild(sealCell(wKey(e,deptNum(f,posIdx),code),code,`${deptNum(f,posIdx)}`));
-        } else {
-          const td=document.createElement('td');
-          td.style.cssText=EMPTY_STYLE;
-          td.innerHTML='<span style="color:var(--tx-2);font-size:0.7rem;">—</span>';
-          tr.appendChild(td);
-        }
-      }
-      tbody.appendChild(tr);
-    });
-
-    const table=document.createElement('table');
-    table.style.cssText='width:100%;border-collapse:collapse;font-size:0.8rem;';
-    const thead=h('thead',{},[h('tr',{},[
-      h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)',whiteSpace:'nowrap'}},['Ventana']),
-      ...[1,2,3,4,5].map(f=>h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},['P'+f])),
-    ])]);
-    table.appendChild(thead);table.appendChild(tbody);
-    const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.appendChild(table);
-
-    return h('div',{style:{marginBottom:'16px'}},[
-      h('div',{style:{
-        display:'flex',alignItems:'center',justifyContent:'space-between',
-        padding:'6px 10px',borderRadius:'var(--radius-sm)',marginBottom:'6px',
-        background:complete?'var(--ac-green-soft)':'var(--ac-blue-soft)',
-        border:'1px solid '+(complete?'var(--ac-green)':'var(--ac-blue)')
-      }},[
-        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:complete?'var(--ac-green)':'var(--ac-blue)'}},[
-          posLabel+(isMixed?` (P1:${tipo1} · P2-5:${tipo25})`:''),
-        ]),
-        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${done}/${total} (${pct}%)`]),
-      ]),
-      wrap,
-    ]);
-  }
-
-  // EC section
-  function ecSection(){
-    const codes=[...new Set(([1,2,3,4,5].flatMap(f=>getCommonWindows(f).map(([c])=>c))))];
-    if(!codes.length)return null;
-    const allPairs=[];
-    codes.forEach(code=>{for(let f=1;f<=5;f++)allPairs.push({key:wKey(e,`EC${f}`,code),code});});
-    const{done,total}=secCounts(allPairs);
-    const complete=done===total&&total>0;
-
-    const tbody=document.createElement('tbody');
-    codes.forEach(code=>{
-      const tr=document.createElement('tr');
-      const tdCode=document.createElement('td');
-      tdCode.style.cssText='padding:4px 8px;font-family:var(--font-mono);font-weight:600;font-size:0.78rem;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg-1);';
-      tdCode.textContent=code;
-      tr.appendChild(tdCode);
-      for(let f=1;f<=5;f++) tr.appendChild(sealCell(wKey(e,`EC${f}`,code),code,`EC${f}`));
-      tbody.appendChild(tr);
-    });
-    const table=document.createElement('table');
-    table.style.cssText='width:100%;border-collapse:collapse;font-size:0.8rem;';
-    const thead=h('thead',{},[h('tr',{},[
-      h('th',{style:{textAlign:'left',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',background:'var(--bg-1)'}},['Ventana']),
-      ...[1,2,3,4,5].map(f=>h('th',{style:{textAlign:'center',padding:'6px 8px',fontWeight:'700',borderBottom:'2px solid var(--border)',minWidth:'44px'}},['P'+f])),
-    ])]);
-    table.appendChild(thead);table.appendChild(tbody);
-    const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.appendChild(table);
-    return h('div',{style:{marginBottom:'16px'}},[
-      h('div',{style:{
-        display:'flex',alignItems:'center',justifyContent:'space-between',
-        padding:'6px 10px',borderRadius:'var(--radius-sm)',marginBottom:'6px',
-        background:complete?'var(--ac-green-soft)':'var(--ac-cyan-soft)',
-        border:'1px solid '+(complete?'var(--ac-green)':'var(--ac-cyan)')
-      }},[
-        h('span',{style:{fontWeight:'700',fontSize:'0.85rem',color:complete?'var(--ac-green)':'var(--ac-cyan)'}},['Espacios Comunes (EC)']),
-        h('span',{style:{fontSize:'0.78rem',color:'var(--tx-2)'}},[`${done}/${total}`]),
-      ]),
-      wrap,
-    ]);
-  }
-
-  const el=h('div',{className:'fade-in'},[
-    topbar(`Sello Exterior — Edif. ${edif}`,'building',{edif}),
-    h('div',{className:'card'},[
-      // Resumen global
-      h('div',{style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'10px'}},[
-        cSellado?h('span',{className:'badge badge-green',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cSellado+' Sellado']):null,
-        cPendiente?h('span',{className:'badge badge-orange',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cPendiente+' Pendiente']):null,
-        cSinSellar?h('span',{className:'badge',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cSinSellar+' Sin Sellar']):null,
-        cDeficiente?h('span',{className:'badge badge-red',style:{fontSize:'0.78rem',padding:'5px 8px'}},[cDeficiente+' Sello Deficiente']):null,
-      ].filter(Boolean)),
-
-      // Leyenda
-      h('div',{style:{display:'flex',gap:'12px',flexWrap:'wrap',marginBottom:'16px',fontSize:'0.75rem',color:'var(--tx-2)'}},[
-        h('span',{},[`✓ Sellado`]),h('span',{},[`◷ Pendiente`]),
-        h('span',{},[`✗ Sin Sellar`]),h('span',{},[`⚠ Deficiente`]),
-        isEditor()?h('span',{style:{color:'var(--ac-blue)'}},[`Toque corto = sellado/sin sellar · Mantener = popup completo`]):null,
-      ].filter(Boolean)),
-
-      posSection(0,'X01'),posSection(1,'X02'),posSection(2,'X03'),posSection(3,'X04'),
-      ecSection(),
-    ]),
-    renderSyncBar(),
-  ]);
-  app().innerHTML='';
-  app().appendChild(el);
-}
-
-/* ============================================
    REPORT GENERATOR
    ============================================ */
 function generateReport(edif){
@@ -3188,7 +2864,6 @@ function generateReport(edif){
   const byEstado={instalada:[],pendiente:[],noInstalada:[],quitar:[],sinVentana:[]};
   const byTipo={};
   const withDef=[];
-  const withFunc=[];
 
   function collect(key,depto,code,loc,isCommon){
     const w=DATA.windows[key]||newWindowRecord();
@@ -3201,7 +2876,6 @@ function generateReport(edif){
     byTipo[code][estado]=(byTipo[code][estado]||0)+1;
     const defs=DEFICIENCIES.filter(d=>w.deficiencias[d.id]);
     if(defs.length)withDef.push({...entry,defs});
-    if(w.funcionalidad>0)withFunc.push(entry);
   }
   for(let f=1;f<=5;f++){
     for(let p=0;p<4;p++){
@@ -3313,60 +2987,6 @@ function generateReport(edif){
     add('');
   }
 
-  // ── SELLO EXTERIOR ───────────────────────────
-  const selloCounts={sellado:0,pendiente:0,sinSellar:0,deficiente:0};
-  const selloDefList=[];
-  Object.keys(byEstado).forEach(est=>{
-    byEstado[est].forEach(it=>{
-      const se=it.w.selloExterior;
-      if(!se){selloCounts.sinSellar++;return;}
-      if(selloCounts[se.estado]!==undefined)selloCounts[se.estado]++;
-      else selloCounts.sinSellar++;
-      if(se.estado==='deficiente')selloDefList.push(it);
-    });
-  });
-  {
-    add(SEP);
-    add('SELLO EXTERIOR');
-    add(sep2);
-    add(`  Sellado          : ${selloCounts.sellado}`);
-    add(`  Pendiente        : ${selloCounts.pendiente}`);
-    add(`  Sin Sellar       : ${selloCounts.sinSellar}`);
-    add(`  Sello Deficiente : ${selloCounts.deficiente}`);
-    if(selloDefList.length){
-      add('');
-      add('  Detalle — Deficiencias de Sello:');
-      selloDefList.forEach(it=>{
-        const se=it.w.selloExterior;
-        add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | Grado ${se.grado||'—'}`);
-        if(se.comentario)add(`    Comentario: ${se.comentario}`);
-      });
-    }
-    add('');
-  }
-
-  // ── FUNCIONALIDAD ────────────────────────────
-  if(withFunc.length){
-    const FUNC_LABELS=['','Muy Deficiente','Deficiente','Regular','Buena','Excelente'];
-    const funcByCat={1:[],2:[],3:[],4:[],5:[]};
-    withFunc.forEach(it=>{const n=it.w.funcionalidad||0;if(funcByCat[n])funcByCat[n].push(it);});
-    add(SEP);
-    add('CONDICIÓN DE FUNCIONALIDAD');
-    add(sep2);
-    [1,2,3,4,5].forEach(n=>{
-      if(funcByCat[n].length)add(`  ${pad(n+' – '+FUNC_LABELS[n],22)} : ${funcByCat[n].length} ventanas`);
-    });
-    const critical=withFunc.filter(it=>it.w.funcionalidad<=2);
-    if(critical.length){
-      add('');
-      add('  Críticas (1–2):');
-      critical.forEach(it=>{
-        add(`  Dpto ${pad(it.depto,6)} | ${pad(it.code,9)} | ${pad(it.loc,22)} | Func. ${it.w.funcionalidad}/5`);
-        if(it.w.observaciones)add(`    Obs: ${it.w.observaciones}`);
-      });
-    }
-    add('');
-  }
 
   // ── PEDIDO DE VENTANAS (sinVentana) ──────────
   const sinVentanaList=byEstado.sinVentana||[];
@@ -3975,7 +3595,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ].filter(Boolean)):null,
     ].filter(Boolean)),
 
-    // ── Hojas de la ventana (corredera / fija / medida) — v2.20 ──
+    // ── Hojas de la ventana (corredera / fija / medida) — v2.21 ──
     (()=>{
       const hj=getHojas(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4028,73 +3648,6 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
           }
         },[hj.comentario||'']):(hj.comentario?h('div',{style:{fontSize:'0.78rem',color:'var(--tx-1)',fontStyle:'italic'}},['💬 '+hj.comentario]):null),
       ].filter(Boolean));
-    })(),
-
-    // Sello Exterior
-    (()=>{
-      if(!w.selloExterior)w.selloExterior={estado:'sinSellar',grado:0,comentario:''};
-      const se=w.selloExterior;
-      const selloColors={
-        sellado:    {bg:'var(--ac-green-soft)', bdr:'var(--ac-green)',  txt:'var(--ac-green)'},
-        pendiente:  {bg:'var(--ac-yellow-soft)',bdr:'var(--ac-yellow)', txt:'var(--ac-yellow)'},
-        sinSellar:  {bg:'var(--bg-2)',          bdr:'var(--border)',    txt:'var(--tx-2)'},
-        deficiente: {bg:'var(--ac-red-soft)',   bdr:'var(--ac-red)',    txt:'var(--ac-red)'},
-      };
-      const sc=selloColors[se.estado]||selloColors.sinSellar;
-      const seEnt=SELLO_ESTADOS.find(s=>s.id===se.estado);
-      const seLabel=seEnt?seEnt.label:se.estado;
-      const seSym=seEnt?seEnt.sym:'';
-      return h('div',{className:'card'},[
-        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}},[
-          h('div',{style:{fontWeight:'600',fontSize:'0.85rem'}},['Sello Exterior']),
-          isEditor()?h('button',{className:'btn btn-sm btn-ghost',onClick:()=>{
-            showSelloPopup(key,code,subtitle,()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams));
-          }},['✏️ Editar']):null,
-        ].filter(Boolean)),
-        h('div',{style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}},[
-          h('span',{style:{
-            background:sc.bg,border:`1px solid ${sc.bdr}`,color:sc.txt,
-            borderRadius:'var(--radius-sm)',padding:'4px 10px',fontSize:'0.82rem',fontWeight:'600'
-          }},[seSym+' '+seLabel]),
-          (se.estado==='deficiente'&&se.grado>0)?h('span',{style:{
-            background:'var(--ac-red-soft)',border:'1px solid var(--ac-red)',color:'var(--ac-red)',
-            borderRadius:'var(--radius-sm)',padding:'4px 8px',fontSize:'0.82rem',fontWeight:'600'
-          }},['Grado '+se.grado]):null,
-        ].filter(Boolean)),
-        se.comentario?h('div',{style:{marginTop:'6px',fontSize:'0.8rem',color:'var(--tx-2)',fontStyle:'italic'}},['💬 '+se.comentario]):null,
-      ].filter(Boolean));
-    })(),
-
-    // Condición de Funcionalidad
-    (()=>{
-      if(w.funcionalidad===undefined)w.funcionalidad=0;
-      const FUNC_LABELS=['','Muy Deficiente','Deficiente','Regular','Buena','Excelente'];
-      const FUNC_COLORS=['','var(--ac-red)','var(--ac-orange)','var(--ac-cyan)','var(--ac-blue)','var(--ac-green)'];
-      const FUNC_SOFT=['','var(--ac-red-soft)','var(--ac-orange-soft)','var(--ac-cyan-soft)','var(--ac-blue-soft)','var(--ac-green-soft)'];
-      return h('div',{className:'card'},[
-        h('div',{style:{fontWeight:'600',fontSize:'0.85rem',marginBottom:'10px'}},['Condición de Funcionalidad']),
-        h('div',{style:{display:'flex',gap:'10px',justifyContent:'center'}},[
-          ...[1,2,3,4,5].map(n=>h('button',{
-            style:{
-              width:'46px',height:'46px',borderRadius:'50%',border:`2px solid ${w.funcionalidad===n?FUNC_COLORS[n]:'var(--border)'}`,
-              background:w.funcionalidad===n?FUNC_SOFT[n]:'var(--bg-2)',
-              color:w.funcionalidad===n?FUNC_COLORS[n]:'var(--tx-2)',
-              fontSize:'1.1rem',fontWeight:'700',cursor:isEditor()?'pointer':'default',
-              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
-            },
-            onClick:()=>{
-              if(!isEditor())return;
-              const newVal=w.funcionalidad===n?0:n;
-              updateWindow(key,'funcionalidad',newVal,
-                `Funcionalidad: ${w.funcionalidad||'—'} → ${newVal||'—'}`);
-              renderWindowDetail(key,code,loc,subtitle,backView,backParams);
-            }
-          },[String(n)])),
-        ]),
-        w.funcionalidad>0?h('div',{style:{textAlign:'center',marginTop:'8px',fontSize:'0.82rem',fontWeight:'600',color:FUNC_COLORS[w.funcionalidad]}},
-          [FUNC_LABELS[w.funcionalidad]]):
-          h('div',{style:{textAlign:'center',marginTop:'6px',fontSize:'0.75rem',color:'var(--tx-2)'}},['Sin evaluar — toca un número para calificar']),
-      ]);
     })(),
 
     // Deficiencias — colapsable
@@ -4193,7 +3746,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.20: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.21: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4785,6 +4338,7 @@ function renderBldgIssueMap(edif){
    ============================================ */
 function getInventario(){
   if(!DATA.inventario)DATA.inventario={recepciones:[],meta:{}};
+  if(!DATA.bodega)DATA.bodega={items:[]};
   if(!DATA.inventario.recepciones)DATA.inventario.recepciones=[];
   if(!DATA.inventario.meta)DATA.inventario.meta={};
   return DATA.inventario;
@@ -4973,6 +4527,7 @@ function renderInventario(){
     h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
       isEditor()?h('button',{className:'btn btn-sm btn-primary',onClick:()=>showRecepcionModal(null,()=>renderInventario())},['➕ Registrar cargamento']):null,
       h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-cyan)'},onClick:()=>showPedidoModal(scope)},['📤 Pedido a oficina técnica']),
+      h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-green)'},onClick:()=>navigate('bodega',{})},['🏬 Bodega']),
       h('button',{className:'btn btn-sm btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>navigate('danos',viewParams.edif?{edif:viewParams.edif}:{})},['💥 Daños críticos']),
     ].filter(Boolean)),
 
@@ -5226,7 +4781,7 @@ function showDanosReporte(lista){
   });
   L.push('');
   L.push('='.repeat(56));
-  L.push('VentaControl v2.20');
+  L.push('VentaControl v2.21');
   const texto=L.join('\n');
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
@@ -5439,7 +4994,7 @@ function generatePedidoText(scope){
   }
   L.push('');
   L.push('='.repeat(52));
-  L.push('VentaControl v2.20');
+  L.push('VentaControl v2.21');
   return L.join('\n');
 }
 
@@ -5493,6 +5048,236 @@ function showPedidoModal(scope){
   setTimeout(()=>{const ta=$('#pedido-area',overlay);if(ta)ta.value=texto;},50);
 }
 
+
+/* ============================================
+   BODEGA — material disponible para reponer
+   ============================================ */
+// Categorias de material que se guardan en bodega.
+const BODEGA_CATS = [
+  {id:'termopanelCorredera', label:'Termopanel de corredera', icon:'▧', usaMedida:true,  repone:'corredera'},
+  {id:'termopanelFijo',      label:'Termopanel de hoja fija',  icon:'▨', usaMedida:false, repone:'fija'},
+  {id:'hojaCorredera',       label:'Hoja corredera completa',  icon:'⬌', usaMedida:true,  repone:'corredera'},
+  {id:'ventanaCompleta',     label:'Ventana completa',         icon:'🪟', usaMedida:false, repone:'ventana'},
+];
+function bodegaCat(id){ return BODEGA_CATS.find(c=>c.id===id)||null; }
+
+function getBodega(){
+  if(!DATA.bodega)DATA.bodega={items:[]};
+  if(!DATA.bodega.items)DATA.bodega.items=[];
+  return DATA.bodega;
+}
+function bodegaTotal(){ return getBodega().items.reduce((s,it)=>s+(it.cantidad||0),0); }
+
+// Un item de bodega: {id, cat, tipoVentana, medida, orientacion, cantidad, ubicacion, nota}
+// tipoVentana / medida / orientacion pueden ir vacios cuando no se conocen.
+function bodegaUpsert(item){
+  const b=getBodega();
+  const i=b.items.findIndex(x=>x.id===item.id);
+  if(i>=0)b.items[i]=item; else b.items.push(item);
+  saveLocalNow();
+}
+function bodegaDelete(id){
+  const b=getBodega();
+  b.items=b.items.filter(x=>x.id!==id);
+  saveLocalNow();
+}
+
+/* Buscador inverso: dado un item de bodega, devuelve los vanos donde encaja.
+   - Para correderas: vanos con hoja corredera faltante o danada.
+   - Para hoja fija:  vanos con hoja fija faltante o danada.
+   - Para ventana completa: vanos marcados 'sinVentana'.
+   Separa los que calzan exacto en medida de los que aun no tienen medida
+   relevada (candidatos: hay que ir a medir). */
+function bodegaDestinos(item){
+  const cat=bodegaCat(item.cat);
+  if(!cat)return {exactas:[],sinMedir:[]};
+  const exactas=[],sinMedir=[];
+  Object.keys(BUILDINGS).map(Number).forEach(e=>{
+    forEachWindowInBldg(e,(w,key,ctx)=>{
+      if(!w)return;
+      if(item.tipoVentana&&ctx.code!==item.tipoVentana)return;
+      const o=getOrientacion(ctx.depto)||'—';
+      if(item.orientacion&&o!==item.orientacion)return;
+      const hj=w.hojas||{};
+      let aplica=false;
+      if(cat.repone==='corredera')      aplica=(hj.corredera==='falta'||hj.corredera==='danada');
+      else if(cat.repone==='fija')      aplica=(hj.fija==='falta'||hj.fija==='danada');
+      else if(cat.repone==='ventana')   aplica=(w.estado==='sinVentana');
+      if(!aplica)return;
+      const row={edif:e,depto:ctx.depto,code:ctx.code,loc:ctx.loc,orient:o,
+        medida:hj.medida||'',estado:w.estado,key};
+      if(!cat.usaMedida||!item.medida){exactas.push(row);return;}
+      if(hj.medida===item.medida)exactas.push(row);
+      else if(!hj.medida)sinMedir.push(row);
+    });
+  });
+  const ord=(a,b)=>(a.edif-b.edif)||String(a.depto).localeCompare(String(b.depto))||a.code.localeCompare(b.code);
+  exactas.sort(ord);sinMedir.sort(ord);
+  return {exactas,sinMedir};
+}
+
+function renderBodega(){
+  const b=getBodega();
+  const total=bodegaTotal();
+  const porCat={};
+  BODEGA_CATS.forEach(c=>{porCat[c.id]=b.items.filter(i=>i.cat===c.id).reduce((s,i)=>s+(i.cantidad||0),0);});
+
+  const el=h('div',{className:'fade-in'},[
+    topbar('🏬 Bodega','dashboard'),
+    h('div',{className:'card'},[
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px',gap:'6px',flexWrap:'wrap'}},[
+        h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Material disponible']),
+        h('span',{className:'badge '+(total?'badge-green':'badge-orange'),style:{fontSize:'0.72rem'}},[total+' unidades']),
+      ]),
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',marginBottom:'10px'}},
+        ['Lo que hay guardado para reponer. Cada lote te dice a qué vanos calza.']),
+      h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap'}},
+        BODEGA_CATS.map(c=>h('span',{className:'badge '+(porCat[c.id]?'badge-cyan':'badge-orange'),style:{fontSize:'0.7rem'}},
+          [c.icon+' '+c.label+': '+porCat[c.id]]))),
+    ]),
+    isEditor()?h('div',{style:{display:'flex',gap:'6px',marginBottom:'var(--gap)',flexWrap:'wrap'}},[
+      h('button',{className:'btn btn-sm btn-primary',onClick:()=>showBodegaItemModal(null,renderBodega)},['➕ Agregar material']),
+    ]):null,
+    b.items.length?h('div',{},b.items.slice().reverse().map(it=>{
+      const cat=bodegaCat(it.cat);
+      const dest=bodegaDestinos(it);
+      const calzan=dest.exactas.length;
+      return h('div',{className:'card',style:{borderLeft:'3px solid '+(calzan?'var(--ac-green)':'var(--ac-orange)')}},[
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}},[
+          h('div',{style:{fontWeight:'600',fontSize:'0.86rem'}},[(cat?cat.icon+' '+cat.label:it.cat)]),
+          h('span',{className:'badge badge-blue',style:{fontSize:'0.72rem'}},[(it.cantidad||0)+' u.']),
+        ]),
+        h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginTop:'6px'}},[
+          it.tipoVentana?h('span',{className:'badge',style:{fontSize:'0.68rem'}},[it.tipoVentana]):null,
+          it.medida?h('span',{className:'badge badge-cyan',style:{fontSize:'0.68rem'}},[it.medida==='128.5'?'128,5 cm':it.medida+' cm']):null,
+          it.orientacion?h('span',{className:'badge badge-blue',style:{fontSize:'0.68rem'}},[it.orientacion]):null,
+          it.ubicacion?h('span',{style:{fontSize:'0.7rem',color:'var(--tx-2)'}},['📍 '+it.ubicacion]):null,
+        ].filter(Boolean)),
+        it.nota?h('div',{style:{fontSize:'0.74rem',color:'var(--tx-2)',fontStyle:'italic',marginTop:'4px'}},['💬 '+it.nota]):null,
+        h('div',{style:{marginTop:'8px',padding:'7px 9px',borderRadius:'var(--radius-sm)',
+          background:calzan?'var(--ac-green-soft)':'var(--bg-2)',fontSize:'0.78rem',
+          color:calzan?'var(--ac-green)':'var(--tx-2)',fontWeight:'600'}},
+          [calzan?('✓ Calza en '+calzan+' vano(s)'+(dest.sinMedir.length?' · '+dest.sinMedir.length+' por medir':''))
+                : (dest.sinMedir.length?(dest.sinMedir.length+' candidatos, falta medirlos'):'Sin vanos que lo necesiten ahora')]),
+        h('div',{style:{display:'flex',gap:'6px',marginTop:'8px',flexWrap:'wrap'}},[
+          (calzan||dest.sinMedir.length)?h('button',{className:'btn btn-sm btn-ghost',style:{fontSize:'0.74rem',color:'var(--ac-cyan)'},
+            onClick:()=>showBodegaDestinosModal(it)},['🔎 ¿Dónde va?']):null,
+          isEditor()?h('button',{className:'btn btn-sm btn-ghost',style:{fontSize:'0.74rem'},
+            onClick:()=>showBodegaItemModal(it.id,renderBodega)},['✏️ Editar']):null,
+          isEditor()?h('button',{className:'btn btn-sm btn-ghost',style:{fontSize:'0.74rem',color:'var(--ac-red)'},
+            onClick:()=>{ if(!confirm('¿Eliminar este lote de bodega?'))return; bodegaDelete(it.id); renderBodega(); }},['🗑']):null,
+        ].filter(Boolean)),
+      ].filter(Boolean));
+    })):h('div',{className:'card'},[h('div',{style:{padding:'14px 0',textAlign:'center',color:'var(--tx-2)',fontSize:'0.85rem'}},
+      ['Bodega vacía. Agregá el material que tengas guardado.'])]),
+    renderSyncBar(),
+  ].filter(Boolean));
+  app().innerHTML='';
+  app().appendChild(el);
+}
+
+function showBodegaItemModal(itemId,onDone){
+  const b=getBodega();
+  const ex=itemId?b.items.find(x=>x.id===itemId):null;
+  const d=ex?Object.assign({},ex):{id:'bod_'+Date.now(),cat:'termopanelCorredera',tipoVentana:'',
+    medida:'',orientacion:'',cantidad:1,ubicacion:'',nota:''};
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[]);
+  const inputStyle={padding:'8px 10px',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)',
+    background:'var(--bg-2)',color:'var(--tx-1)',fontSize:'0.85rem',width:'100%'};
+
+  function draw(){
+    const u=overlay.querySelector('#bod-ubic'); if(u)d.ubicacion=u.value;
+    const n=overlay.querySelector('#bod-nota'); if(n)d.nota=n.value;
+    overlay.innerHTML='';
+    const cat=bodegaCat(d.cat);
+    const chip=(label,val,cur,set)=>h('button',{
+      className:'btn btn-sm '+(cur===val?'btn-primary':'btn-ghost'),
+      style:{fontSize:'0.72rem',padding:'5px 9px'},onClick:()=>{set(cur===val?'':val);draw();}},[label]);
+    overlay.appendChild(h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
+      h('h3',{style:{marginBottom:'10px'}},[ex?'✏️ Editar material':'➕ Agregar material a bodega']),
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['Tipo de material']),
+      h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},
+        BODEGA_CATS.map(c=>h('button',{
+          className:'btn btn-sm '+(d.cat===c.id?'btn-primary':'btn-ghost'),
+          style:{fontSize:'0.72rem',padding:'5px 9px'},
+          onClick:()=>{d.cat=c.id;if(!bodegaCat(c.id).usaMedida)d.medida='';draw();}},[c.icon+' '+c.label]))),
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['Cantidad']),
+      h('div',{style:{marginBottom:'10px'}},[stepper(d.cantidad||0,(v)=>{d.cantidad=v;},0)]),
+      (cat&&cat.usaMedida)?h('div',{},[
+        h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['Medida (si la conocés)']),
+        h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},
+          HOJA_MEDIDAS.map(m=>chip(m.label,m.id,d.medida,v=>d.medida=v))),
+      ]):null,
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['Orientación (opcional)']),
+      h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}},
+        ['Derecha','Izquierda'].map(o=>chip(o,o,d.orientacion,v=>d.orientacion=v))),
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['Tipo de ventana (opcional)']),
+      h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px',maxHeight:'96px',overflowY:'auto'}},
+        getAllWindowCodes().map(c=>chip(c.code,c.code,d.tipoVentana,v=>d.tipoVentana=v))),
+      h('div',{style:{fontSize:'0.72rem',color:'var(--tx-2)',fontWeight:'600',marginBottom:'4px'}},['Ubicación en bodega (opcional)']),
+      h('input',{id:'bod-ubic',type:'text',value:d.ubicacion,placeholder:'Rack 3, pallet A...',style:inputStyle}),
+      h('div',{style:{height:'8px'}}),
+      h('textarea',{id:'bod-nota',className:'obs-area',style:{minHeight:'42px',fontSize:'0.8rem'},
+        placeholder:'Nota (de dónde salio, estado, etc.)'},[d.nota]),
+      h('div',{style:{display:'flex',gap:'8px',marginTop:'12px'}},[
+        h('button',{className:'btn btn-sm btn-ghost',style:{flex:1},onClick:()=>overlay.remove()},['Cancelar']),
+        h('button',{className:'btn btn-sm btn-primary',style:{flex:1},onClick:()=>{
+          const u2=overlay.querySelector('#bod-ubic'); if(u2)d.ubicacion=u2.value.trim();
+          const n2=overlay.querySelector('#bod-nota'); if(n2)d.nota=n2.value.trim();
+          if(!d.cantidad||d.cantidad<1)return alert('Indicá al menos 1 unidad.');
+          bodegaUpsert(d);
+          overlay.remove();
+          if(onDone)onDone();
+        }},['💾 Guardar']),
+      ]),
+    ].filter(Boolean)));
+  }
+  draw();
+  document.body.appendChild(overlay);
+}
+
+function showBodegaDestinosModal(item){
+  const cat=bodegaCat(item.cat);
+  const {exactas,sinMedir}=bodegaDestinos(item);
+  const fila=(r,dim)=>h('button',{
+    className:'btn btn-ghost',
+    style:{justifyContent:'flex-start',gap:'8px',padding:'9px 10px',fontSize:'0.8rem',width:'100%',
+      textAlign:'left',opacity:dim?0.75:1,borderLeft:'3px solid '+(dim?'var(--ac-orange)':'var(--ac-green)')},
+    onClick:()=>{overlay.remove();navigate('window',{edif:String(r.edif),depto:r.depto,code:r.code,loc:r.loc});}
+  },[
+    h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'700',minWidth:'40px'}},['T'+r.edif]),
+    h('span',{style:{fontFamily:'var(--font-mono)',minWidth:'46px'}},[String(r.depto)]),
+    h('span',{style:{fontFamily:'var(--font-mono)',fontWeight:'600',minWidth:'56px'}},[r.code]),
+    h('span',{style:{flex:1,color:'var(--tx-2)',fontSize:'0.72rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},
+      [r.loc+' · '+r.orient]),
+    h('span',{className:'badge '+(r.medida?'badge-cyan':'badge-orange'),style:{fontSize:'0.65rem'}},
+      [r.medida?(r.medida==='128.5'?'128,5':r.medida):'sin medir']),
+  ]);
+  const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
+    h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
+      h('h3',{style:{marginBottom:'6px'}},['🔎 ¿Dónde va este material?']),
+      h('div',{style:{fontSize:'0.76rem',color:'var(--tx-2)',marginBottom:'10px'}},
+        [(cat?cat.label:item.cat)+(item.medida?' · '+(item.medida==='128.5'?'128,5 cm':item.medida+' cm'):'')+
+         ' · '+(item.cantidad||0)+' unidad(es) disponibles']),
+      h('div',{style:{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'8px'}},[
+        h('span',{className:'badge '+(exactas.length?'badge-green':'badge-orange'),style:{fontSize:'0.72rem'}},[exactas.length+' calzan']),
+        sinMedir.length?h('span',{className:'badge badge-orange',style:{fontSize:'0.72rem'}},[sinMedir.length+' por medir']):null,
+      ].filter(Boolean)),
+      exactas.length?h('div',{style:{display:'flex',flexDirection:'column',gap:'4px',marginBottom:'10px'}},exactas.slice(0,40).map(r=>fila(r,false)))
+        :h('div',{style:{padding:'12px 0',color:'var(--tx-2)',fontSize:'0.85rem',textAlign:'center'}},
+          ['Ningún vano registrado necesita esto ahora mismo.']),
+      sinMedir.length?h('div',{},[
+        h('div',{style:{fontSize:'0.72rem',color:'var(--ac-orange)',fontWeight:'600',margin:'8px 0 4px'}},
+          ['Candidatos sin medida relevada — hay que ir a medir:']),
+        h('div',{style:{display:'flex',flexDirection:'column',gap:'4px'}},sinMedir.slice(0,25).map(r=>fila(r,true))),
+      ]):null,
+      h('div',{style:{height:'10px'}}),
+      h('button',{className:'btn btn-primary',style:{width:'100%'},onClick:()=>overlay.remove()},['Cerrar']),
+    ].filter(Boolean)),
+  ]);
+  document.body.appendChild(overlay);
+}
+
 function renderSyncBar(){
   const inBuilding=currentView==='building'||currentView==='dept'||currentView==='window'||currentView==='common';
   const inDept=currentView==='dept'||currentView==='window';
@@ -5502,7 +5287,7 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Sync (v2.20): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    // ⬆ Sync (v2.21): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
       title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
@@ -5848,6 +5633,7 @@ function showExportMenu(){
       h('h3',{},['Opciones']),
       h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},[
         h('button',{className:'btn btn-ghost',style:{color:'var(--ac-cyan)'},onClick:()=>{overlay.remove();navigate('inventario',{});}},['📦 Inventario de ventanas']),
+        h('button',{className:'btn btn-ghost',style:{color:'var(--ac-green)'},onClick:()=>{overlay.remove();navigate('bodega',{});}},['🏬 Bodega — material para reponer']),
         h('button',{className:'btn btn-ghost',style:{color:'var(--ac-red)'},onClick:()=>{overlay.remove();navigate('danos',{});}},['💥 Mapa de daños críticos']),
         h('button',{className:'btn btn-ghost',style:{color:'var(--ac-purple)'},onClick:()=>{overlay.remove();showHojaDestinoModal();}},['🔎 ¿A dónde llevo esta hoja?']),
         h('button',{className:'btn btn-ghost',onClick:()=>{overlay.remove();showPersonasManager();}},['👥 Personas / cuadrillas']),
@@ -5920,7 +5706,7 @@ const MAX_BACKUPS=3;
 function saveBackupSnapshot(){
   try{
     // Copia profunda sin fotos (ahorrar quota)
-    const safe={ts:ts(),version:'v2.20',data:JSON.parse(JSON.stringify(DATA))};
+    const safe={ts:ts(),version:'v2.21',data:JSON.parse(JSON.stringify(DATA))};
     Object.values(safe.data.windows||{}).forEach(w=>{if(w&&w.fotos)w.fotos=[];});
     // Rotar: borrar más antiguos si excedemos MAX_BACKUPS
     const keys=Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PREFIX)).sort();
@@ -6013,7 +5799,7 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync principal (v2.20): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// Sync principal (v2.21): SOLO PUSH. Antes hacía pull automático que sobrescribía
 // datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
 // Alias de doPushOnly para compat con botón existente.
 async function doSync(){ return doPushOnly(); }
@@ -6191,6 +5977,7 @@ function buildSyncPayload(dirtyOnly=false){
       sinImpermeabilizar:w.deficiencias.sinImpermeabilizar?1:0,
       faltaHojaCorredera:w.deficiencias.faltaHojaCorredera?1:0,
       faltaHojaFija:w.deficiencias.faltaHojaFija?1:0,
+      funcionamientoDeficiente:w.deficiencias.funcionamientoDeficiente?1:0,
       termopanelTrizado:w.deficiencias.termopanelTrizado?1:0,
       pvcRoto:w.deficiencias.pvcRoto?1:0,
       filtracionAgua:w.deficiencias.filtracionAgua?1:0,
@@ -6301,7 +6088,7 @@ function mergeFromSheets(rows){
     }
     if(!depto){skipped++;return;}
 
-    // Legacy v2.20: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
+    // Legacy v2.21: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
     // Sin esto, las filas viejas del Sheet crearían registros fantasma.
     let elemNorm=elem;
     if(elem==='V1_D2'&&!String(depto).startsWith('EC')){
@@ -6366,12 +6153,13 @@ function mergeFromSheets(rows){
       sinImpermeabilizar:pd(r,'sinImpermeabilizar','def_sinImpermeabilizar'),
       faltaHojaCorredera:pd(r,'faltaHojaCorredera','def_faltaHojaCorredera'),
       faltaHojaFija:pd(r,'faltaHojaFija','def_faltaHojaFija'),
+      funcionamientoDeficiente:pd(r,'funcionamientoDeficiente','def_funcionamientoDeficiente'),
       termopanelTrizado:pd(r,'termopanelTrizado','def_termopanelTrizado'),
       pvcRoto:pd(r,'pvcRoto','def_pvcRoto'),
       filtracionAgua:pd(r,'filtracionAgua','def_filtracionAgua'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    // Hojas (v2.20)
+    // Hojas (v2.21)
     if(r.hoja_corredera!==undefined||r.hoja_fija!==undefined||r.hoja_medida!==undefined){
       const hj=getHojas(w);
       if(r.hoja_corredera!==undefined&&r.hoja_corredera!=='')hj.corredera=String(r.hoja_corredera);
@@ -6552,11 +6340,13 @@ function migrateV1(){
   initData();
   if(!DATA.personas)DATA.personas=[];
   if(!DATA.inventario)DATA.inventario={recepciones:[],meta:{}};
+  if(!DATA.bodega)DATA.bodega={items:[]};
 
   // IMPORTANTE: debe correr ANTES del bloque de integridad. Si no, el loop de
   // integridad crearía fichas vacías con el código nuevo y dejaría huérfanas
   // las viejas con todos los datos cargados.
   migrateV1D2B();
+  migrateFuncionalidad();
 
   // Verify data integrity - ensure all windows exist
   let added=0;
@@ -6621,7 +6411,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.20 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.21 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
