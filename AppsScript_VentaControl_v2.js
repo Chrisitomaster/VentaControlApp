@@ -24,14 +24,14 @@ var HEADERS = [
   'Estado',              // G  7
   'Separación >5mm',     // H  8
   'Descuadre',           // I  9
-  'Sin FC11 bajo marco', // J  10
+  'Sin sello interior',  // J  10
   'Malla EIFS no llega', // K  11
   'Estado Vano',         // L  12
   'Observaciones',       // M  13
   'Última Actualización',// N  14
   // ---- Columnas v2 ----
   'Desaplomado',         // O  15
-  'Sin FC11 frente vent',// P  16
+  'Sin sello exterior',  // P  16
   'Malla retorno pulida',// Q  17
   'Vidrio trizado',      // R  18
   'Marco perforado',     // S  19
@@ -319,8 +319,8 @@ var DEFS_CONFIG = [
   {label:'Separacion >5mm',             col:7,  accion:'Pulir Vano',                accionCol:20},
   {label:'Descuadre',                   col:8,  accion:'Aplomar ventana',            accionCol:23},
   {label:'Ventana desaplomada',         col:14, accion:'Aplomar ventana',            accionCol:23},
-  {label:'Sin FC11 bajo marco',         col:9,  accion:'Aplicar sello bajo marco',   accionCol:21},
-  {label:'Sin FC11 frente ventana',     col:15, accion:'Aplicar sello frente vent.', accionCol:24},
+  {label:'Sin sello interior',          col:9,  accion:'Aplicar sello bajo marco',   accionCol:21},
+  {label:'Sin sello exterior',          col:15, accion:'Aplicar sello frente vent.', accionCol:24},
   {label:'Malla retorno EIFS no llega', col:10, accion:'Reparar retorno EIFS',       accionCol:22},
   {label:'Malla de retorno pulida',     col:16, accion:'Reparar retorno EIFS',       accionCol:22},
   {label:'Vidrio trizado',              col:17, accion:'Reemplazar vidrio',           accionCol:25},

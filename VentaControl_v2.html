@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VentaControl v2.27</title>
+<title>VentaControl v2.28</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -378,13 +378,6 @@ body{
 .print-summary .box .lbl { font-size:0.85rem; color:#555; text-transform:uppercase; letter-spacing:0.4px; }
 .print-summary .box .val { font-size:2.4rem; font-weight:700; color:#000; line-height:1.1; }
 
-.print-eifs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:14px; font-size:0.9rem; }
-.print-eifs .phase { border:1px solid #888; padding:6px 10px; background:#f9fafb; }
-.print-eifs .phase.complete { background:#bbf7d0; border-color:#16a34a; color:#065f46; font-weight:600; }
-.print-eifs .phase.partial { background:#fed7aa; border-color:#d97706; color:#78350f; }
-.print-eifs .phase .pname { font-weight:700; }
-.print-eifs .phase .pitems { font-size:0.78rem; color:#444; }
-
 .print-comment { font-size:0.78rem; padding:6px 8px; background:#fffbeb; border-left:3px solid #d97706;
   margin-bottom:10px; color:#3f3f3f; }
 
@@ -463,7 +456,7 @@ body{
 @media print {
   body { background:#fff !important; color:#000 !important; }
   body, .print-mode, .print-cell, .print-summary .box, .print-table th, .print-table td,
-  .print-floor h3, .print-comment, .print-eifs .phase {
+  .print-floor h3, .print-comment {
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
     color-adjust:exact !important;
@@ -494,7 +487,7 @@ body{
 <div id="app"></div>
 <script>
 /* ============================================
-   VentaControl v2.27 — Configuration & Data
+   VentaControl v2.28 — Configuration & Data
    ============================================ */
 
 // ---- APPS SCRIPT URL (hardcoded default, overridable via config) ----
@@ -549,7 +542,7 @@ BLDG_RAW.forEach(([e,tipo,sa,p1,p25])=>{
 // ---- WINDOW DEFINITIONS PER DEPT TYPE ----
 const WIN_DEF = {
   A:[['V1-Izq','Dorm 1 Izq'],['V1-Der','Dorm 1 Der'],['V1_D2','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
-  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.27)
+  // V1_D2-B: en deptos tipo B la ventana del dorm. 2 va en el dilatado y lleva pilar (v2.28)
   B:[['V2','Dormitorio 1'],['V1_D2-B','Dormitorio 2'],['V1_D3','Dormitorio 3'],['V3','Balcón'],['V4','Baño'],['V1a','Logia']],
   MR:[['V5_1','Dorm MR 1'],['V5_2','Dorm MR 2'],['V5_3','Dorm MR 3'],['V5a','Logia MR'],['V6_1','Dorm 2 MR'],['V6_2','Dorm 2 MR'],['V7','Estar-Comedor MR']]
 };
@@ -569,8 +562,8 @@ const DEFICIENCIES = [
   {id:'separacion',        label:'Separación >5mm',                    icon:'↔'},
   {id:'descuadre',         label:'Descuadre de Rasgo',                 icon:'◇'},
   {id:'desaplomo',         label:'Ventana desaplomada',                 icon:'📐'},
-  {id:'sinSellador',       label:'Sin sellador FC11 bajo marco',        icon:'💧'},
-  {id:'sinSelladorFrente', label:'Sin sellador FC11 frente ventana',    icon:'💦'},
+  {id:'sinSellador',       label:'Sin sello interior',                  icon:'💧'},
+  {id:'sinSelladorFrente', label:'Sin sello exterior',                  icon:'💦'},
   {id:'retornoMalla',      label:'Malla retorno EIFS no llega a marco', icon:'🔲'},
   {id:'mallaPulida',       label:'Malla de retorno está pulida',        icon:'⚠'},
   {id:'vidrioTrizado',     label:'Vidrio trizado',                     icon:'🔍'},
@@ -580,7 +573,7 @@ const DEFICIENCIES = [
   {id:'faltaHojaCorredera',label:'Falta hoja corredera',                icon:'⬌'},
   {id:'faltaHojaFija',     label:'Falta hoja fija',                     icon:'⬜'},
   {id:'funcionamientoDeficiente', label:'Funcionamiento deficiente',    icon:'⚙'},
-  // ---- Daños críticos (v2.27) ----
+  // ---- Daños críticos (v2.28) ----
   {id:'termopanelTrizado', label:'Termopanel trizado/fracturado',       icon:'💥', critico:true},
   {id:'pvcRoto',           label:'PVC roto',                            icon:'🧱', critico:true},
   {id:'filtracionAgua',    label:'Filtración (prueba estanqueidad)',    icon:'🌊', critico:true},
@@ -627,7 +620,7 @@ const DEF_ACTION_MAP = {
   filtracionAgua:'sellarFiltracion',
 };
 
-/* ---- HOJAS DE VENTANA (v2.27) ----
+/* ---- HOJAS DE VENTANA (v2.28) ----
    Estado de hoja corredera y hoja fija + medida de la corredera.
    La medida se releva en terreno (no hay regla por tipo). */
 const HOJA_ESTADOS = [
@@ -635,7 +628,7 @@ const HOJA_ESTADOS = [
   {id:'falta',  label:'Falta',   sym:'✗', color:'red'},
   {id:'danada', label:'Dañada',  sym:'⚠', color:'orange'},
 ];
-/* ---- REPOSICIÓN (v2.27) ----
+/* ---- REPOSICIÓN (v2.28) ----
    Ciclo de la ventana que se manda al proveedor: está en obra y hay que
    retirarla → se la llevaron (pendiente de volver) → volvió a obra. */
 const REPO_ESTADOS = [
@@ -663,45 +656,8 @@ const ESTADOS = [
 
 const VANO_OPTS = ['OK','Sobredimensionado','Subdimensionado'];
 
-// Exterior seal states
-
-// EIFS scheduling helpers (v2.27)
+// Fecha de hoy en YYYY-MM-DD (inventario, reposiciones y conteos)
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function eifsStatus(plan, real, done){
-  if(done){
-    if(plan&&real)return real<=plan?'on-time':'late-done';
-    return 'done-no-plan';
-  }
-  if(!plan)return 'no-plan';
-  return plan<todayISO()?'overdue':'scheduled';
-}
-function eifsStatusBadge(status){
-  const map={
-    'on-time':{sym:'✓',color:'green',label:'A tiempo'},
-    'late-done':{sym:'⏱',color:'orange',label:'Tarde pero hecho'},
-    'done-no-plan':{sym:'✓',color:'cyan',label:'Hecho sin plan'},
-    'no-plan':{sym:'○',color:'',label:'Sin planificar'},
-    'overdue':{sym:'⚠',color:'red',label:'Atrasado'},
-    'scheduled':{sym:'📅',color:'blue',label:'Planificado'},
-  };
-  return map[status]||map['no-plan'];
-}
-
-// Building construction stages — 3 EIFS phases with sub-items
-const EIFS_PHASES = [
-  {id:1,label:'EIFS Fase 1 — Preparación',items:[
-    {id:'1a',label:'Pegado de EPS a muro cara exterior'},
-    {id:'1b',label:'Refuerzo en rasgos con malla + 1ra mano yeso'},
-  ]},
-  {id:2,label:'EIFS Fase 2 — Malla y terminación',items:[
-    {id:'2a',label:'Pegado malla en EPS con yeso en fachada exterior'},
-    {id:'2b',label:'Instalación esquineros y cortagoteras'},
-    {id:'2c',label:'Aplicación 2da mano yeso en rasgos'},
-  ]},
-  {id:3,label:'EIFS Fase 3 — Revestimiento',items:[
-    {id:'3a',label:'Revestimiento granulado en fachada exterior'},
-  ]},
-];
 
 const SA_NAMES = {1:'SA1',2:'SA2',3:'SA3',4:'SA4',5:'SA5'};
 const SA_RANGES = {1:[1,8],2:[9,17],3:[18,25],4:[26,29],5:[30,34]};
@@ -787,7 +743,7 @@ function closeOverlayOnBackdrop(ov){ov.addEventListener('click',closeOnBackdropC
    ============================================ */
 let DATA = {windows:{},buildings:{},personas:[],meta:{version:'2.0',lastSync:null}};
 
-// ---- PERSONAS / Asignación de acciones (v2.27) ----
+// ---- PERSONAS / Asignación de acciones (v2.28) ----
 const PERSONA_COLORS = ['#3b82f6','#eab308','#ec4899','#22c55e','#a855f7','#06b6d4','#f97316','#ef4444','#0ea5e9','#84cc16'];
 function nextPersonaColor(){
   const used=new Set((DATA.personas||[]).map(p=>p.color));
@@ -1021,7 +977,7 @@ function defsDeVentana(w){
   return out;
 }
 
-/* ---- MIGRACIÓN v2.27: V1_D2 → V1_D2-B en departamentos tipo B ----
+/* ---- MIGRACIÓN v2.28: V1_D2 → V1_D2-B en departamentos tipo B ----
    La ventana del dormitorio 2 de los deptos tipo B va en el dilatado y lleva
    pilar, así que pasa a tener código propio. Mueve la ficha completa
    conservando estado, deficiencias, acciones, hojas, sello, fotos e historial.
@@ -1039,7 +995,7 @@ function windowTieneDatos(w){
   if(w.fotos&&w.fotos.length)return true;
   return false;
 }
-/* ---- MIGRACION v2.27: rating de funcionalidad 1-5 -> deficiencia ----
+/* ---- MIGRACION v2.28: rating de funcionalidad 1-5 -> deficiencia ----
    El rating se saco de la interfaz. Las ventanas calificadas 1 o 2 (muy
    deficiente / deficiente) pasan a tener la deficiencia
    'funcionamientoDeficiente'; de 3 a 5 se consideran aceptables y se
@@ -1181,9 +1137,9 @@ function newWindowRecord(){
     acciones:Object.fromEntries(ACTION_IDS.map(id=>[id,{active:false,done:false}])),
     observaciones:'',
     selloExterior:{estado:'sinSellar',grado:0,comentario:''},
-    // Hojas de la ventana (v2.27). medida: '' | '130' | '128.5' (relevada en terreno)
+    // Hojas de la ventana (v2.28). medida: '' | '130' | '128.5' (relevada en terreno)
     hojas:{corredera:'',fija:'',medida:'',comentario:''},
-    // Reposición (v2.27): estado, fechas de retiro/retorno y comentario
+    // Reposición (v2.28): estado, fechas de retiro/retorno y comentario
     reposicion:{estado:'',fechaRetiro:'',fechaRetorno:'',comentario:''},
     funcionalidad:0,
     historial:[],
@@ -1195,7 +1151,7 @@ let _saveTimer=null;
 // IMPORTANTE: saveLocal antes era debounced 400ms — si tapaba rápido + recarga, perdía cambios.
 // Ahora persiste inmediato. Costo: ~5-20ms por tap. localStorage es atomico, sin race.
 function saveLocal(){ saveLocalNow(); }
-/* ---- FORMATO DE GUARDADO COMPACTO (v2.27) ----
+/* ---- FORMATO DE GUARDADO COMPACTO (v2.28) ----
    El formato anterior escribía cada ficha entera, incluidos los valores por
    defecto: 13 acciones en {active:false,done:false} y 17 deficiencias en
    false suman 978 bytes por ventana. Con 4.732 ventanas eso da ~6 MB, por
@@ -1563,7 +1519,7 @@ function renderLogin(){
   const el=h('div',{className:'fade-in',style:{padding:'40px 20px',textAlign:'center',minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center'}},[
     h('div',{style:{marginBottom:'32px'}},[
       h('div',{style:{fontFamily:'var(--font-mono)',fontSize:'2rem',color:'var(--ac-blue)',fontWeight:'700',letterSpacing:'2px'}},['VC2']),
-      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.27']),
+      h('h1',{style:{fontSize:'1.2rem',fontWeight:'600',marginTop:'8px'}},['VentaControl v2.28']),
       h('p',{style:{color:'var(--tx-2)',marginTop:'4px',fontSize:'0.85rem'}},['Control de instalación de ventanas']),
     ]),
     h('div',{style:{maxWidth:'260px',margin:'0 auto'}},[
@@ -1687,7 +1643,7 @@ function renderGlobalDefBreakdown(){
 function renderDashboard(){
   const g=getGlobalStats();
   const el=h('div',{className:'fade-in'},[
-    topbar('VentaControl v2.27'),
+    topbar('VentaControl v2.28'),
     // Global stats — 1 solo porcentaje neto
     h('div',{className:'stats-row'},[
       statBox(g.instaladasNeto.toLocaleString(),'Inst. Neto'),
@@ -1793,8 +1749,6 @@ function renderSA(){
       const b=BUILDINGS[e];
       const s=getBldgStats(e);
       const bData=DATA.buildings[bKey(e)]||{};
-      const stg=bData.stage||0;
-      const stgInfo=stg?BLDG_STAGES.find(x=>x.id===stg):null;
       return h('div',{className:'card card-click bld-card',onClick:()=>navigate('building',{edif:e})},[
         h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},[
           h('div',{},[
@@ -1803,7 +1757,6 @@ function renderSA(){
           ]),
           h('span',{className:'badge '+(s.pctReal>=100?'badge-green':s.pctReal>0?'badge-blue':'badge-orange')},[s.pctReal+'%']),
         ]),
-        stgInfo?h('div',{style:{fontSize:'0.75rem',color:'var(--ac-cyan)',marginTop:'4px',fontWeight:'500'}},['📋 '+stgInfo.short+' ('+stg+'/6)']):null,
         h('div',{className:'pbar',style:{marginTop:'6px'}},[h('div',{className:'pbar-fill green',style:{width:s.pctReal+'%'}})]),
         h('div',{style:{display:'flex',gap:'6px',marginTop:'8px',flexWrap:'wrap'}},[
           s.actionsPending?h('span',{className:'badge badge-orange'},[s.actionsPending+' acc.']):null,
@@ -1887,146 +1840,6 @@ function renderBuilding(){
         ].filter(Boolean)),
       ]);
     })(),
-
-    // Building stage tracker — 3 EIFS phases with sub-items + fechas (v2.27)
-    h('div',{className:'card'},[
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}},[
-        h('div',{style:{fontWeight:'600',fontSize:'0.9rem'}},['Etapas EIFS']),
-        (()=>{
-          const si=bData.stageItems||{};
-          const sp=bData.stagePlan||{};
-          const sr=bData.stageReal||{};
-          const totalItems=EIFS_PHASES.reduce((s,p)=>s+p.items.length,0);
-          const doneItems=Object.values(si).filter(Boolean).length;
-          // Contar atrasados
-          const allItems=EIFS_PHASES.flatMap(p=>p.items);
-          let overdue=0,next=null,nextPlan=null;
-          allItems.forEach(it=>{
-            const status=eifsStatus(sp[it.id]||'',sr[it.id]||'',si[it.id]||false);
-            if(status==='overdue')overdue++;
-            if(status==='scheduled'){
-              const plan=sp[it.id];
-              if(!nextPlan||plan<nextPlan){nextPlan=plan;next=it;}
-            }
-          });
-          return h('div',{style:{display:'flex',gap:'4px',flexWrap:'wrap',justifyContent:'flex-end'}},[
-            doneItems>0?h('span',{className:'badge badge-blue',style:{fontSize:'0.7rem'}},[`${doneItems}/${totalItems}`]):h('span',{className:'badge badge-orange',style:{fontSize:'0.7rem'}},['Sin iniciar']),
-            overdue?h('span',{className:'badge badge-red',style:{fontSize:'0.7rem'}},[`⚠ ${overdue} atrasado${overdue>1?'s':''}`]):null,
-            next?h('span',{className:'badge badge-blue',style:{fontSize:'0.7rem'},title:next.label},[`📅 Próx: ${nextPlan}`]):null,
-          ].filter(Boolean));
-        })(),
-      ]),
-      // Progress bar
-      h('div',{className:'pbar',style:{marginBottom:'10px'}},[
-        h('div',{className:'pbar-fill green',style:{width:pct(Object.values(bData.stageItems||{}).filter(Boolean).length,EIFS_PHASES.reduce((s,p)=>s+p.items.length,0))+'%'}})
-      ]),
-      // Phases
-      ...EIFS_PHASES.map(phase=>{
-        const si=bData.stageItems||{};
-        const phaseDone=phase.items.every(it=>si[it.id]);
-        const phasePartial=phase.items.some(it=>si[it.id]);
-        return h('div',{style:{marginBottom:'8px',border:'1px solid '+(phaseDone?'var(--ac-green)':phasePartial?'var(--ac-orange)':'var(--border)'),borderRadius:'var(--radius-sm)',overflow:'hidden'}},[
-          // Phase header
-          h('div',{style:{
-            display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',
-            background:phaseDone?'var(--ac-green-soft)':phasePartial?'var(--ac-orange-soft)':'var(--bg-2)',
-            fontWeight:'600',fontSize:'0.85rem',
-            color:phaseDone?'var(--ac-green)':phasePartial?'var(--ac-orange)':'var(--tx-1)'
-          }},[
-            h('span',{style:{fontSize:'1rem'}},[phaseDone?'✓':phasePartial?'◷':'○']),
-            h('span',{style:{flex:1}},[phase.label]),
-            h('span',{style:{fontSize:'0.75rem',color:'var(--tx-2)'}},
-              [phase.items.filter(it=>si[it.id]).length+'/'+phase.items.length]),
-          ]),
-          // Sub-items con fechas plan/real (v2.27)
-          ...phase.items.map(it=>{
-            const done=si[it.id]||false;
-            const sp=bData.stagePlan||{};
-            const sr=bData.stageReal||{};
-            const plan=sp[it.id]||'';
-            const real=sr[it.id]||'';
-            const status=eifsStatus(plan,real,done);
-            const badge=eifsStatusBadge(status);
-            // Estilo del fondo según status
-            const bgMap={'on-time':'var(--ac-green-soft)','late-done':'var(--ac-orange-soft)','done-no-plan':'var(--ac-cyan-soft)','overdue':'var(--ac-red-soft)','scheduled':'var(--ac-blue-soft)','no-plan':'transparent'};
-            return h('div',{
-              style:{
-                display:'flex',flexDirection:'column',gap:'4px',padding:'8px 12px 8px 24px',
-                borderTop:'1px solid var(--border)',
-                background:bgMap[status]||'transparent',
-              }
-            },[
-              // Fila 1: checkbox + label + status badge
-              h('div',{
-                style:{display:'flex',alignItems:'center',gap:'10px',cursor:isEditor()?'pointer':'default'},
-                onClick:()=>{
-                  if(!isEditor())return;
-                  if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
-                  const bd=DATA.buildings[bKey(edif)];
-                  if(!bd.stageItems)bd.stageItems={};
-                  if(!bd.stageReal)bd.stageReal={};
-                  const newDone=!done;
-                  bd.stageItems[it.id]=newDone;
-                  // Auto-set fecha real al marcar; limpiar al desmarcar
-                  if(newDone&&!bd.stageReal[it.id])bd.stageReal[it.id]=todayISO();
-                  else if(!newDone)delete bd.stageReal[it.id];
-                  saveLocal();
-                  renderBuilding();
-                }
-              },[
-                h('div',{style:{
-                  width:'22px',height:'22px',borderRadius:'4px',display:'flex',alignItems:'center',justifyContent:'center',
-                  fontSize:'0.75rem',fontWeight:'700',flexShrink:0,
-                  background:done?'var(--ac-green)':'var(--bg-3)',
-                  color:done?'#fff':'var(--tx-2)',border:done?'none':'1px solid var(--border)'
-                }},[done?'✓':'']),
-                h('div',{style:{flex:1,fontSize:'0.8rem',color:done?'var(--ac-green)':'var(--tx-1)'}},[it.label]),
-                badge.color?h('span',{className:'badge badge-'+badge.color,style:{fontSize:'0.65rem',padding:'2px 6px'},title:badge.label},[badge.sym+' '+badge.label]):null,
-              ].filter(Boolean)),
-              // Fila 2: inputs de fecha (solo editor o lectura)
-              h('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap',fontSize:'0.7rem',color:'var(--tx-2)',paddingLeft:'32px'},onClick:(ev)=>ev.stopPropagation()},[
-                h('label',{style:{display:'flex',alignItems:'center',gap:'4px'}},[
-                  '📅 Plan:',
-                  isEditor()?h('input',{type:'date',value:plan,
-                    style:{padding:'2px 4px',fontSize:'0.7rem',border:'1px solid var(--border)',borderRadius:'4px',background:'var(--bg-2)',color:'var(--tx-1)'},
-                    onChange:(e)=>{
-                      if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
-                      const bd=DATA.buildings[bKey(edif)];
-                      if(!bd.stagePlan)bd.stagePlan={};
-                      if(e.target.value)bd.stagePlan[it.id]=e.target.value;
-                      else delete bd.stagePlan[it.id];
-                      saveLocal();
-                      renderBuilding();
-                    }
-                  }):h('span',{style:{fontFamily:'var(--font-mono)'}},[plan||'—']),
-                ]),
-                h('label',{style:{display:'flex',alignItems:'center',gap:'4px'}},[
-                  '🏁 Real:',
-                  isEditor()?h('input',{type:'date',value:real,
-                    style:{padding:'2px 4px',fontSize:'0.7rem',border:'1px solid var(--border)',borderRadius:'4px',background:'var(--bg-2)',color:'var(--tx-1)'},
-                    onChange:(e)=>{
-                      if(!DATA.buildings[bKey(edif)])DATA.buildings[bKey(edif)]={comment:'',accionesPendientes:{},stage:0};
-                      const bd=DATA.buildings[bKey(edif)];
-                      if(!bd.stageReal)bd.stageReal={};
-                      if(e.target.value){
-                        bd.stageReal[it.id]=e.target.value;
-                        // Si setean fecha real, también marcar done
-                        if(!bd.stageItems)bd.stageItems={};
-                        bd.stageItems[it.id]=true;
-                      } else {
-                        delete bd.stageReal[it.id];
-                      }
-                      saveLocal();
-                      renderBuilding();
-                    }
-                  }):h('span',{style:{fontFamily:'var(--font-mono)'}},[real||'—']),
-                ]),
-              ]),
-            ]);
-          }),
-        ]);
-      }),
-    ]),
 
     // ── Conteo físico de ventanas en acopio (inventario terreno) ──
     (()=>{
@@ -2655,7 +2468,6 @@ function renderPrint(){
 
   appEl.appendChild(renderPrintControls(e, 'top'));
   appEl.appendChild(renderPrintHeader(e, cfg, stats, bldg));
-  appEl.appendChild(renderPrintEifs(bldg));
   appEl.appendChild(renderPrintLegend());
   appEl.appendChild(renderPrintSummary(stats));
   if(bldg.comment) appEl.appendChild(h('div',{className:'print-comment'},['💬 '+bldg.comment]));
@@ -2675,24 +2487,9 @@ function renderPrintHeader(e, cfg, stats, bldg){
     h('div',{className:'meta'},[
       h('div',{},[h('b',{},['Generado: ']),ts()]),
       h('div',{},[h('b',{},['Última sync: ']),DATA.meta.lastSync||'—']),
-      h('div',{},[h('b',{},['VentaControl ']),'v2.27']),
+      h('div',{},[h('b',{},['VentaControl ']),'v2.28']),
     ]),
   ]);
-}
-
-function renderPrintEifs(bldg){
-  const si = bldg.stageItems || {};
-  return h('div',{className:'print-eifs'},
-    EIFS_PHASES.map(phase=>{
-      const total = phase.items.length;
-      const done = phase.items.filter(it=>si[it.id]).length;
-      const cls = done===total ? 'complete' : (done>0 ? 'partial' : '');
-      return h('div',{className:`phase ${cls}`},[
-        h('div',{className:'pname'},[phase.label.replace('EIFS ','')]),
-        h('div',{className:'pitems'},[`${done}/${total} sub-ítems${done===total?' ✓':''}`]),
-      ]);
-    })
-  );
 }
 
 function renderPrintLegend(){
@@ -2939,7 +2736,7 @@ function renderPrintWindowRow(code, loc, w){
 function renderPrintFooter(e){
   return h('div',{className:'print-footer'},[
     h('div',{},[`Edificio ${e} · ${SA_NAMES[BUILDINGS[e].sa]}`]),
-    h('div',{},[`Generado ${ts()} · VentaControl v2.27`]),
+    h('div',{},[`Generado ${ts()} · VentaControl v2.28`]),
   ]);
 }
 
@@ -2953,7 +2750,7 @@ function exportPrintHTML(edif){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Edificio ${edif} — VentaControl v2.27 — ${dateStr}</title>
+<title>Edificio ${edif} — VentaControl v2.28 — ${dateStr}</title>
 <style>
 ${css}
 *,*::before,*::after{box-sizing:border-box;}
@@ -3769,7 +3566,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
         ].filter(Boolean)):null,
     ].filter(Boolean)),
 
-    // ── Reposición al proveedor — v2.27 ──
+    // ── Reposición al proveedor — v2.28 ──
     (()=>{
       const rp=getRepo(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -3813,7 +3610,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       ].filter(Boolean));
     })(),
 
-    // ── Hojas de la ventana (corredera / fija / medida) — v2.27 ──
+    // ── Hojas de la ventana (corredera / fija / medida) — v2.28 ──
     (()=>{
       const hj=getHojas(w);
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -3964,7 +3761,7 @@ function renderWindowDetail(key,code,loc,subtitle,backView,backParams){
       }),
     ]),
 
-    // Photo capture (v2.27: preview modal, comentario, gate editor, contador)
+    // Photo capture (v2.28: preview modal, comentario, gate editor, contador)
     (()=>{
       const MAX_FOTOS=5;
       const refresh=()=>renderWindowDetail(key,code,loc,subtitle,backView,backParams);
@@ -4212,7 +4009,7 @@ function applyBulkStatus(scope,params,newEstado){
   saveLocalNow();
 }
 
-/* ---- CAMBIO MASIVO CONDICIONAL (v2.27) ----
+/* ---- CAMBIO MASIVO CONDICIONAL (v2.28) ----
    Cambia de estado sólo las ventanas que hoy están en ciertos estados, en
    vez de pisar todo el alcance. El caso que lo motivó: marcar como
    "Sin Ventana" todo lo que todavía no está instalado. */
@@ -5218,7 +5015,7 @@ function showDanosReporte(lista){
   });
   L.push('');
   L.push('='.repeat(56));
-  L.push('VentaControl v2.27');
+  L.push('VentaControl v2.28');
   const texto=L.join('\n');
   const overlay=h('div',{className:'overlay',onClick:closeOnBackdropClick},[
     h('div',{className:'modal',style:{maxHeight:'92vh',overflowY:'auto'}},[
@@ -5447,7 +5244,7 @@ function generatePedidoText(scope){
   }
   L.push('');
   L.push('='.repeat(52));
-  L.push('VentaControl v2.27');
+  L.push('VentaControl v2.28');
   return L.join('\n');
 }
 
@@ -5499,7 +5296,7 @@ function generateReposicionesText(edifs,etiqueta){
     });
   });
   L.push('='.repeat(56));
-  L.push('VentaControl v2.27');
+  L.push('VentaControl v2.28');
   return L.join('\n');
 }
 
@@ -5820,7 +5617,7 @@ function renderSyncBar(){
 
   return h('div',{className:'sync-bar'},[
     h('button',{className:'btn btn-sm btn-ghost',style:{padding:'8px 12px',fontSize:'1rem'},title:'Buscar ventana',onClick:showSearchModal},['🔍']),
-    // ⬆ Sync (v2.27): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
+    // ⬆ Sync (v2.28): SOLO sube. Pull manual via menú ⋮ → "Restaurar desde Sheet".
     h('button',{className:'btn btn-sm btn-primary',id:'sync-btn',style:{padding:'8px 14px',fontSize:'0.9rem'},
       title:'Subir cambios locales al Sheet (NO descarga).',
       onClick:doPushOnly
@@ -6241,7 +6038,7 @@ function saveBackupSnapshot(){
   try{
     // Snapshot en formato compacto y sin fotos: comparte cupo con el registro
     // principal, así que tiene que ocupar lo mínimo.
-    const safe={ts:ts(),version:'v2.27',compact:true,data:packData(true)};
+    const safe={ts:ts(),version:'v2.28',compact:true,data:packData(true)};
     const keys=Object.keys(localStorage).filter(k=>k.indexOf(BACKUP_PREFIX)===0).sort();
     while(keys.length>=MAX_BACKUPS) localStorage.removeItem(keys.shift());
     localStorage.setItem(BACKUP_PREFIX+Date.now(),JSON.stringify(safe));
@@ -6339,7 +6136,7 @@ async function doPushOnly(){
   if(btn)btn.disabled=false;
 }
 
-// Sync principal (v2.27): SOLO PUSH. Antes hacía pull automático que sobrescribía
+// Sync principal (v2.28): SOLO PUSH. Antes hacía pull automático que sobrescribía
 // datos locales con remoto desactualizado. Ahora pull es estrictamente opt-in.
 // Alias de doPushOnly para compat con botón existente.
 async function doSync(){ return doPushOnly(); }
@@ -6632,7 +6429,7 @@ function mergeFromSheets(rows){
     }
     if(!depto){skipped++;return;}
 
-    // Legacy v2.27: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
+    // Legacy v2.28: V1_D2 en depto tipo B pasó a llamarse V1_D2-B.
     // Sin esto, las filas viejas del Sheet crearían registros fantasma.
     let elemNorm=elem;
     if(elem==='V1_D2'&&!String(depto).startsWith('EC')){
@@ -6703,7 +6500,7 @@ function mergeFromSheets(rows){
       filtracionAgua:pd(r,'filtracionAgua','def_filtracionAgua'),
     };
     Object.entries(dmap).forEach(([k,v])=>{if(v!==undefined)d[k]=v;});
-    // Hojas (v2.27)
+    // Hojas (v2.28)
     if(r.hoja_corredera!==undefined||r.hoja_fija!==undefined||r.hoja_medida!==undefined){
       const hj=getHojas(w);
       if(r.hoja_corredera!==undefined&&r.hoja_corredera!=='')hj.corredera=String(r.hoja_corredera);
@@ -6712,7 +6509,7 @@ function mergeFromSheets(rows){
       if(r.hoja_comentario!==undefined&&r.hoja_comentario!=='')hj.comentario=String(r.hoja_comentario);
       syncHojasToDef(w);
     }
-    // Reposición (v2.27)
+    // Reposición (v2.28)
     if(r.repo_estado!==undefined||r.repo_fechaRetiro!==undefined){
       const rp=getRepo(w);
       if(r.repo_estado!==undefined&&r.repo_estado!=='')rp.estado=String(r.repo_estado);
@@ -6965,7 +6762,7 @@ function migrateV1(){
 
   // Count total windows
   const totalWins=Object.keys(DATA.windows).length;
-  if(DEBUG)console.log('VentaControl v2.27 — '+totalWins+' ventanas cargadas');
+  if(DEBUG)console.log('VentaControl v2.28 — '+totalWins+' ventanas cargadas');
 
   // Prevent accidental exit — Android back-button / swipe gesture
   const _vcBase=location.href.split('#')[0];
